@@ -1,6 +1,6 @@
 # Pre-specified Study Protocol
 
-**Version:** 0.1 (locked at git tag `v0.1-protocol`). **Date:** 26 October 2026.
+**Version:** 0.2 (27 October 2026). Version 0.1 is locked at git tag `v0.1-protocol` (commit 5ca4821); changes since then are listed in Section 12. No experiment has been run yet, so no result has informed these changes.
 **Study:** Revisiting Federated Skin Lesion Benchmarks: Lesion-Level Leakage, Calibration and Conformal Coverage on Real Centers.
 
 Any change after the tag is recorded in Section 12 with date and reason. Results obtained before a change are kept and reported.
@@ -8,8 +8,8 @@ Any change after the tag is recorded in Section 12 with date and reason. Results
 ## 1. Research questions
 
 - **RQ1** (mother paper FW1, FW2, FW5): On six real Fed-ISIC2019 centers with a lesion-grouped split, how reliable are federated accuracy and conformal coverage, overall, per center, for melanoma, and on unseen centers?
-- **RQ2** (prerequisite): How much lesion-level leakage does Fed-ISIC2019 contain, and how much does it change accuracy, calibration, coverage and the ranking of federated methods?
-- **RQ3**: Does personalization improve per-center calibration and coverage, or only accuracy?
+- **RQ2** (prerequisite): Centralized studies show that lesion leakage can inflate dermoscopy metrics, with mixed evidence on its size. How unevenly is leakage distributed across the Fed-ISIC2019 centers, and how much does it change federated method rankings and per-center accuracy, calibration and conformal coverage?
+- **RQ3**: Does personalization improve per-center calibration and coverage, or only accuracy, and do published conclusions about personalization on Fed-ISIC2019 (FENDA-FL, FedOPAL) hold under a lesion-grouped split?
 
 ## 2. Data
 
@@ -62,7 +62,7 @@ No hyperparameter is tuned on any test set.
 | E4 | Balancing/augmentation applied to training only vs to all splits | RQ2 |
 | E5 | Conformal aggregation strategies on lesion-grouped models | RQ1 |
 | E6 | Leave-one-center-out; PAD-UFES-20 | RQ1 |
-| E7 | Personalization vs global: accuracy, ECE, coverage per center; subgroups | RQ3 |
+| E7 | Personalization vs global (FedBN, FedAvg-FT, FedPer, personalized FCP): accuracy, ECE, coverage per center; subgroups; both split types | RQ3 |
 | E8 | Backbones, 27 rounds, calibration-set size | Ablation |
 
 ## 7. Metrics
@@ -96,4 +96,5 @@ Balanced accuracy (primary, as FLamby), macro-F1, AUROC, melanoma recall; ECE (1
 
 | Date | Change | Reason |
 | --- | --- | --- |
-| — | — | — |
+| 27 Oct 2026 | RQ2 reworded to state that centralized leakage is prior evidence and to focus on the federated, per-center effect; analysis 2e added (per-center effect vs per-center leakage rate) | Literature round 3 found 2026 centralized leakage studies (incl. one with no AUC effect); no data analysed |
+| 27 Oct 2026 | RQ3 extended to re-test FENDA-FL and FedOPAL conclusions; FedPer added to E7 and E7 run on both split types | Two Fed-ISIC2019 personalization studies found in round 3; no data analysed |
