@@ -1,6 +1,6 @@
 # Pre-specified Study Protocol
 
-**Version:** 0.2 (27 October 2026). Version 0.1 is locked at git tag `v0.1-protocol` (commit 5ca4821); changes since then are listed in Section 12. No experiment has been run yet, so no result has informed these changes.
+**Version:** 0.3 (27 October 2026). Version 0.1 is locked at git tag `v0.1-protocol` (commit 5ca4821); changes since then are listed in Section 12. No experiment has been run yet, so no result has informed these changes.
 **Study:** Revisiting Federated Skin Lesion Benchmarks: Lesion-Level Leakage, Calibration and Conformal Coverage on Real Centers.
 
 Any change after the tag is recorded in Section 12 with date and reason. Results obtained before a change are kept and reported.
@@ -16,6 +16,7 @@ Any change after the tag is recorded in Section 12 with date and reason. Results
 - Fed-ISIC2019 from FLamby (commit edacf54), 23,247 images, 6 centers, 8 classes; images resized and colour-normalized with FLamby's scripts.
 - Lesion IDs from `ISIC_2019_Training_Metadata.csv` (all 23,247 images have an ID).
 - PAD-UFES-20 (unseen domain), mapped to the shared classes MEL, NV, BCC, AK, SCC, BKL (SEK→BKL, ACK→AK); patient-grouped use only.
+- **Pretraining overlap:** model B (PanDerm) was pretrained on about 2.1 million skin images including ISIC 2024 tiles; ISIC 2019, HAM10000, BCN20000 and PAD-UFES-20 are not listed among its pretraining sources. This is reported as a limitation. Models pretrained on PAD-UFES-20 (e.g. MedSigLIP) are excluded because PAD-UFES-20 is our unseen-domain test set.
 
 ## 3. Splits (files in `splits/`, checksums in `splits/SHA256SUMS.txt`)
 
@@ -33,7 +34,9 @@ Within each training set, 10% of lesions are held out (lesion-grouped) as valida
 
 | Setting | Value (FLamby defaults unless noted) |
 | --- | --- |
-| Backbone | EfficientNet-B0, ImageNet pretrained (main); ResNet18, MobileNetV3, ViT-Tiny in E8 only |
+| Model A (main, anchor) | EfficientNet-B0, ImageNet pretrained, full fine-tuning (FLamby default; comparable with published Fed-ISIC2019 results) |
+| Model B (main, foundation model) | PanDerm-Base (ViT-B/16, dermatology foundation model, CC-BY-NC-ND), **frozen**; embeddings computed once; a linear head is trained federatedly (SGD, lr 0.01, batch 64, same rounds and local updates as A); personalization = client-specific heads (FedPer-style) |
+| Model C (ablation only, if time) | DINOv3 ConvNeXt-Tiny, full fine-tuning; E1 and E2 (FedAvg, FedProx, FedAvg-FT), 3 seeds. FedBN is not applicable (LayerNorm) |
 | Loss | Weighted focal loss, γ = 2, FLamby class weights |
 | Federated optimizer | SGD, lr 0.01, batch 64, 100 local updates per round, 9 rounds |
 | FedProx μ | 0.001 |
@@ -56,14 +59,16 @@ No hyperparameter is tuned on any test set.
 
 | ID | Content | RQ |
 | --- | --- | --- |
-| E1 | FedAvg + pooled; image-level vs lesion-grouped; 3 seeds | RQ2, Gate 2 |
-| E2 | FedAvg, FedProx, FedBN, FedAvg-FT, pooled, local; both split types; 5 seeds | RQ2 |
+| E1 | FedAvg + pooled; image-level vs lesion-grouped; models A and B; 3 seeds | RQ2, Gate 2 |
+| E2 | FedAvg, FedProx, FedBN (A only), FedAvg-FT, pooled, local; both split types; models A and B; 5 seeds | RQ2 |
 | E3 | Softmax, MC-Dropout (20 passes), 5-member ensembles, conformal on E2 models | RQ2, RQ1 |
 | E4 | Balancing/augmentation applied to training only vs to all splits | RQ2 |
-| E5 | Conformal aggregation strategies on lesion-grouped models | RQ1 |
+| E5 | Conformal aggregation strategies on lesion-grouped models A and B | RQ1 |
 | E6 | Leave-one-center-out; PAD-UFES-20 | RQ1 |
-| E7 | Personalization vs global (FedBN, FedAvg-FT, FedPer, personalized FCP): accuracy, ECE, coverage per center; subgroups; both split types | RQ3 |
-| E8 | Backbones, 27 rounds, calibration-set size | Ablation |
+| E7 | Personalization vs global (A: FedBN, FedAvg-FT, FedPer; B: client-specific heads; personalized FCP): accuracy, ECE, coverage per center; subgroups; both split types | RQ3 |
+| E8 | Model C (DINOv3 ConvNeXt-Tiny) if time; 27 rounds; calibration-set size | Ablation |
+
+**Analysis 2f (RQ2):** does the leaky–clean difference depend on the adaptation regime (full fine-tuning, model A, vs frozen foundation model, model B)? Hypothesis: full fine-tuning memorizes lesion-specific appearance, so leakage inflates its metrics more.
 
 ## 7. Metrics
 
@@ -98,3 +103,4 @@ Balanced accuracy (primary, as FLamby), macro-F1, AUROC, melanoma recall; ECE (1
 | --- | --- | --- |
 | 27 Oct 2026 | RQ2 reworded to state that centralized leakage is prior evidence and to focus on the federated, per-center effect; analysis 2e added (per-center effect vs per-center leakage rate) | Literature round 3 found 2026 centralized leakage studies (incl. one with no AUC effect); no data analysed |
 | 27 Oct 2026 | RQ3 extended to re-test FENDA-FL and FedOPAL conclusions; FedPer added to E7 and E7 run on both split types | Two Fed-ISIC2019 personalization studies found in round 3; no data analysed |
+| 27 Oct 2026 | Backbones: model B (PanDerm-Base, frozen, federated linear head) added to E1, E2, E5, E7; former E8 backbones (ResNet18, MobileNetV3, ViT-Tiny) replaced by DINOv3 ConvNeXt-Tiny as optional ablation; analysis 2f added; pretraining-overlap rule added (MedSigLIP excluded) | Reviewer expectation of recent models; foundation model allows a full-fine-tuning vs frozen comparison within 6 GB GPU; no data analysed |
