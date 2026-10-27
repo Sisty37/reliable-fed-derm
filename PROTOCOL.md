@@ -1,6 +1,6 @@
 # Pre-specified Study Protocol
 
-**Version:** 0.5 (27 October 2026). Version 0.1 is locked at git tag `v0.1-protocol` (commit 5ca4821); changes since then are listed in Section 12. No experiment has been run yet, so no result has informed these changes. Version 0.5 will be registered on OSF before E0 starts.
+**Version:** 0.6 (27 October 2026). Version 0.1 is locked at git tag `v0.1-protocol` (commit 5ca4821); changes since then are listed in Section 12. No experiment has been run yet, so no result has informed these changes. Each version is time-stamped by its git tag (`v0.1-protocol` … `v0.6-protocol`).
 **Study:** Revisiting Federated Skin Lesion Benchmarks: Lesion-Level Leakage, Calibration and Conformal Coverage on Real Centers.
 
 Any change after the tag is recorded in Section 12 with date and reason. Results obtained before a change are kept and reported.
@@ -110,7 +110,7 @@ Model A total: about 140 runs.
 - `tests/test_splits.py`: no lesion in both train and test of lesion-grouped splits; image-level and lesion-grouped train sizes within 1%; full splits cover the same 23,247 images.
 - Split files are never edited by hand; checksums verified before each experiment batch.
 - All runs are logged, including failed and negative ones.
-- Protocol v0.4 is registered on OSF before E0; later changes are logged here and on OSF.
+- The protocol is not registered externally; its versions are fixed by git tags, and the repository (with full history) is released with the paper. Later changes are logged here.
 - Release: code, configurations, split files (lesion IDs dropped if the ISIC licence requires). PanDerm-derived heads or embeddings are released only if the PanDerm authors confirm this is allowed under CC-BY-NC-ND.
 
 ## 12. Deviations log
@@ -122,3 +122,4 @@ Model A total: about 140 runs.
 | 27 Oct 2026 | Backbones: model B (PanDerm-Base, frozen, federated linear head) added to E1, E2, E5, E7; former E8 backbones (ResNet18, MobileNetV3, ViT-Tiny) replaced by DINOv3 ConvNeXt-Tiny as optional ablation; analysis 2f added; pretraining-overlap rule added (MedSigLIP excluded) | Reviewer expectation of recent models; foundation model allows a full-fine-tuning vs frozen comparison within 6 GB GPU; no data analysed |
 | 27 Oct 2026 (v0.4) | Wilcoxon tests on seeds dropped; one primary outcome defined for Gate 2 (within-model inflation on the reweighted new-lesion subset, lesion bootstrap); Gate 1 added; E0 (official-split reproduction) and E0b (mother-paper setting) added; model A-frozen control added for 2f; 27 rounds moved into E1; lesion-grouped validation stated for both conditions and a leaky-validation variant added; new-lesion reweighting; lesion-ID check; SCAFFOLD added to E2; RQ3 reworded to the qualitative FENDA-FL conclusion and H3b added; τ noise floor; absent-class and small-center metric rules; centers 2–4 indicative; PAD-UFES-20 defined as a domain-shift stress test with 6-class restriction and two calibration sources; ensemble variance clarified; OSF registration and release rule added | External methodological review of v0.3; no data analysed |
 | 27 Oct 2026 (v0.5) | Leaky-validation variant dropped (would need retraining); new-lesion reweighting defined per class over centers, with a drop rule, a stated threat and a between-condition sensitivity check; E0b reworded and specified (mother paper pp. 293, 294, 298; Dirichlet α = 0.5 clients, as the mother paper does not state its partition); lesion-ID provenance, HAM10000 cross-check (7,470 lesions) and MSK check added; A-frozen and B use 5 augmented embedding views and a pre-specified convergence rule; Gate 1 reference fixed at 0.657 (FENDA-FL); E0b seeds stated; H3b operationalized; bootstrap limitation stated | Second external methodological review; no data analysed |
+| 27 Oct 2026 (v0.6) | Planned OSF registration dropped; versions are time-stamped by git tags and the full history is released with the paper | Author's decision; no data analysed |
