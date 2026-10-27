@@ -64,6 +64,7 @@ BLOCKS = {
 }
 
 LOG, RECORDS = [], []
+OPENALEX_KEY = None  # set with --openalex-key (free key from openalex.org)
 
 
 def log(source, block, query, hits, note=""):
@@ -78,9 +79,18 @@ def openalex(block, query, email, cap=2000):
     params = {"filter": f"title_and_abstract.search:{query},publication_year:{YEARS[0]}-{YEARS[1]}",
               "per-page": 200, "cursor": "*", "mailto": email,
               "select": "id,doi,title,publication_year,primary_location,type,language"}
-    total, got = None, 0
+    if OPENALEX_KEY:
+        params["api_key"] = OPENALEX_KEY
+    params.pop("cursor")
+    params["page"] = 1
+    total, got, note = None, 0, ""
     while True:
         r = requests.get(url, params=params, timeout=60)
+        if r.status_code in (401, 403, 429) and total is not None:
+            # OpenAlex refused a further page: keep what we have and record why
+            note = (f"downloaded first {got} of {total}; page {params['page']} refused "
+                    f"(HTTP {r.status_code}); rerun with --openalex-key")
+            break
         r.raise_for_status()
         js = r.json()
         total = js["meta"]["count"] if total is None else total
@@ -90,12 +100,13 @@ def openalex(block, query, email, cap=2000):
                             "year": w.get("publication_year"), "venue": src, "doi": w.get("doi"),
                             "type": w.get("type"), "language": w.get("language"), "id": w.get("id")})
             got += 1
-        cur = js["meta"].get("next_cursor")
-        if not cur or got >= min(total, cap):
+        if not js["results"] or got >= min(total, cap):
             break
-        params["cursor"] = cur
-        time.sleep(0.2)
-    log("OpenAlex", block, query, total, "" if got >= total else f"downloaded first {got}")
+        params["page"] += 1
+        time.sleep(0.5)
+    if not note and got < total:
+        note = f"downloaded first {got} of {total} (cap {cap})"
+    log("OpenAlex", block, query, total, note)
 
 
 # ---------------------------------------------------------------- PubMed
@@ -158,13 +169,19 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--email", required=True)
     ap.add_argument("--out", default="systematic_search.xlsx")
+    ap.add_argument("--openalex-key", default=None, help="free OpenAlex API key (optional)")
+    ap.add_argument("--only", nargs="*", default=None, help="run only these sources, e.g. OpenAlex")
     a = ap.parse_args()
+    global OPENALEX_KEY
+    OPENALEX_KEY = a.openalex_key
 
     for block, q in BLOCKS.items():
         print(block)
         for name, fn in [("OpenAlex", lambda: openalex(block, q["openalex"], a.email)),
                          ("PubMed", lambda: pubmed(block, q["pubmed"], a.email)),
                          ("arXiv", lambda: arxiv(block, q["arxiv"]))]:
+            if a.only and name not in a.only:
+                continue
             try:
                 fn()
             except Exception as ex:  # keep going if one source fails
