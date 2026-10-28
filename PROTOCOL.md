@@ -1,6 +1,6 @@
 # Pre-specified Study Protocol
 
-**Version:** 0.6 (27 October 2026). Version 0.1 is locked at git tag `v0.1-protocol` (commit 5ca4821); changes since then are listed in Section 12. No experiment has been run yet, so no result has informed these changes. Each version is time-stamped by its git tag (`v0.1-protocol` … `v0.6-protocol`).
+**Version:** 0.7 (28 October 2026). Version 0.1 is locked at git tag `v0.1-protocol` (commit 5ca4821); changes since then are listed in Section 12. No experiment has been run yet, so no result has informed these changes. Each version is time-stamped by its git tag (`v0.1-protocol` … `v0.7-protocol`).
 **Study:** Revisiting Federated Skin Lesion Benchmarks: Lesion-Level Leakage, Calibration and Conformal Coverage on Real Centers.
 
 Any change after the tag is recorded in Section 12 with date and reason. Results obtained before a change are kept and reported.
@@ -8,6 +8,7 @@ Any change after the tag is recorded in Section 12 with date and reason. Results
 ## 1. Research questions
 
 - **RQ1** (mother paper FW1, FW2, FW5): On six real Fed-ISIC2019 centers with a lesion-grouped split, how reliable are federated accuracy, calibration and conformal coverage, overall, per center, for melanoma, on unseen centers, and under a domain shift to smartphone images?
+- **RQ4 (method):** Does shrinking each center's conformal threshold toward the federated global threshold, in proportion to how little calibration data the center has, reduce the worst per-center coverage shortfall without inflating prediction sets?
 - **RQ2** (prerequisite): Centralized studies show that lesion leakage can inflate dermoscopy metrics, with mixed evidence on its size. How unevenly is leakage distributed across the Fed-ISIC2019 centers, and how much does it change federated method rankings and per-center accuracy, calibration and conformal coverage?
 - **RQ3**: Does personalization improve per-center calibration and coverage, or only accuracy? Does the qualitative conclusion of FENDA-FL (personalized methods under-perform on Fed-ISIC2019) hold under a lesion-grouped split?
   - **H3b:** local and personalized models gain most from leakage, because a leaked lesion's sibling images sit in the same center (92.7% of center 0's test images are leaked). Operationalized with the primary measure computed per method and per center: inflation(m, c) = balanced accuracy of method m on center c's image-level test set minus its reweighted balanced accuracy on center c's new-lesion subset. H3b is supported if the mean inflation of local-only, FedAvg-FT, FedBN and FedPer exceeds that of FedAvg, with the bootstrap interval of the difference above zero, in center 0 (the only center with enough new-lesion images); other centers are descriptive.
@@ -58,6 +59,8 @@ Any change after the tag is recorded in Section 12 with date and reason. Results
 - Temperature scaling per client on its validation lesions; global temperature = sample-weighted mean.
 - Split conformal with LAC and APS scores; target coverage 90% (main), also 80% and 95%.
 - Aggregation: global (pooled scores), client-wise (each center's own quantile), sample-weighted quantile; baselines FCP (Lu et al., 2023) and personalized FCP (Min et al., 2025).
+- **Proposed: shrinkage federated conformal calibration (ShrinkFCP, RQ4).** For center c with n_c calibration lesions' scores, let q_c be its own conformal quantile (level ⌈(n_c+1)(1−α)⌉/n_c) and q_g the global quantile obtained federatedly (each client shares a 1,000-bin histogram of its scores, as in FCP-style aggregation; no raw scores leave the client). The threshold is q̂_c = w_c·q_c + (1 − w_c)·q_g with w_c = n_c/(n_c + k). k = 0 gives client-wise and k → ∞ gives global calibration. **k is chosen once on validation lesions only** from {0, 10, 25, 50, 100, 200, 500, ∞}, minimizing the largest per-center coverage shortfall max_c max(0, (1−α) − cov_c), ties broken by smaller mean set size; the chosen k is then fixed for all test evaluations. Shrinkage does not carry a finite-sample coverage guarantee per center; this is stated and coverage is assessed empirically.
+- **Success criterion (RQ4, fixed now):** on lesion-grouped models A and B at α = 0.1, ShrinkFCP reduces the worst-center coverage shortfall by at least 2 points compared with the better of global and client-wise calibration, with the lesion-bootstrap interval of the reduction above zero, while mean set size grows by no more than 10%. FCP and personalized FCP are reported as comparisons. If the criterion is not met, the result is reported as negative.
 - PAD-UFES-20: (i) transfer, using the Fed-ISIC2019 lesion-grouped calibration scores restricted to the six shared classes; (ii) recalibrated on 50% of PAD-UFES-20 patients and evaluated on the other 50%, repeated 100 times.
 
 ## 6. Experiments
@@ -71,6 +74,7 @@ Any change after the tag is recorded in Section 12 with date and reason. Results
 | E3 | Softmax, MC-Dropout (20 passes), one 5-member deep ensemble per condition (from the 5 seeds; its uncertainty comes from the lesion bootstrap only), conformal; on E2 models | post hoc | RQ2, RQ1 |
 | E4 | Balancing/augmentation applied to training only vs to all splits | 6 | RQ2 |
 | E5 | Conformal aggregation strategies on lesion-grouped models A and B | post hoc | RQ1 |
+| E5b | **ShrinkFCP** vs global, client-wise, FCP, personalized FCP on lesion-grouped models A and B; α = 0.05, 0.1, 0.2; k chosen on validation lesions; also on leave-one-center-out (E6) models | post hoc | RQ4 |
 | E6 | Leave-one-center-out (lesion-grouped models); PAD-UFES-20 stress test | 18 | RQ1 |
 | E7 | Personalization vs global (A: FedBN, FedAvg-FT, FedPer; B: client-specific heads; personalized FCP): accuracy, ECE, coverage per center; subgroups; both split types; H3b | 10 (FedPer) + E2 | RQ3 |
 | E8 | Model C if time; calibration-set size | about 12 | Ablation |
@@ -103,7 +107,7 @@ Model A total: about 140 runs.
 
 - **Gate 1 (after E0):** reference value = FENDA-FL's FedAvg global-model balanced accuracy on the Fed-ISIC2019 test set, **0.657** (EfficientNet-B0, FLamby split). Gate 1 passes if model A FedAvg on the official split (mean of 3 seeds, pooled test set, balanced accuracy) is within ±5 points of 0.657. FLamby's own published FedAvg value is recorded next to it before E0. If Gate 1 fails, the pipeline is debugged before E1.
 - **Gate 2 (after E1), primary outcome:** inflation of model A FedAvg (9 rounds) = balanced accuracy on its own image-level test set minus reweighted balanced accuracy on the new-lesion subset of the same test set, same model; interval as in Section 9. If the inflation is at least 2 points with the interval above zero, RQ2 is the headline. Otherwise the headline is RQ1 and RQ2 is reported as a small or null effect with its interval. Melanoma recall, coverage, ECE, the between-condition difference and the 27-round result are secondary.
-- **Scope gate (after E5):** if time is short, E7 and E8 are reduced; E0, E1, E2, E5 are never dropped.
+- **Scope gate (after E5):** if time is short, E7 and E8 are reduced; E0, E1, E2, E5, E5b are never dropped.
 
 ## 11. Integrity, registration and release
 
@@ -123,3 +127,4 @@ Model A total: about 140 runs.
 | 27 Oct 2026 (v0.4) | Wilcoxon tests on seeds dropped; one primary outcome defined for Gate 2 (within-model inflation on the reweighted new-lesion subset, lesion bootstrap); Gate 1 added; E0 (official-split reproduction) and E0b (mother-paper setting) added; model A-frozen control added for 2f; 27 rounds moved into E1; lesion-grouped validation stated for both conditions and a leaky-validation variant added; new-lesion reweighting; lesion-ID check; SCAFFOLD added to E2; RQ3 reworded to the qualitative FENDA-FL conclusion and H3b added; τ noise floor; absent-class and small-center metric rules; centers 2–4 indicative; PAD-UFES-20 defined as a domain-shift stress test with 6-class restriction and two calibration sources; ensemble variance clarified; OSF registration and release rule added | External methodological review of v0.3; no data analysed |
 | 27 Oct 2026 (v0.5) | Leaky-validation variant dropped (would need retraining); new-lesion reweighting defined per class over centers, with a drop rule, a stated threat and a between-condition sensitivity check; E0b reworded and specified (mother paper pp. 293, 294, 298; Dirichlet α = 0.5 clients, as the mother paper does not state its partition); lesion-ID provenance, HAM10000 cross-check (7,470 lesions) and MSK check added; A-frozen and B use 5 augmented embedding views and a pre-specified convergence rule; Gate 1 reference fixed at 0.657 (FENDA-FL); E0b seeds stated; H3b operationalized; bootstrap limitation stated | Second external methodological review; no data analysed |
 | 27 Oct 2026 (v0.6) | Planned OSF registration dropped; versions are time-stamped by git tags and the full history is released with the paper | Author's decision; no data analysed |
+| 28 Oct 2026 (v0.7) | RQ4 and experiment E5b added: shrinkage federated conformal calibration (ShrinkFCP) with k chosen on validation lesions and a fixed success criterion | A method contribution addressing the small-center calibration problem the study is designed to measure; post hoc, no extra training; no data analysed |
