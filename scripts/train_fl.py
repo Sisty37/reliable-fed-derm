@@ -128,6 +128,22 @@ def main():
                         image=np.array([r[0] for r in rows]), center=np.array([r[1] for r in rows]),
                         logits=np.concatenate([per_center[c][0] for c in range(NUM_CLIENTS)]),
                         target=np.concatenate([per_center[c][1] for c in range(NUM_CLIENTS)]))
+    # validation predictions (E1 onward: lesion-grouped validation fold, used later for temperature scaling)
+    import pandas as pd
+    if (pd.read_csv(a.split, usecols=["fold"]).fold == "val").any():
+        vrows, vlog, vy = [], [], []
+        for c in range(NUM_CLIENTS):
+            ds = IsicDataset(a.split, a.img_dir, "val", center=c, train_aug=False, max_items=max_items)
+            if len(ds) == 0:
+                continue
+            lg, y = predict(eval_model, make_loader(ds, False, a.batch, a.workers, 0), device, amp)
+            vlog.append(lg)
+            vy.append(y)
+            vrows += [(img, c) for img in ds.df.image]
+        np.savez_compressed(os.path.join(out_dir, "preds_val.npz"),
+                            image=np.array([r[0] for r in vrows]), center=np.array([r[1] for r in vrows]),
+                            logits=np.concatenate(vlog), target=np.concatenate(vy))
+        log(f"validation predictions saved ({len(vrows)} images)")
     torch.save(eval_model.state_dict(), os.path.join(out_dir, "model.pt"))
     if bn is not None:
         torch.save(bn, os.path.join(out_dir, "bn_buffers.pt"))
