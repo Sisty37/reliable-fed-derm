@@ -1,0 +1,159 @@
+{
+  "fedavg_r9 (PRIMARY)": {
+    "inflation": 0.08113714978866242,
+    "ci95": [
+      0.047380429050643234,
+      0.11182014232601017
+    ],
+    "per_seed": [
+      {
+        "seed": 0,
+        "classes_kept": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "ba_full": 0.5676103900816338,
+        "ba_new_reweighted": 0.4816468558230069,
+        "inflation": 0.0859635342586269,
+        "n_test": 4648,
+        "n_new": 1858,
+        "mel_recall_full": 0.4796650717703349,
+        "mel_recall_new": 0.37037037037037035
+      },
+      {
+        "seed": 1,
+        "classes_kept": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "ba_full": 0.5728809180362515,
+        "ba_new_reweighted": 0.43977991899778035,
+        "inflation": 0.13310099903847117,
+        "n_test": 4648,
+        "n_new": 1950,
+        "mel_recall_full": 0.49401913875598086,
+        "mel_recall_new": 0.3548387096774194
+      },
+      {
+        "seed": 2,
+        "classes_kept": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "ba_full": 0.5913895285253037,
+        "ba_new_reweighted": 0.5670426124564145,
+        "inflation": 0.02434691606888917,
+        "n_test": 4648,
+        "n_new": 1845,
+        "mel_recall_full": 0.5382775119617225,
+        "mel_recall_new": 0.4057142857142857
+      }
+    ],
+    "seed_range": [
+      0.02434691606888917,
+      0.13310099903847117
+    ],
+    "between_condition": {
+      "ba_image_model_own_test": 0.5772936122143963,
+      "ba_lesion_model_own_test": 0.5085766303534659,
+      "difference": 0.06871698186093045
+    }
+  },
+  "pooled_e20": {
+    "inflation": 0.16162955336470886,
+    "ci95": [
+      0.12498542478141013,
+      0.19421309083153604
+    ],
+    "per_seed": [
+      {
+        "seed": 0,
+        "classes_kept": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "ba_full": 0.7399992043929611,
+        "ba_new_reweighted": 0.5410317184375627,
+        "inflation": 0.19896748595539837,
+        "n_test": 4648,
+        "n_new": 1858,
+        "mel_recall_full": 0.7404306220095693,
+        "mel_recall_new": 0.6296296296296297
+      },
+      {
+        "seed": 1,
+        "classes_kept": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "ba_full": 0.7197045066265183,
+        "ba_new_reweighted": 0.5979529435743629,
+        "inflation": 0.1217515630521554,
+        "n_test": 4648,
+        "n_new": 1950,
+        "mel_recall_full": 0.6088516746411483,
+        "mel_recall_new": 0.45161290322580644
+      },
+      {
+        "seed": 2,
+        "classes_kept": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "ba_full": 0.7224717445718484,
+        "ba_new_reweighted": 0.5583021334852756,
+        "inflation": 0.1641696110865728,
+        "n_test": 4648,
+        "n_new": 1845,
+        "mel_recall_full": 0.6507177033492823,
+        "mel_recall_new": 0.4857142857142857
+      }
+    ],
+    "seed_range": [
+      0.1217515630521554,
+      0.19896748595539837
+    ],
+    "between_condition": {
+      "ba_image_model_own_test": 0.7273918185304425,
+      "ba_lesion_model_own_test": 0.5756153800433943,
+      "difference": 0.15177643848704825
+    }
+  },
+  "gate2": "PASS: RQ2 is the headline"
+}
