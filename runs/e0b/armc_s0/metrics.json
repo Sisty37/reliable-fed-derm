@@ -1,0 +1,25 @@
+{
+  "arm": "c",
+  "seed": 0,
+  "rounds": 9,
+  "updates": 100,
+  "lr": 0.01,
+  "amp": true,
+  "git": "e3c939e",
+  "test_rows": 2003,
+  "bacc_test": 0.6332822951814572,
+  "share_test_lesion_in_train": 0.28806789815277084,
+  "share_test_source_image_in_train": 0.0,
+  "bacc_test_new_lesions_exploratory": 0.6239455225387278,
+  "n_test_new_lesions": 1426,
+  "recall_per_class": {
+    "MEL": 0.2691,
+    "NV": 0.8471,
+    "BCC": 0.6311,
+    "AKIEC": 0.3538,
+    "BKL": 0.4545,
+    "DF": 0.913,
+    "VASC": 0.9643
+  },
+  "minutes": 9.3
+}

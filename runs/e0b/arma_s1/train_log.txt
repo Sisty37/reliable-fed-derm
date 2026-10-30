@@ -1,0 +1,14 @@
+2026-10-30 14:43 | E0b arma_s1 | device cuda | AMP True | lr 0.01 | git e3c939e
+train rows per client: 6483, 9311, 6726 | test rows: 2048
+  round 1/9  client losses 0.963 0.872 0.938  (61 s)
+  round 2/9  client losses 0.700 0.636 0.679  (122 s)
+  round 3/9  client losses 0.560 0.500 0.542  (182 s)
+  round 4/9  client losses 0.466 0.440 0.464  (242 s)
+  round 5/9  client losses 0.423 0.404 0.419  (301 s)
+  round 6/9  client losses 0.390 0.371 0.389  (361 s)
+  round 7/9  client losses 0.367 0.346 0.368  (421 s)
+  round 8/9  client losses 0.343 0.333 0.346  (481 s)
+  round 9/9  client losses 0.315 0.309 0.317  (541 s)
+balanced accuracy (own test set) 0.6467 | test rows with lesion in train 0.0% | with source image in train 0.0%
+exploratory: balanced accuracy on 2048 new-lesion test rows 0.6467
+saved to runs\e0b\arma_s1 (9.3 min)

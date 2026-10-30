@@ -1,0 +1,14 @@
+2026-10-30 15:03 | E0b armc_s1 | device cuda | AMP True | lr 0.01 | git e3c939e
+train rows per client: 7163, 7439, 7918 | test rows: 2003
+  round 1/9  client losses 0.988 1.111 0.900  (61 s)
+  round 2/9  client losses 0.753 0.878 0.648  (122 s)
+  round 3/9  client losses 0.641 0.732 0.495  (182 s)
+  round 4/9  client losses 0.571 0.658 0.421  (242 s)
+  round 5/9  client losses 0.525 0.585 0.384  (301 s)
+  round 6/9  client losses 0.502 0.550 0.348  (361 s)
+  round 7/9  client losses 0.465 0.509 0.322  (421 s)
+  round 8/9  client losses 0.457 0.480 0.303  (482 s)
+  round 9/9  client losses 0.433 0.468 0.289  (542 s)
+balanced accuracy (own test set) 0.6439 | test rows with lesion in train 28.4% | with source image in train 0.0%
+exploratory: balanced accuracy on 1435 new-lesion test rows 0.6652
+saved to runs\e0b\armc_s1 (9.3 min)
