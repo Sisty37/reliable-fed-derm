@@ -1,0 +1,20 @@
+{
+  "bacc_center_0": 0.6193244587833067,
+  "bacc_center_1": 0.6214477985002884,
+  "bacc_center_2": 0.7442759990644475,
+  "bacc_center_3": 0.46002225461087026,
+  "bacc_center_4": 0.46804782519068233,
+  "bacc_center_5": 0.8584834834834835,
+  "bacc_pooled": 0.5990729127478363,
+  "bacc_mean_of_centers": 0.6286003032721798,
+  "method": "fedprox",
+  "seed": 0,
+  "split": "splits\\split_official.csv",
+  "rounds": 9,
+  "updates": 100,
+  "lr": 0.01,
+  "amp": true,
+  "minutes": 23.6,
+  "git": "907f3b5",
+  "eval_model": "client 0 copy"
+}

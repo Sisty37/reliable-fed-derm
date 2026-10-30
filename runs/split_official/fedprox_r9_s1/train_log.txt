@@ -1,0 +1,13 @@
+2026-10-30 07:40 | fedprox_r9_s1 | split splits\split_official.csv | device cuda (NVIDIA GeForce RTX 4050 Laptop GPU) | AMP True | lr 0.01 | git 907f3b5
+train images per center: 9930, 3163, 2691, 1807, 655, 351
+  round 1/9  client losses 11.014 1.912 5.748 9.391 2.167 2.017  (200 s)
+  round 2/9  client losses 8.551 1.002 4.167 7.742 1.751 1.162  (331 s)
+  round 3/9  client losses 7.214 0.775 3.803 7.141 1.622 1.001  (461 s)
+  round 4/9  client losses 6.680 0.785 2.896 6.090 1.506 0.876  (592 s)
+  round 5/9  client losses 5.851 0.596 2.501 5.906 1.498 0.869  (722 s)
+  round 6/9  client losses 5.561 0.594 2.495 5.779 1.489 0.842  (852 s)
+  round 7/9  client losses 5.279 0.499 4.828 5.494 1.441 0.826  (982 s)
+  round 8/9  client losses 4.789 0.456 2.113 5.130 1.470 0.954  (1113 s)
+  round 9/9  client losses 4.693 0.527 3.382 4.844 1.392 0.704  (1243 s)
+balanced accuracy  pooled 0.5666 | mean of centers 0.5340 | per center 0.601 0.604 0.580 0.426 0.371 0.623
+saved to runs\split_official\fedprox_r9_s1 (22.0 min)

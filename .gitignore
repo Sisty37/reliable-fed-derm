@@ -7,3 +7,11 @@ __pycache__/
 fulltext_pdfs/
 fulltext_txt/
 *.xlsx
+
+data/
+
+runs/**/model.pt
+runs/**/bn_buffers.pt
+runs/split_official_smoke/
+runs_check/
+_misplaced/

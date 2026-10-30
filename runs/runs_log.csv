@@ -1,0 +1,20 @@
+time,split,method,seed,rounds,bacc_pooled,bacc_mean_centers,minutes,git,status
+2026-10-30 04:46,split_official_smoke,fedavg,0,2,0.1314,0.0516,0.2,907f3b5,smoke
+2026-10-30 04:47,split_official_smoke,fedprox,0,2,0.1314,0.0516,0.2,907f3b5,smoke
+2026-10-30 04:47,split_official_smoke,scaffold,0,2,0.1314,0.0516,0.2,907f3b5,smoke
+2026-10-30 04:47,split_official_smoke,pooled,0,2,0.1314,0.0516,0.1,907f3b5,smoke
+2026-10-30 05:01,split_official_smoke,fedprox,0,2,0.1314,0.0516,0.2,907f3b5,smoke
+2026-10-30 05:02,split_official_smoke,scaffold,0,2,0.1314,0.0516,0.2,907f3b5,smoke
+2026-10-30 05:02,split_official_smoke,pooled,0,2,0.1314,0.0516,0.1,907f3b5,smoke
+2026-10-30 06:11,split_official,fedavg,0,9,0.6415,0.6529,22.7,907f3b5,ok
+2026-10-30 06:35,split_official,fedprox,0,9,0.5991,0.6286,23.6,907f3b5,ok
+2026-10-30 06:57,split_official,scaffold,0,9,0.6258,0.6016,21.7,907f3b5,ok
+2026-10-30 07:19,split_official,pooled,0,9,0.7614,0.7276,21.5,907f3b5,ok
+2026-10-30 07:40,split_official,fedavg,1,9,0.5787,0.5699,21.3,907f3b5,ok
+2026-10-30 08:02,split_official,fedprox,1,9,0.5666,0.5340,22.0,907f3b5,ok
+2026-10-30 08:24,split_official,scaffold,1,9,0.6264,0.6147,21.4,907f3b5,ok
+2026-10-30 08:46,split_official,pooled,1,9,0.7463,0.6949,21.2,907f3b5,ok
+2026-10-30 09:07,split_official,fedavg,2,9,0.6243,0.6294,21.0,907f3b5,ok
+2026-10-30 09:29,split_official,fedprox,2,9,0.6467,0.6272,21.7,907f3b5,ok
+2026-10-30 09:50,split_official,scaffold,2,9,0.6180,0.5966,21.5,907f3b5,ok
+2026-10-30 10:12,split_official,pooled,2,9,0.7415,0.6898,21.5,907f3b5,ok

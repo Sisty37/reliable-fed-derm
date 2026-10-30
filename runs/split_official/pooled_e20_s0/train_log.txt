@@ -1,0 +1,24 @@
+2026-10-30 06:57 | pooled_e20_s0 | split splits\split_official.csv | device cuda (NVIDIA GeForce RTX 4050 Laptop GPU) | AMP True | lr 0.0005 | git 907f3b5
+pooled train images: 18597
+  epoch 1/20  train loss 7.6154
+  epoch 2/20  train loss 5.1331
+  epoch 3/20  train loss 4.3195
+  epoch 4/20  train loss 3.8663
+  epoch 5/20  train loss 3.3329
+  epoch 6/20  train loss 3.1461
+  epoch 7/20  train loss 2.7877
+  epoch 8/20  train loss 2.7722
+  epoch 9/20  train loss 2.6138
+  epoch 10/20  train loss 2.3760
+  epoch 11/20  train loss 2.1465
+  epoch 12/20  train loss 1.9839
+  epoch 13/20  train loss 1.8430
+  epoch 14/20  train loss 1.8269
+  epoch 15/20  train loss 1.6881
+  epoch 16/20  train loss 1.5934
+  epoch 17/20  train loss 1.4489
+  epoch 18/20  train loss 1.5889
+  epoch 19/20  train loss 1.3052
+  epoch 20/20  train loss 1.1405
+balanced accuracy  pooled 0.7614 | mean of centers 0.7276 | per center 0.763 0.847 0.812 0.630 0.642 0.671
+saved to runs\split_official\pooled_e20_s0 (21.5 min)
