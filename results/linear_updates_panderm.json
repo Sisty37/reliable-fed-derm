@@ -1,0 +1,65 @@
+{
+  "encoder": "panderm",
+  "feature_norm": "center",
+  "updates": 6400,
+  "history": [
+    {
+      "updates": 100,
+      "loss_last_two_rounds": [
+        6.095181655883789,
+        5.973684883117675
+      ],
+      "relative_drop": 0.019933248855484198
+    },
+    {
+      "updates": 200,
+      "loss_last_two_rounds": [
+        5.62406816482544,
+        5.539292335510254
+      ],
+      "relative_drop": 0.01507375565705242
+    },
+    {
+      "updates": 400,
+      "loss_last_two_rounds": [
+        5.2362696647644045,
+        5.1256498336792
+      ],
+      "relative_drop": 0.021125694085157857
+    },
+    {
+      "updates": 800,
+      "loss_last_two_rounds": [
+        4.894225978851319,
+        4.8198925971984865
+      ],
+      "relative_drop": 0.015187974967653282
+    },
+    {
+      "updates": 1600,
+      "loss_last_two_rounds": [
+        4.638314914703369,
+        4.569268417358399
+      ],
+      "relative_drop": 0.014886116750308313
+    },
+    {
+      "updates": 3200,
+      "loss_last_two_rounds": [
+        4.508261775970459,
+        4.42704029083252
+      ],
+      "relative_drop": 0.018016142179422358
+    },
+    {
+      "updates": 6400,
+      "loss_last_two_rounds": [
+        4.432691669464111,
+        4.445463466644287
+      ],
+      "relative_drop": -0.002881273531420696
+    }
+  ],
+  "git": "0362aeb",
+  "date": "2026-10-31 20:44"
+}

@@ -1,0 +1,65 @@
+{
+  "encoder": "effb0",
+  "feature_norm": "center",
+  "updates": 6400,
+  "history": [
+    {
+      "updates": 100,
+      "loss_last_two_rounds": [
+        6.192616081237793,
+        6.1230494499206545
+      ],
+      "relative_drop": 0.011233803356211455
+    },
+    {
+      "updates": 200,
+      "loss_last_two_rounds": [
+        5.858982086181641,
+        5.749334526062012
+      ],
+      "relative_drop": 0.018714438533313078
+    },
+    {
+      "updates": 400,
+      "loss_last_two_rounds": [
+        5.537417030334472,
+        5.413443565368652
+      ],
+      "relative_drop": 0.022388320093408548
+    },
+    {
+      "updates": 800,
+      "loss_last_two_rounds": [
+        5.233702564239502,
+        5.148733997344971
+      ],
+      "relative_drop": 0.016234886459750096
+    },
+    {
+      "updates": 1600,
+      "loss_last_two_rounds": [
+        5.100680160522461,
+        4.96440372467041
+      ],
+      "relative_drop": 0.02671730662643474
+    },
+    {
+      "updates": 3200,
+      "loss_last_two_rounds": [
+        5.223834419250489,
+        5.109512996673584
+      ],
+      "relative_drop": 0.021884580061652722
+    },
+    {
+      "updates": 6400,
+      "loss_last_two_rounds": [
+        5.339904308319092,
+        5.336166763305664
+      ],
+      "relative_drop": 0.0006999273390732151
+    }
+  ],
+  "git": "0362aeb",
+  "date": "2026-10-31 20:12"
+}
