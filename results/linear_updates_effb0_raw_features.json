@@ -1,0 +1,16 @@
+{
+  "encoder": "effb0",
+  "updates": 100,
+  "history": [
+    {
+      "updates": 100,
+      "loss_last_two_rounds": [
+        6.818440055847168,
+        6.75413875579834
+      ],
+      "relative_drop": 0.009430500161644192
+    }
+  ],
+  "git": "631fddb",
+  "date": "2026-10-31 18:50"
+}

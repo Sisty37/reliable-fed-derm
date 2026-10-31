@@ -2,6 +2,8 @@
 Federated / pooled linear heads on frozen embeddings: model A-frozen (--encoder effb0) and model B
 (--encoder panderm), protocol v0.10, Section 4.
 
+  * Embeddings are standardized per dimension with federated training statistics (deviation of
+    31 Oct 2026, see results/E1_frozen_implementation_notes.md).
   * Training rows use one of their 5 augmented-view embeddings, drawn at random each time a row is used;
     validation and test use the plain view.
   * Loss: FLamby weighted focal loss (gamma 2). FedAvg: SGD lr 0.01, batch 64, 9 rounds x U local
@@ -58,6 +60,25 @@ class EmbRows:
         return torch.from_numpy(self.aug[idx, v].astype(np.float32)), torch.from_numpy(self.y[idx])
 
 
+def federated_standardize(df, plain, aug, eps=1e-4):
+    """Per-dimension z-scoring with training statistics aggregated federatedly: each client shares only
+    its row count, sum and sum of squares over its training rows (all 5 views); the server combines
+    them. The same transform is applied to every row and view (train, val, test)."""
+    n = 0
+    s1 = np.zeros(plain.shape[1], np.float64)
+    s2 = np.zeros(plain.shape[1], np.float64)
+    tr = df[df.fold == "train"]
+    for c in sorted(tr.center.unique()):                      # client-side statistics
+        x = aug[tr.row[tr.center == c].to_numpy()].astype(np.float64).reshape(-1, plain.shape[1])
+        n += len(x)
+        s1 += x.sum(0)
+        s2 += (x ** 2).sum(0)
+    mu = s1 / n                                               # server-side combination
+    sd = np.sqrt(np.maximum(s2 / n - mu ** 2, 0) + eps)
+    mu, sd = mu.astype(np.float32), sd.astype(np.float32)
+    return (plain.astype(np.float32) - mu) / sd, (aug.astype(np.float32) - mu) / sd
+
+
 def load_split(split_csv, emb_path):
     e = np.load(emb_path)
     pos = {im: i for i, im in enumerate(e["image"].astype(str))}
@@ -89,6 +110,8 @@ def run(a, updates, log):
     set_seed(a.seed)
     rng = np.random.default_rng(a.seed)
     df, plain, aug = load_split(a.split, os.path.join(a.emb_dir, f"{a.encoder}.npz"))
+    df["row"] = df.row.astype(int)
+    plain, aug = federated_standardize(df, plain, aug)
     tr = df[df.fold == "train"]
     dim = plain.shape[1]
     head = nn.Linear(dim, NUM_CLASSES)

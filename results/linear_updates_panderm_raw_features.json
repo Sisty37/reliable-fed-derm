@@ -1,0 +1,48 @@
+{
+  "encoder": "panderm",
+  "updates": 1600,
+  "history": [
+    {
+      "updates": 100,
+      "loss_last_two_rounds": [
+        15.65611457824707,
+        13.189542961120605
+      ],
+      "relative_drop": 0.1575468552429714
+    },
+    {
+      "updates": 200,
+      "loss_last_two_rounds": [
+        14.19904384613037,
+        11.155035591125488
+      ],
+      "relative_drop": 0.21438121383324404
+    },
+    {
+      "updates": 400,
+      "loss_last_two_rounds": [
+        8.956217002868652,
+        7.8142087936401365
+      ],
+      "relative_drop": 0.12751010933106388
+    },
+    {
+      "updates": 800,
+      "loss_last_two_rounds": [
+        9.937045478820801,
+        8.942104721069336
+      ],
+      "relative_drop": 0.10012440416741772
+    },
+    {
+      "updates": 1600,
+      "loss_last_two_rounds": [
+        8.083313179016113,
+        8.061045074462891
+      ],
+      "relative_drop": 0.002754823926781472
+    }
+  ],
+  "git": "631fddb",
+  "date": "2026-10-31 18:59"
+}

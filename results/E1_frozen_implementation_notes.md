@@ -27,3 +27,27 @@ validation and test, federated linear head, convergence check). Points the proto
    round 9. The chosen U is saved in `results/linear_updates_<encoder>.json` and used for every split,
    seed and method of that encoder.
 7. **Model B status.** Pretraining overlap not ruled out (`results/PanDerm_overlap_check.md`).
+
+## Deviation, 31 Oct 2026 (after the first convergence check, before any test-set result)
+
+**What happened.** The embeddings were extracted (10.6 min) and the convergence check was run on the
+raw embeddings. For EfficientNet-B0 the pooled training loss fell smoothly (9.44 to 6.75 over 9
+rounds; U = 100). For PanDerm-Base it jumped between rounds at every U tried (e.g. U = 100:
+21.8, 30.4, 20.4, 18.4, 40.9, 19.5, 13.9, 15.7, 13.2), and the rule was met at U = 1600 only because two
+noisy values happened to be close (8.08, 8.06). The training was unstable, not converged.
+
+**Diagnosis** (plain-view embeddings, all images): per-dimension SD 0.019–0.929 and largest absolute
+value 6.1 for EfficientNet-B0; per-dimension SD 0.000–0.887 but largest absolute value 16.3 for
+PanDerm-Base, i.e. some PanDerm dimensions carry large, almost constant offsets (a known property of
+ViT features). With SGD lr 0.01 and FLamby's class weights (up to 101), these offsets give very large
+gradients on the matching head weights.
+
+**Change.** Before the linear head, every embedding dimension is standardized with training
+statistics computed federatedly (each client shares its row count, sum and sum of squares over its
+training rows and all 5 views; z = (x − mean) / sqrt(var + 1e-4)); the same transform is applied to the
+validation and test views. It is applied to **both** encoders so that A-frozen and B stay comparable,
+and the convergence check is re-run for both. Everything else is unchanged.
+
+**Basis of the decision.** Training loss and embedding statistics only; no validation or test
+prediction of any frozen-encoder model had been computed. The first check's output is kept as
+`results/linear_updates_<encoder>_raw_features.json`.
