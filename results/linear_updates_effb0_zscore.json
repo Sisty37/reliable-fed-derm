@@ -1,0 +1,24 @@
+{
+  "encoder": "effb0",
+  "updates": 200,
+  "history": [
+    {
+      "updates": 100,
+      "loss_last_two_rounds": [
+        9.931469535827636,
+        9.121650695800781
+      ],
+      "relative_drop": 0.08154068610948713
+    },
+    {
+      "updates": 200,
+      "loss_last_two_rounds": [
+        10.6051815032959,
+        11.543935966491699
+      ],
+      "relative_drop": -0.08851847211705442
+    }
+  ],
+  "git": "7b93ab1",
+  "date": "2026-10-31 19:12"
+}

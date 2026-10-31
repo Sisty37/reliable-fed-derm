@@ -2,8 +2,9 @@
 Federated / pooled linear heads on frozen embeddings: model A-frozen (--encoder effb0) and model B
 (--encoder panderm), protocol v0.10, Section 4.
 
-  * Embeddings are standardized per dimension with federated training statistics (deviation of
-    31 Oct 2026, see results/E1_frozen_implementation_notes.md).
+  * Embeddings are centred per dimension with the federated training mean (default; deviation of
+    31 Oct 2026, see results/E1_frozen_implementation_notes.md). --feature-norm zscore / none keep the
+    earlier variants for the record.
   * Training rows use one of their 5 augmented-view embeddings, drawn at random each time a row is used;
     validation and test use the plain view.
   * Loss: FLamby weighted focal loss (gamma 2). FedAvg: SGD lr 0.01, batch 64, 9 rounds x U local
@@ -60,7 +61,7 @@ class EmbRows:
         return torch.from_numpy(self.aug[idx, v].astype(np.float32)), torch.from_numpy(self.y[idx])
 
 
-def federated_standardize(df, plain, aug, eps=1e-4):
+def federated_standardize(df, plain, aug, eps=1e-4, mode="center"):
     """Per-dimension z-scoring with training statistics aggregated federatedly: each client shares only
     its row count, sum and sum of squares over its training rows (all 5 views); the server combines
     them. The same transform is applied to every row and view (train, val, test)."""
@@ -76,6 +77,10 @@ def federated_standardize(df, plain, aug, eps=1e-4):
     mu = s1 / n                                               # server-side combination
     sd = np.sqrt(np.maximum(s2 / n - mu ** 2, 0) + eps)
     mu, sd = mu.astype(np.float32), sd.astype(np.float32)
+    if mode == "none":
+        return plain.astype(np.float32), aug.astype(np.float32)
+    if mode == "center":                                      # remove offsets, keep the scale
+        return plain.astype(np.float32) - mu, aug.astype(np.float32) - mu
     return (plain.astype(np.float32) - mu) / sd, (aug.astype(np.float32) - mu) / sd
 
 
@@ -111,7 +116,7 @@ def run(a, updates, log):
     rng = np.random.default_rng(a.seed)
     df, plain, aug = load_split(a.split, os.path.join(a.emb_dir, f"{a.encoder}.npz"))
     df["row"] = df.row.astype(int)
-    plain, aug = federated_standardize(df, plain, aug)
+    plain, aug = federated_standardize(df, plain, aug, mode=a.feature_norm)
     tr = df[df.fold == "train"]
     dim = plain.shape[1]
     head = nn.Linear(dim, NUM_CLASSES)
@@ -162,6 +167,8 @@ def main():
     ap.add_argument("--out", default="runs")
     ap.add_argument("--rounds", type=int, default=9)
     ap.add_argument("--convergence-check", action="store_true")
+    ap.add_argument("--feature-norm", default="center", choices=["center", "zscore", "none"],
+                    help="federated per-dimension centering (default), z-scoring, or raw embeddings")
     a = ap.parse_args()
 
     upd_file = os.path.join("results", f"linear_updates_{a.encoder}.json")
@@ -178,14 +185,16 @@ def main():
                 break
             updates *= 2
         os.makedirs("results", exist_ok=True)
-        json.dump({"encoder": a.encoder, "updates": updates, "history": history, "git": git_commit(),
+        json.dump({"encoder": a.encoder, "feature_norm": a.feature_norm, "updates": updates, "history": history, "git": git_commit(),
                    "date": f"{dt.datetime.now():%Y-%m-%d %H:%M}"}, open(upd_file, "w"), indent=2)
         print(f"chosen local updates per round for {a.encoder}: {updates} -> {upd_file}")
         return
 
     if a.method == "fedavg":
         assert os.path.exists(upd_file), f"run the convergence check first ({upd_file} missing)"
-        updates = json.load(open(upd_file))["updates"]
+        cfg = json.load(open(upd_file))
+        assert cfg.get("feature_norm", "zscore") == a.feature_norm, f"{upd_file} was made with another --feature-norm"
+        updates = cfg["updates"]
     else:
         updates = 0
     split_name = os.path.splitext(os.path.basename(a.split))[0]

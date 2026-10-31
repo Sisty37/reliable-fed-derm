@@ -51,3 +51,20 @@ and the convergence check is re-run for both. Everything else is unchanged.
 **Basis of the decision.** Training loss and embedding statistics only; no validation or test
 prediction of any frozen-encoder model had been computed. The first check's output is kept as
 `results/linear_updates_<encoder>_raw_features.json`.
+
+## Second check and final choice, 31 Oct 2026 (still before any validation or test prediction)
+
+**Z-scored embeddings, convergence check re-run.** EfficientNet-B0: U = 100 gave 13.68 → 9.12 with
+jumps (13.04 → 11.19 → 13.49); U = 200 stayed between 10.4 and 13.9 (rule met because the loss rose
+in the last round). PanDerm-Base: U = 100 to 800, losses 10.7 → 6.4–7.2 with jumps. Z-scoring removed
+PanDerm's worst jumps but made EfficientNet-B0 clearly worse than on raw embeddings (final loss about
+10–11 instead of 6.75): dividing by very small SDs (down to 0.019) multiplies weak dimensions up to
+about 50-fold and raises the effective step size. Kept as
+`results/linear_updates_<encoder>_zscore.json`.
+
+**Final choice: centring only.** The diagnosed problem is the large near-constant offsets, not the
+scale. Each dimension is therefore centred with the federated training mean (same client-side sums as
+above) and not divided by its SD; the scale of every encoder is kept. This is applied to both
+encoders, the convergence check is re-run once for each, and its result is used whatever it is. No
+further preprocessing variant will be tried; if training is still unstable, this is reported as a
+limitation of the protocol's fixed SGD settings for linear heads.
