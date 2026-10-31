@@ -16,3 +16,6 @@ runs/split_official_smoke/
 runs_check/
 _misplaced/
 runs/e0b_smoke/
+
+embeddings/
+embeddings_smoke/

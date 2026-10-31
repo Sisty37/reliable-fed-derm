@@ -16,7 +16,10 @@ Secondary (reported, no decision): the same inflation for FedAvg at 27 rounds an
 the between-condition difference (BA of the image-level model on its own test set minus BA of the
 lesion-grouped model on its own test set); melanoma recall in both terms.
 
-Usage (from the repo folder):  python scripts\\gate2.py
+Usage (from the repo folder):
+  python scripts\\gate2.py                              # model A (Gate 2)
+  python scripts\\gate2.py --prefix effb0frozen_        # model A-frozen (secondary, analysis 2f)
+  python scripts\\gate2.py --prefix pandermfrozen_      # model B (secondary, analysis 2f)
 Writes results/E1_gate2.json and prints a summary.
 """
 import argparse
@@ -126,14 +129,17 @@ def main():
     ap.add_argument("--split-dir", default=os.path.join("splits", "e1"))
     ap.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2])
     ap.add_argument("--n-boot", type=int, default=2000)
-    ap.add_argument("--out", default=os.path.join("results", "E1_gate2.json"))
+    ap.add_argument("--out", default=None)
+    ap.add_argument("--prefix", default="", help="run-name prefix: '' model A, 'effb0frozen_' A-frozen, 'pandermfrozen_' B")
     a = ap.parse_args()
+    if a.out is None:
+        a.out = os.path.join("results", f"E1_gate2{'_' + a.prefix.rstrip('_') if a.prefix else ''}.json")
 
     def runs_for(kind, tag):
         out = []
         for s in a.seeds:
             name = f"resplit_{kind}_seed{s}_val"
-            d = os.path.join(a.runs, name, tag.format(s=s))
+            d = os.path.join(a.runs, name, a.prefix + tag.format(s=s))
             if os.path.exists(os.path.join(d, "preds.npz")):
                 out.append((s, load_run(d, os.path.join(a.split_dir, name + ".csv"))))
         return out
@@ -166,7 +172,7 @@ def main():
             print(f"  between-condition (sensitivity): {b['ba_image_model_own_test']:.4f} - "
                   f"{b['ba_lesion_model_own_test']:.4f} = {100 * b['difference']:+.2f} pts")
 
-    if "fedavg_r9 (PRIMARY)" in res:
+    if "fedavg_r9 (PRIMARY)" in res and not a.prefix:
         r = res["fedavg_r9 (PRIMARY)"]
         passed = r["inflation"] >= 0.02 and r["ci95"][0] > 0
         res["gate2"] = "PASS: RQ2 is the headline" if passed else "NOT MET: RQ1 is the headline, RQ2 reported as small/null"
