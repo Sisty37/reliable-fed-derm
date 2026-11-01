@@ -49,7 +49,7 @@ def git_commit():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--method", required=True, choices=["fedavg", "fedprox", "scaffold", "pooled"])
+    ap.add_argument("--method", required=True, choices=["fedavg", "fedprox", "scaffold", "fedbn", "pooled", "local"])
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--split", default=os.path.join("splits", "split_official.csv"))
     ap.add_argument("--img-dir", default=os.path.join("data", "fedisic", "ISIC_2019_Training_Input_preprocessed"))
@@ -69,9 +69,10 @@ def main():
     if a.smoke:
         a.rounds, a.updates, a.epochs, a.workers = 2, 2, 1, 0
     amp = not a.no_amp
-    lr = a.lr if a.lr is not None else (5e-4 if a.method == "pooled" else 0.01)
+    lr = a.lr if a.lr is not None else (5e-4 if a.method in ("pooled", "local") else 0.01)
     split_name = os.path.splitext(os.path.basename(a.split))[0] + ("_smoke" if a.smoke else "")
-    tag = f"{a.method}_r{a.rounds}_s{a.seed}" if a.method != "pooled" else f"pooled_e{a.epochs}_s{a.seed}"
+    tag = (f"{a.method}_e{a.epochs}_s{a.seed}" if a.method in ("pooled", "local")
+           else f"{a.method}_r{a.rounds}_s{a.seed}")
     out_dir = os.path.join(a.out, split_name, tag)
     os.makedirs(out_dir, exist_ok=True)
     logf = open(os.path.join(out_dir, "train_log.txt"), "w", encoding="utf-8")
@@ -98,6 +99,17 @@ def main():
         model = train_pooled(model, loss_fn, make_loader(ds, True, a.batch, a.workers, a.seed),
                              a.epochs, lr, device, amp, log)
         eval_model, bn = model, None
+        models = [model] * NUM_CLIENTS
+    elif a.method == "local":                              # local-only: pooled recipe, one model per center
+        models = []
+        for c in range(NUM_CLIENTS):
+            set_seed(a.seed + 1000 * c)
+            ds = IsicDataset(a.split, a.img_dir, "train", center=c, train_aug=True, max_items=max_items)
+            log(f"center {c}: local training on {len(ds)} images")
+            m = train_pooled(Baseline(pretrained=True), loss_fn, make_loader(ds, True, a.batch, a.workers, a.seed + 1000 * c),
+                             a.epochs, lr, device, amp, log)
+            models.append(m.cpu())
+        eval_model, bn = None, None
     else:
         loaders = []
         for c in range(NUM_CLIENTS):
@@ -110,19 +122,22 @@ def main():
             log(f"  round {r + 1}/{a.rounds}  client losses " + " ".join(f"{x:.3f}" for x in losses)
                 + f"  ({time.time() - t0:.0f} s)")
         eval_model = fed.clients[0].model                  # FLamby convention
+        models = ([c.model for c in fed.clients] if a.method == "fedbn"   # personalized: own model per center
+                  else [eval_model] * NUM_CLIENTS)
         bn = [{k: v.cpu() for k, v in c.model.state_dict().items() if "running" in k or "num_batches" in k}
               for c in fed.clients]
 
     per_center, rows = {}, []
     for c in range(NUM_CLIENTS):
         ds = IsicDataset(a.split, a.img_dir, "test", center=c, train_aug=False, max_items=max_items)
-        lg, y = predict(eval_model, make_loader(ds, False, a.batch, a.workers, 0), device, amp)
+        lg, y = predict(models[c].to(device), make_loader(ds, False, a.batch, a.workers, 0), device, amp)
         per_center[c] = (lg, y)
         rows += [(img, c) for img in ds.df.image]
     metrics = summarize(per_center)
     metrics.update({"method": a.method, "seed": a.seed, "split": a.split, "rounds": a.rounds,
                     "updates": a.updates, "lr": lr, "amp": amp, "minutes": round((time.time() - t0) / 60, 1),
-                    "git": git_commit(), "eval_model": "pooled" if a.method == "pooled" else "client 0 copy"})
+                    "git": git_commit(), "eval_model": {"pooled": "pooled model", "local": "own center's model",
+                                   "fedbn": "own center's client model"}.get(a.method, "client 0 copy")})
     json.dump(metrics, open(os.path.join(out_dir, "metrics.json"), "w"), indent=2)
     np.savez_compressed(os.path.join(out_dir, "preds.npz"),
                         image=np.array([r[0] for r in rows]), center=np.array([r[1] for r in rows]),
@@ -136,7 +151,7 @@ def main():
             ds = IsicDataset(a.split, a.img_dir, "val", center=c, train_aug=False, max_items=max_items)
             if len(ds) == 0:
                 continue
-            lg, y = predict(eval_model, make_loader(ds, False, a.batch, a.workers, 0), device, amp)
+            lg, y = predict(models[c].to(device), make_loader(ds, False, a.batch, a.workers, 0), device, amp)
             vlog.append(lg)
             vy.append(y)
             vrows += [(img, c) for img in ds.df.image]
@@ -144,7 +159,10 @@ def main():
                             image=np.array([r[0] for r in vrows]), center=np.array([r[1] for r in vrows]),
                             logits=np.concatenate(vlog), target=np.concatenate(vy))
         log(f"validation predictions saved ({len(vrows)} images)")
-    torch.save(eval_model.state_dict(), os.path.join(out_dir, "model.pt"))
+    if a.method in ("local", "fedbn"):
+        torch.save([m.state_dict() for m in models], os.path.join(out_dir, "models_per_center.pt"))
+    else:
+        torch.save(eval_model.state_dict(), os.path.join(out_dir, "model.pt"))
     if bn is not None:
         torch.save(bn, os.path.join(out_dir, "bn_buffers.pt"))
 

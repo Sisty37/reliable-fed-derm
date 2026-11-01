@@ -5,6 +5,8 @@ FLamby conventions kept on purpose:
     number of training images), so BatchNorm running statistics stay local to each client;
   * one round = `num_updates` mini-batches per client from an endlessly cycling loader;
   * the reported "global" model is client 0's copy (FLamby evaluates `s.run()[0]`).
+FedBN (Li et al., 2021): BatchNorm weights and biases are not averaged either; each client keeps its
+own, and each center is evaluated with its own client's model.
 Mixed precision (AMP) is optional; gradients are unscaled before the FedProx / SCAFFOLD terms.
 """
 import copy
@@ -70,6 +72,12 @@ class Federation:
         self.mu = mu
         self.lr = lr
         self.server_lr = server_lr
+        if strategy == "fedbn":                         # FedBN: BatchNorm weights and biases stay local
+            bn_names = {f"{mn}.{pn}" for mn, m in self.clients[0].model.named_modules()
+                        if isinstance(m, torch.nn.modules.batchnorm._BatchNorm)
+                        for pn, _ in m.named_parameters(recurse=False)}
+            self.is_bn = [n in bn_names for n, _ in self.clients[0].model.named_parameters()]
+            assert any(self.is_bn), "no BatchNorm parameters found"
         if strategy == "scaffold":
             init = [p.detach().clone() for p in self.clients[0].params()]
             self.prev_client_state = [[t.clone() for t in init] for _ in self.clients]
@@ -85,7 +93,7 @@ class Federation:
             p.copy_(s)
 
     def round(self, num_updates):
-        deltas = []
+        deltas, own_bn = [], []
         for i, c in enumerate(self.clients):
             server_state = self._snapshot(c)
             if self.strategy == "scaffold":
@@ -105,12 +113,16 @@ class Federation:
                 c.local_train(num_updates)
                 nxt = self._snapshot(c)
             deltas.append([(n - s) * self.sizes[i] for n, s in zip(nxt, server_state)])
+            own_bn.append(nxt)
             self._restore(c, server_state)
         with torch.no_grad():
             agg = [sum(d[k] for d in deltas) / self.N for k in range(len(deltas[0]))]
-            for c in self.clients:
-                for p, a in zip(c.params(), agg):
-                    p.add_(a)
+            for i, c in enumerate(self.clients):
+                for k, (p, a) in enumerate(zip(c.params(), agg)):
+                    if self.strategy == "fedbn" and self.is_bn[k]:
+                        p.copy_(own_bn[i][k])           # keep this client's own BatchNorm parameters
+                    else:
+                        p.add_(a)
         return [c.last_loss for c in self.clients]
 
 
