@@ -1,0 +1,4 @@
+2026-11-02 02:12 | pandermfrozen_pooled_e20_s0 | split splits\e1\resplit_image_seed0_val.csv | updates 0 | git 16c2f2e
+  pooled: 20 epochs, training loss 8.3519 -> 5.0647
+balanced accuracy  pooled 0.5721 | mean of centers 0.5812 | per center 0.514 0.661 0.618 0.549 0.571 0.575
+saved to runs\resplit_image_seed0_val\pandermfrozen_pooled_e20_s0 (18 s)
