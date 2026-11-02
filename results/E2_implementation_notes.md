@@ -28,3 +28,25 @@ local-only; image-level and lesion-grouped re-splits; 5 seeds. Code: `scripts/tr
    six models in `models_per_center.pt`.
 8. **Model B in E2** (FedProx, SCAFFOLD, FedAvg-FT, pooled, local-only linear heads) follows in a
    separate step, with its own notes, before its runs.
+
+## Analysis choices (3 Nov 2026, fixed before `scripts/e2_analysis.py` was run on the E2 results)
+
+1. **Ranking metric.** Balanced accuracy on the pooled test set, the FLamby benchmark metric already
+   used in E0 and E1; mean-of-centers balanced accuracy is reported as a secondary ranking.
+   *Disclosure:* while the runs were still going (2 Nov, 21:35), the per-run balanced accuracies of
+   seeds 3 and 4 printed in the training log were looked at, both pooled and mean-of-centers. The
+   choice of the pooled metric follows E0/E1 and the protocol's "balanced accuracy (as FLamby)"; both
+   rankings are reported in full.
+2. **Methods ranked:** FedAvg, FedProx, SCAFFOLD, FedBN, FedAvg-FT, pooled, local-only (7). Each
+   split type's ranking uses the mean over seeds 0–4.
+3. **Noise floor (Section 9).** τ between single-seed rankings of different seeds within one split
+   type (10 pairs × 2 split types), compared with τ between single-seed rankings across split types
+   (25 pairs); the seed-mean τ between split types is reported as well. Intervals: lesion bootstrap,
+   2,000 replicates, one replicate shared by all methods and seeds.
+4. **H3b (interim).** As in the protocol, without FedPer (E7): personalized group = local-only,
+   FedAvg-FT, FedBN. The final H3b test is repeated once FedPer exists.
+5. **Dose-response.** Weights of the weighted least-squares slope = each center's new-lesion test
+   images (seed mean); leakage rate = share of the center's image-level test images whose lesion is
+   in training.
+6. The analysis was checked on synthetic predictions with planted effects (local-only and the
+   personalized methods made to gain from leaked lesions); it recovered the planted ordering.
