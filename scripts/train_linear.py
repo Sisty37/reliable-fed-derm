@@ -37,7 +37,7 @@ import torch.nn as nn
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fedderm.evaluate import summarize  # noqa: E402
-from fedderm.fl import Federation  # noqa: E402
+from fedderm.fl import Client, Federation  # noqa: E402
 from fedderm.model import WeightedFocalLoss  # noqa: E402
 from train_fl import git_commit, set_seed  # noqa: E402
 
@@ -124,43 +124,64 @@ def run(a, updates, log):
     tr_aug, tr_y = aug[tr.row.to_numpy()], tr.target.to_numpy().astype(np.int64)
     losses = []
     t0 = time.time()
-    if a.method == "pooled":
-        head = head.to(device)
-        lf = loss_fn.to(device)
-        opt = torch.optim.Adam(head.parameters(), lr=5e-4)
-        rows = EmbRows(tr_aug, tr_y, rng)
-        steps = int(np.ceil(len(tr) / 64))
+    def client_rows(c, seed_off=0):
+        g = tr[tr.center == c]
+        return EmbRows(aug[g.row.to_numpy()], g.target.to_numpy().astype(np.int64),
+                       np.random.default_rng(a.seed + 1000 * c + seed_off))
+
+    def adam_epochs(m, rows, n_rows):
+        m, lf = m.to(device), loss_fn.to(device)
+        opt = torch.optim.Adam(m.parameters(), lr=5e-4)
         for ep in range(20):
-            head.train()
-            for _ in range(steps):
+            m.train()
+            for _ in range(int(np.ceil(n_rows / 64))):
                 x, y = rows.next()
-                loss = lf(head(x.to(device)), y.to(device))
+                loss = lf(m(x.to(device)), y.to(device))
                 opt.zero_grad()
                 loss.backward()
                 opt.step()
-            losses.append(train_loss(head, lf, tr_aug, tr_y, device))
-        log(f"  pooled: 20 epochs, training loss {losses[0]:.4f} -> {losses[-1]:.4f}")
-        model = head
-    else:
-        loaders = []
+        return m
+
+    if a.method == "pooled":
+        head = adam_epochs(head, EmbRows(tr_aug, tr_y, rng), len(tr))
+        losses.append(train_loss(head, loss_fn.to(device), tr_aug, tr_y, device))
+        log(f"  pooled: 20 epochs, final training loss {losses[-1]:.4f}")
+        models = [head] * NUM_CLIENTS
+    elif a.method == "local":                    # local-only: pooled recipe on one center's rows
+        models = []
         for c in range(NUM_CLIENTS):
-            g = tr[tr.center == c]
-            loaders.append(EmbRows(aug[g.row.to_numpy()], g.target.to_numpy().astype(np.int64),
-                                   np.random.default_rng(a.seed + 1000 * c)))
-        fed = Federation(head, loss_fn, loaders, 0.01, device, amp=False, strategy="fedavg")
+            torch.manual_seed(a.seed + 1000 * c)
+            n_c = int((tr.center == c).sum())
+            models.append(adam_epochs(nn.Linear(dim, NUM_CLASSES), client_rows(c), n_c))
+        log("  local-only: 20 epochs per center")
+    elif a.method == "fedavgft":                 # 3 local SGD steps from the finished FedAvg head
+        split_name = os.path.splitext(os.path.basename(a.split))[0]
+        src = os.path.join(a.out, split_name, f"{a.encoder}frozen_fedavg_r{a.rounds}_s{a.seed}", "model.pt")
+        head.load_state_dict(torch.load(src, map_location="cpu"))
+        models = []
+        for c in range(NUM_CLIENTS):
+            torch.manual_seed(a.seed + 1000 * c)
+            cl = Client(head, loss_fn, client_rows(c, seed_off=7), 0.01, device, amp=False)
+            cl.local_train(3)
+            models.append(cl.model)
+        log(f"  FedAvg-FT: 3 local steps per client from {src}")
+    else:                                        # fedavg, fedprox, scaffold
+        loaders = [client_rows(c) for c in range(NUM_CLIENTS)]
+        fed = Federation(head, loss_fn, loaders, 0.01, device, amp=False, strategy=a.method,
+                         mu=0.001, server_lr=1.0)
         for r in range(a.rounds):
             fed.round(updates)
             losses.append(train_loss(fed.clients[0].model, fed.clients[0].loss_fn, tr_aug, tr_y, device))
-        log(f"  fedavg: {a.rounds} rounds x {updates} updates, pooled training loss by round "
+        log(f"  {a.method}: {a.rounds} rounds x {updates} updates, pooled training loss by round "
             + " ".join(f"{x:.4f}" for x in losses))
-        model = fed.clients[0].model
-    return model, df, plain, losses, device, time.time() - t0
+        models = [fed.clients[0].model] * NUM_CLIENTS
+    return models, df, plain, losses, device, time.time() - t0
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--encoder", required=True, choices=["effb0", "panderm"])
-    ap.add_argument("--method", default="fedavg", choices=["fedavg", "pooled"])
+    ap.add_argument("--method", default="fedavg", choices=["fedavg", "fedprox", "scaffold", "fedavgft", "pooled", "local"])
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--split", default=os.path.join("splits", "e1", "resplit_lesion_seed0_val.csv"))
     ap.add_argument("--emb-dir", default="embeddings")
@@ -190,7 +211,7 @@ def main():
         print(f"chosen local updates per round for {a.encoder}: {updates} -> {upd_file}")
         return
 
-    if a.method == "fedavg":
+    if a.method in ("fedavg", "fedprox", "scaffold"):
         assert os.path.exists(upd_file), f"run the convergence check first ({upd_file} missing)"
         cfg = json.load(open(upd_file))
         assert cfg.get("feature_norm", "zscore") == a.feature_norm, f"{upd_file} was made with another --feature-norm"
@@ -198,7 +219,8 @@ def main():
     else:
         updates = 0
     split_name = os.path.splitext(os.path.basename(a.split))[0]
-    tag = f"{a.encoder}frozen_" + (f"fedavg_r{a.rounds}_s{a.seed}" if a.method == "fedavg" else f"pooled_e20_s{a.seed}")
+    tag = f"{a.encoder}frozen_" + (f"{a.method}_e20_s{a.seed}" if a.method in ("pooled", "local")
+                                   else f"{a.method}_r{a.rounds}_s{a.seed}")
     out_dir = os.path.join(a.out, split_name, tag)
     os.makedirs(out_dir, exist_ok=True)
     logf = open(os.path.join(out_dir, "train_log.txt"), "w", encoding="utf-8")
@@ -209,14 +231,18 @@ def main():
         logf.flush()
 
     log(f"{dt.datetime.now():%Y-%m-%d %H:%M} | {tag} | split {a.split} | updates {updates} | git {git_commit()}")
-    model, df, plain, losses, device, secs = run(a, updates, log)
+    models, df, plain, losses, device, secs = run(a, updates, log)
 
     per_center = {}
     for fold, fname in (("test", "preds.npz"), ("val", "preds_val.npz")):
         part = df[df.fold == fold]
         if part.empty:
             continue
-        lg = predict(model, plain[part.row.to_numpy()], device)
+        cen = part.center.to_numpy()
+        lg = np.zeros((len(part), NUM_CLASSES), np.float32)
+        for c in range(NUM_CLIENTS):                      # each center with its own model
+            if (cen == c).any():
+                lg[cen == c] = predict(models[c], plain[part.row.to_numpy()[cen == c]], device)
         y = part.target.to_numpy()
         np.savez_compressed(os.path.join(out_dir, fname), image=part.image.to_numpy().astype(str),
                             center=part.center.to_numpy(), logits=lg, target=y)
@@ -226,7 +252,10 @@ def main():
     m.update({"encoder": a.encoder, "method": a.method, "seed": a.seed, "split": a.split, "rounds": a.rounds,
               "updates": updates, "train_loss_by_round": losses, "git": git_commit(), "seconds": round(secs, 1)})
     json.dump(m, open(os.path.join(out_dir, "metrics.json"), "w"), indent=2)
-    torch.save(model.state_dict(), os.path.join(out_dir, "model.pt"))
+    if a.method in ("local", "fedavgft"):
+        torch.save([x.state_dict() for x in models], os.path.join(out_dir, "models_per_center.pt"))
+    else:
+        torch.save(models[0].state_dict(), os.path.join(out_dir, "model.pt"))
     log("balanced accuracy  pooled {:.4f} | mean of centers {:.4f} | per center {}".format(
         m["bacc_pooled"], m["bacc_mean_of_centers"], " ".join(f"{m[f'bacc_center_{c}']:.3f}" for c in range(NUM_CLIENTS))))
     log(f"saved to {out_dir} ({secs:.0f} s)")

@@ -20,7 +20,9 @@ Dose-response (secondary): per method, weighted least-squares slope of the per-c
   center's leakage rate (share of its image-level test images whose lesion is in training), all six
   centers, weights = new-lesion test images; interval by the same lesion bootstrap.
 
-Usage (from the repo folder):  python scripts\\e2_analysis.py
+Usage (from the repo folder):
+  python scripts\\e2_analysis.py                              # model A
+  python scripts\\e2_analysis.py --prefix pandermfrozen_ --out results\\E2_analysis_panderm.json   # model B
 Writes results/E2_analysis.json and prints the tables.
 """
 import argparse
@@ -147,6 +149,9 @@ def main():
     ap.add_argument("--n-boot", type=int, default=2000)
     ap.add_argument("--out", default=os.path.join("results", "E2_analysis.json"))
     a = ap.parse_args()
+    if a.prefix:                                   # frozen-encoder models: no FedBN (no BatchNorm in a linear head)
+        METHODS.remove("fedbn_r9")
+        PERSONAL.remove("fedbn_r9")
 
     data = {k: {s: load(a.runs, a.split_dir, k, s, a.prefix) for s in a.seeds} for k in ("image", "lesion")}
     ones = {k: {s: np.ones(len(data[k][s]["y"])) for s in data[k]} for k in data}

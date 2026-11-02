@@ -50,3 +50,20 @@ local-only; image-level and lesion-grouped re-splits; 5 seeds. Code: `scripts/tr
    in training.
 6. The analysis was checked on synthetic predictions with planted effects (local-only and the
    personalized methods made to gain from leaked lesions); it recovered the planted ordering.
+
+## Model B (PanDerm-Base, frozen) in E2 (3 Nov 2026, before any model B E2 run)
+
+Code: `scripts/train_linear.py` (`--method fedprox | scaffold | fedavgft | local`). Same embeddings,
+centring, loss and U = 6400 local updates per round as in E1 (`results/linear_updates_panderm.json`).
+
+1. **Methods:** FedAvg, FedProx (μ 0.001), SCAFFOLD (server lr 1.0), FedAvg-FT, pooled, local-only;
+   FedBN does not apply (no BatchNorm in a linear head on a frozen ViT). Seeds 0–4, both split types.
+   FedAvg and pooled seeds 0–2 are reused from E1.
+2. **FedAvg-FT:** from the finished FedAvg head, 3 local SGD updates per client (lr 0.01, batch 64,
+   random augmented view), each center evaluated with its own head.
+3. **Local-only:** the pooled recipe (Adam lr 5e-4, batch 64, 20 epochs) on one center's training
+   rows, one head per center, each center evaluated with its own head.
+4. The code changes leave FedAvg and pooled unchanged (same random draws), so seeds 3–4 are
+   comparable with E1's seeds 0–2.
+5. Analysis: `scripts/e2_analysis.py --prefix pandermfrozen_` with the same choices as model A, except
+   that FedBN is absent (6 methods) and the H3b personalized group is local-only and FedAvg-FT.
