@@ -1,0 +1,14 @@
+2026-11-02 12:47 | scaffold_r9_s2 | split splits\e1\resplit_lesion_seed2_val.csv | device cuda (NVIDIA GeForce RTX 4050 Laptop GPU) | AMP True | lr 0.01 | git 0c30675
+train images per center: 8909, 2849, 2423, 1623, 588, 314
+  round 1/9  client losses 11.166 1.960 5.578 9.951 2.117 1.829  (210 s)
+  round 2/9  client losses 8.681 1.363 4.586 8.812 2.055 1.230  (339 s)
+  round 3/9  client losses 7.756 1.301 4.142 8.312 2.196 1.211  (467 s)
+  round 4/9  client losses 6.351 1.258 3.766 8.271 2.279 1.299  (594 s)
+  round 5/9  client losses 5.923 1.117 3.641 7.896 2.283 1.339  (722 s)
+  round 6/9  client losses 5.473 1.037 3.364 7.912 2.278 1.468  (850 s)
+  round 7/9  client losses 5.141 1.017 3.393 7.146 2.214 1.370  (977 s)
+  round 8/9  client losses 4.452 0.916 3.179 6.801 2.054 1.314  (1105 s)
+  round 9/9  client losses 4.476 0.857 2.839 6.812 2.031 1.183  (1233 s)
+validation predictions saved (1898 images)
+balanced accuracy  pooled 0.5521 | mean of centers 0.6021 | per center 0.509 0.768 0.805 0.504 0.459 0.567
+saved to runs\resplit_lesion_seed2_val\scaffold_r9_s2 (21.8 min)

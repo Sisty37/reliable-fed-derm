@@ -1,0 +1,25 @@
+2026-11-02 23:04 | pooled_e20_s4 | split splits\e1\resplit_lesion_seed4_val.csv | device cuda (NVIDIA GeForce RTX 4050 Laptop GPU) | AMP True | lr 0.0005 | git 0c30675
+pooled train images: 16712
+  epoch 1/20  train loss 7.2460
+  epoch 2/20  train loss 4.8503
+  epoch 3/20  train loss 3.9789
+  epoch 4/20  train loss 3.4602
+  epoch 5/20  train loss 3.4654
+  epoch 6/20  train loss 2.9225
+  epoch 7/20  train loss 2.5232
+  epoch 8/20  train loss 2.4722
+  epoch 9/20  train loss 2.1159
+  epoch 10/20  train loss 1.9863
+  epoch 11/20  train loss 1.6870
+  epoch 12/20  train loss 1.6669
+  epoch 13/20  train loss 1.6993
+  epoch 14/20  train loss 1.5184
+  epoch 15/20  train loss 1.5786
+  epoch 16/20  train loss 1.4126
+  epoch 17/20  train loss 1.2187
+  epoch 18/20  train loss 1.2692
+  epoch 19/20  train loss 1.0735
+  epoch 20/20  train loss 0.9750
+validation predictions saved (1892 images)
+balanced accuracy  pooled 0.5616 | mean of centers 0.5727 | per center 0.497 0.753 0.587 0.423 0.608 0.569
+saved to runs\resplit_lesion_seed4_val\pooled_e20_s4 (21.6 min)

@@ -22,3 +22,5 @@ embeddings_smoke/
 
 embeddings/
 embeddings_smoke/
+
+runs/**/models_per_center.pt
