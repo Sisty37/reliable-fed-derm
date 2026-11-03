@@ -64,6 +64,8 @@ def main():
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--no-amp", action="store_true")
     ap.add_argument("--smoke", action="store_true", help="tiny run to test the pipeline")
+    ap.add_argument("--exclude-center", type=int, default=None,
+                    help="E6 leave-one-center-out: this center's training data is not used (FedAvg only)")
     a = ap.parse_args()
 
     if a.smoke:
@@ -73,6 +75,9 @@ def main():
     split_name = os.path.splitext(os.path.basename(a.split))[0] + ("_smoke" if a.smoke else "")
     tag = (f"{a.method}_e{a.epochs}_s{a.seed}" if a.method in ("pooled", "local")
            else f"{a.method}_r{a.rounds}_s{a.seed}")
+    if a.exclude_center is not None:
+        assert a.method == "fedavg", "leave-one-center-out is defined for FedAvg"
+        tag = f"{a.method}_r{a.rounds}_loco{a.exclude_center}_s{a.seed}"
     out_dir = os.path.join(a.out, split_name, tag)
     os.makedirs(out_dir, exist_ok=True)
     logf = open(os.path.join(out_dir, "train_log.txt"), "w", encoding="utf-8")
@@ -112,10 +117,11 @@ def main():
         eval_model, bn = None, None
     else:
         loaders = []
-        for c in range(NUM_CLIENTS):
+        train_centers = [c for c in range(NUM_CLIENTS) if c != a.exclude_center]
+        for c in train_centers:
             ds = IsicDataset(a.split, a.img_dir, "train", center=c, train_aug=True, max_items=max_items)
             loaders.append(InfiniteLoader(make_loader(ds, True, a.batch, a.workers, a.seed + 1000 * c)))
-        log("train images per center: " + ", ".join(str(l.n) for l in loaders))
+        log("train images per center: " + ", ".join(f"{c}:{l.n}" for c, l in zip(train_centers, loaders)))
         fed = Federation(model, loss_fn, loaders, lr, device, amp, a.method, mu=a.mu, server_lr=a.server_lr)
         for r in range(a.rounds):
             losses = fed.round(a.updates)

@@ -116,6 +116,8 @@ def run(a, updates, log):
     rng = np.random.default_rng(a.seed)
     df, plain, aug = load_split(a.split, os.path.join(a.emb_dir, f"{a.encoder}.npz"))
     df["row"] = df.row.astype(int)
+    if a.exclude_center is not None:                 # leave-one-center-out: drop that center's training rows
+        df.loc[(df.center == a.exclude_center) & (df.fold == "train"), "fold"] = "excluded"
     plain, aug = federated_standardize(df, plain, aug, mode=a.feature_norm)
     tr = df[df.fold == "train"]
     dim = plain.shape[1]
@@ -166,7 +168,7 @@ def run(a, updates, log):
             models.append(cl.model)
         log(f"  FedAvg-FT: 3 local steps per client from {src}")
     else:                                        # fedavg, fedprox, scaffold
-        loaders = [client_rows(c) for c in range(NUM_CLIENTS)]
+        loaders = [client_rows(c) for c in range(NUM_CLIENTS) if c != a.exclude_center]
         fed = Federation(head, loss_fn, loaders, 0.01, device, amp=False, strategy=a.method,
                          mu=0.001, server_lr=1.0)
         for r in range(a.rounds):
@@ -188,6 +190,8 @@ def main():
     ap.add_argument("--out", default="runs")
     ap.add_argument("--rounds", type=int, default=9)
     ap.add_argument("--convergence-check", action="store_true")
+    ap.add_argument("--exclude-center", type=int, default=None,
+                    help="E6 leave-one-center-out: this center's training rows are not used (FedAvg only)")
     ap.add_argument("--feature-norm", default="center", choices=["center", "zscore", "none"],
                     help="federated per-dimension centering (default), z-scoring, or raw embeddings")
     a = ap.parse_args()
@@ -221,6 +225,9 @@ def main():
     split_name = os.path.splitext(os.path.basename(a.split))[0]
     tag = f"{a.encoder}frozen_" + (f"{a.method}_e20_s{a.seed}" if a.method in ("pooled", "local")
                                    else f"{a.method}_r{a.rounds}_s{a.seed}")
+    if a.exclude_center is not None:
+        assert a.method == "fedavg", "leave-one-center-out is defined for FedAvg"
+        tag = f"{a.encoder}frozen_{a.method}_r{a.rounds}_loco{a.exclude_center}_s{a.seed}"
     out_dir = os.path.join(a.out, split_name, tag)
     os.makedirs(out_dir, exist_ok=True)
     logf = open(os.path.join(out_dir, "train_log.txt"), "w", encoding="utf-8")

@@ -1,6 +1,6 @@
 # Pre-specified Study Protocol
 
-**Version:** 0.10 (30 October 2026). Version 0.1 is locked at git tag `v0.1-protocol` (commit 5ca4821); changes since then are listed in Section 12. No experiment has been run yet, so no result has informed these changes. Each version is time-stamped by its git tag (`v0.1-protocol` … `v0.7-protocol` and `v0.10-protocol`; v0.8 and v0.9 were not committed separately, so their changes are contained in the v0.10 commit and dated in Section 12); tags are pushed to a remote repository (GitHub) so that their dates are held by a third party.
+**Version:** 0.11 (3 November 2026; Section 5b added after E5, see Section 12). Earlier: 0.10 (30 October 2026). Version 0.1 is locked at git tag `v0.1-protocol` (commit 5ca4821); changes since then are listed in Section 12. No experiment has been run yet, so no result has informed these changes. Each version is time-stamped by its git tag (`v0.1-protocol` … `v0.7-protocol` and `v0.10-protocol`; v0.8 and v0.9 were not committed separately, so their changes are contained in the v0.10 commit and dated in Section 12); tags are pushed to a remote repository (GitHub) so that their dates are held by a third party.
 **Study:** Revisiting Federated Skin Lesion Benchmarks: Lesion-Level Leakage, Calibration and Conformal Coverage on Real Centers.
 
 Any change after the tag is recorded in Section 12 with date and reason. Results obtained before a change are kept and reported.
@@ -66,6 +66,40 @@ Any change after the tag is recorded in Section 12 with date and reason. Results
 - **Interval for the gain:** lesion-wise cluster bootstrap of the test set (2,000 replicates); within each replicate, 20 calibration/evaluation splits are redrawn and shared by all methods, so the gain is paired.
 - **Success criterion (RQ4, fixed now):** for **each** of the lesion-grouped models A and B separately, at α = 0.1, ShrinkFCP raises the worst-center lower-tail coverage by at least 2 points compared with the **reference**, defined as whichever of global and client-wise calibration has the higher worst-center lower-tail coverage, with the lesion-bootstrap interval of the gain above zero; and (i) mean set size (equal weight per center) is no more than 10% larger than the reference's, and (ii) no center's mean coverage falls below 0.89. FCP and personalized FCP are reported as comparisons. If the criterion is not met, the result is reported as negative.
 - PAD-UFES-20: (i) transfer, using the Fed-ISIC2019 lesion-grouped calibration scores restricted to the six shared classes; (ii) recalibrated on 50% of PAD-UFES-20 patients and evaluated on the other 50%, repeated 100 times.
+
+## 5b. Amendment v0.11 (3 November 2026): bias-aware shrinkage, tested on held-out models
+
+**Why.** E5/E5b (run 3 November 2026 on the lesion-grouped FedAvg models, seeds 0–4) answered RQ4
+negatively for both models (`results/E5_summary.md`). The assumption behind ShrinkFCP, that small
+centers mainly suffer from variance, did not hold: one shared threshold leaves some centers short of
+nominal coverage on average (between-center shift), so shrinking toward the pooled threshold imports
+that bias. This amendment specifies, before any E6 model exists, one new method derived from that
+finding and the test it must pass. ShrinkFCP and its RQ4 result stay as they are.
+
+**EB-ShrinkFCP (empirical-Bayes shrinkage).** For each calibration draw and α:
+1. Each client c computes, on its own calibration half, q_c (level ⌈(m_c+1)(1−α)⌉/m_c, threshold 1
+   if above 1) and an estimate of its sampling variance. With p = the level, d = ⌈√(m_c·p(1−p)·D_c)⌉
+   and design effect D_c = m_c/n_c (images per calibration lesion), σ_c = (s₍ᵣ₊d₎ − s₍ᵣ₋d₎)/2, where
+   s₍ᵢ₎ are the client's sorted calibration scores, r is the rank used for q_c, ranks are clipped to
+   [1, m_c], and an upper rank above m_c counts as score 1. The client shares q_c and σ_c² only.
+2. The server computes precision weights v_c = 1/max(σ_c², 10⁻⁶), the weighted mean
+   q̄ = Σ v_c q_c / Σ v_c, Q = Σ v_c (q_c − q̄)² and the DerSimonian–Laird between-center variance
+   τ² = max(0, (Q − (K − 1)) / (Σ v_c − Σ v_c² / Σ v_c)).
+3. Threshold q̂_c = w_c q_c + (1 − w_c) q̄ with w_c = τ²/(τ² + σ_c²) (w_c = 0 if τ² = 0).
+No tuning constant; when centers differ much more than their sampling noise, w_c → 1 (client-wise);
+when they do not, the noisy centers borrow from the others.
+
+**Test (fixed now).** Held-out data: the leave-one-center-out models of E6 (lesion-grouped, FedAvg,
+9 rounds; 6 held-out centers × seeds 0–2; models A and B), whose predictions do not exist yet. For
+each E6 model, conformal calibration is run over all 6 centers (the held-out center calibrates on
+its own test lesions, like every other center) exactly as in Section 5 (lesion halves, 100 splits,
+LAC, α = 0.1). Primary metric per model: worst-center lower-tail coverage; averaged over the 18 models.
+Reference: global or client-wise, whichever is higher. **Success**, for each of models A and B: gain
+≥ 2 points over the reference with the lesion-bootstrap interval above zero (2,000 replicates,
+20 splits each, all 18 models resampled and averaged inside each replicate), mean set size (equal
+weight per center) ≤ 1.10 × the reference's, and every center's mean coverage ≥ 0.89. ShrinkFCP is
+evaluated on the same models. Results of EB-ShrinkFCP on the E5 models are reported as post hoc.
+If the criterion is not met, the result is reported as negative.
 
 ## 6. Experiments
 
@@ -135,3 +169,4 @@ Model A total: about 143 run slots; the 12 E1 runs at 9 rounds (FedAvg and poole
 | 29 Oct 2026 (v0.8) | E0b given three arms (text pipeline; pipeline implied by the mother paper's Tables 3 and 9; image-level), with page and table references; H3b tested in centers 0, 2, 3 plus a dose-response across centers; convergence check fixed once per model and reused for all splits; frozen-encoder compute corrected; ShrinkFCP primary metric changed to worst-center lower-tail coverage (10th percentile over 100 splits) with an explicit reference baseline, set-size and mean-coverage guards; primary k fixed by rule (median n_c), data-driven k as sensitivity; git tags pushed to a remote | Third external methodological review; no data analysed |
 | 29 Oct 2026 (v0.9) | E0b arm (b) split fixed at 70/15/15 and arm (c) given the same training-only balancing as arm (a); per-arm leakage metric with source-image tracking; per-center drop rule for H3b and 2e; ShrinkFCP noise floor, paired bootstrap with 20 redrawn splits per replicate, success required for each of models A and B; embeddings stored in fp16 | Fourth external methodological review; no data analysed |
 | 30 Oct 2026 (v0.10) | ShrinkFCP: images (m_c) used for the quantile level and lesions (n_c) for the weight; model B personalization in E7 defined as FedAvg-FT and a FedPer-style two-layer head (a client-specific linear head would be local-only); RQ order fixed; E0b wording "no code link in the paper"; E1/E2 run reuse and checkpoint retention stated | Fifth external methodological review; no data analysed |
+| 3 Nov 2026 (v0.11) | Section 5b added: EB-ShrinkFCP (DerSimonian–Laird empirical-Bayes shrinkage of client thresholds) with a fixed success criterion, tested on the E6 leave-one-center-out models; ShrinkFCP and RQ4 unchanged | E5/E5b results (RQ4 not met for models A and B; between-center shift identified); specified before any E6 model was trained |
