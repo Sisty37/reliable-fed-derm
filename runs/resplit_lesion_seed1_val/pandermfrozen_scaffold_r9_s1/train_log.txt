@@ -1,0 +1,4 @@
+2026-11-03 04:30 | pandermfrozen_scaffold_r9_s1 | split splits\e1\resplit_lesion_seed1_val.csv | updates 6400 | git b6ba491
+  scaffold: 9 rounds x 6400 updates, pooled training loss by round 5.7794 4.8936 4.5658 4.3280 4.1492 4.0075 3.8874 3.7974 3.7117
+balanced accuracy  pooled 0.5403 | mean of centers 0.5286 | per center 0.481 0.758 0.581 0.614 0.369 0.369
+saved to runs\resplit_lesion_seed1_val\pandermfrozen_scaffold_r9_s1 (851 s)

@@ -1,0 +1,4 @@
+2026-11-03 07:39 | pandermfrozen_fedprox_r9_s4 | split splits\e1\resplit_lesion_seed4_val.csv | updates 6400 | git b6ba491
+  fedprox: 9 rounds x 6400 updates, pooled training loss by round 5.8356 5.2692 5.0712 4.9068 4.8189 4.7297 4.6714 4.6600 4.5886
+balanced accuracy  pooled 0.5359 | mean of centers 0.5737 | per center 0.485 0.919 0.593 0.446 0.391 0.609
+saved to runs\resplit_lesion_seed4_val\pandermfrozen_fedprox_r9_s4 (723 s)

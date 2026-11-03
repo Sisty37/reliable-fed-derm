@@ -1,0 +1,4 @@
+2026-11-03 02:51 | pandermfrozen_scaffold_r9_s0 | split splits\e1\resplit_image_seed0_val.csv | updates 6400 | git b6ba491
+  scaffold: 9 rounds x 6400 updates, pooled training loss by round 5.8868 5.0964 4.7810 4.5333 4.3519 4.1999 4.0936 3.9799 3.8752
+balanced accuracy  pooled 0.5961 | mean of centers 0.5359 | per center 0.568 0.691 0.642 0.558 0.379 0.377
+saved to runs\resplit_image_seed0_val\pandermfrozen_scaffold_r9_s0 (710 s)

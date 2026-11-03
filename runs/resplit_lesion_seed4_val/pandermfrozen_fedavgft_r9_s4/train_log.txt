@@ -1,0 +1,4 @@
+2026-11-03 08:03 | pandermfrozen_fedavgft_r9_s4 | split splits\e1\resplit_lesion_seed4_val.csv | updates 0 | git b6ba491
+  FedAvg-FT: 3 local steps per client from runs\resplit_lesion_seed4_val\pandermfrozen_fedavg_r9_s4\model.pt
+balanced accuracy  pooled 0.5438 | mean of centers 0.5798 | per center 0.491 0.918 0.589 0.452 0.411 0.618
+saved to runs\resplit_lesion_seed4_val\pandermfrozen_fedavgft_r9_s4 (3 s)
