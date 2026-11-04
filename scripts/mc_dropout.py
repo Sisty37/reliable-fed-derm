@@ -1,4 +1,4 @@
-"""
+﻿"""
 E3 MC-Dropout (protocol v0.11, Section 6, E3), model A FedAvg (9 rounds), both split types, seeds 0-4.
 
 EfficientNet-B0 (efficientnet-pytorch) has one dropout layer, before the classifier (p = 0.2); its
@@ -64,7 +64,8 @@ def main():
                 logits = []
                 for _ in range(PASSES):
                     mask = (torch.rand(F.shape, generator=gen, device=device) >= p_drop).float() / (1 - p_drop)
-                    logits.append(model.base_model._fc(F * mask).float().cpu().numpy())
+                    with torch.no_grad():
+                        logits.append(model.base_model._fc(F * mask).detach().float().cpu().numpy())
                 logits = np.stack(logits, 1)                                   # images x passes x classes
                 e = np.exp(logits - logits.max(2, keepdims=True))
                 probs = (e / e.sum(2, keepdims=True)).mean(1)
@@ -75,3 +76,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
