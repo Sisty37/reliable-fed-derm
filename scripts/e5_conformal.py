@@ -236,6 +236,8 @@ def main():
     ap.add_argument("--loco", action="store_true",
                     help="protocol 5b test: the 18 E6 leave-one-center-out models (held-out centers 0-5, seeds 0-2)")
     ap.add_argument("--seeds", type=int, nargs="+", default=None)
+    ap.add_argument("--run-name", default="fedavg_r9",
+                    help="E7: personalized lesion-grouped models (fedbn_r9, fedavgft_r9, fedper_r9, local_e20)")
     ap.add_argument("--n-splits", type=int, default=100)
     ap.add_argument("--n-boot", type=int, default=2000)
     ap.add_argument("--boot-splits", type=int, default=20)
@@ -245,8 +247,9 @@ def main():
     if a.loco:
         units = [(s, f"{a.prefix}fedavg_r9_loco{h}_s{s}") for s in seeds for h in range(N_CENTERS)]
     else:
-        units = [(s, f"{a.prefix}fedavg_r9_s{s}") for s in seeds]
-    tag = ("E6_conformal_loco" if a.loco else "E5_conformal") + (f"_{a.prefix.rstrip('_')}" if a.prefix else "")
+        units = [(s, f"{a.prefix}{a.run_name}_s{s}") for s in seeds]
+    tag = ("E6_conformal_loco" if a.loco else "E5_conformal" if a.run_name == "fedavg_r9" else f"E7_conformal_{a.run_name}") \
+        + (f"_{a.prefix.rstrip('_')}" if a.prefix else "")
     out_path = a.out or os.path.join("results", tag + ".json")
     rng = np.random.default_rng(20261103 if not a.loco else 20261104)
     data = {u: load(a.runs, a.split_dir, u[0], u[1]) for u in units}

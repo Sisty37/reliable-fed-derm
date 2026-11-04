@@ -112,9 +112,11 @@ def main():
     ap.add_argument("--prefix", default="")
     ap.add_argument("--n-boot", type=int, default=1000)
     ap.add_argument("--out", default=None)
+    ap.add_argument("--final", action="store_true", help="E7: calibration table only, FedPer added")
     a = ap.parse_args()
-    methods = [m for m in METHODS_A if not (a.prefix and m == "fedbn_r9")]
-    out_path = a.out or os.path.join("results", f"E3_E6_analysis{'_' + a.prefix.rstrip('_') if a.prefix else ''}.json")
+    methods = [m for m in METHODS_A if not (a.prefix and m == "fedbn_r9")] + (["fedper_r9"] if a.final else [])
+    stem = "E7_calibration" if a.final else "E3_E6_analysis"
+    out_path = a.out or os.path.join("results", f"{stem}{'_' + a.prefix.rstrip('_') if a.prefix else ''}.json")
     rng = np.random.default_rng(20261104)
     seeds = [0, 1, 2, 3, 4]
     res = {"calibration": {}, "leakage_contrasts": {}, "conformal_leakage": {}, "e6": {}}
@@ -139,6 +141,11 @@ def main():
             res["calibration"][f"{m}|{k}"] = {"ece_raw": r[0], "ece": r[1], "classwise_ece": r[2], "brier": r[3],
                                               "ece_by_center": r[4:].tolist(), "seed_sd_ece": float(np.std([x[1] for x in rows], ddof=1))}
             print(f"  {m:12s} {k:7s} {r[0]:.3f}  {r[1]:.3f}  {r[2]:.3f}  {r[3]:.3f}  | " + " ".join(f"{x:.3f}" for x in r[4:]))
+
+    if a.final:                                    # E7: the calibration table with FedPer is all that is needed
+        json.dump(res["calibration"], open(out_path, "w"), indent=2, default=float)
+        print(f"\nsaved {out_path}")
+        return
 
     # MC-Dropout (model A, FedAvg): raw probabilities, compared with raw softmax of the same model
     if not a.prefix:

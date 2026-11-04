@@ -20,7 +20,14 @@ Dose-response (secondary): per method, weighted least-squares slope of the per-c
   center's leakage rate (share of its image-level test images whose lesion is in training), all six
   centers, weights = new-lesion test images; interval by the same lesion bootstrap.
 
+E7 (--final): FedPer (fedper_r9) is added to the methods and to the personalized group, and the H3b
+  result is the final, protocol test (personalized group = local-only, FedAvg-FT, FedBN, FedPer for
+  model A; local-only, FedAvg-FT, FedPer-style head for model B). The E2 rankings (7 methods) stay the
+  pre-specified RQ2 result; the 8-method rankings printed in this mode are supplementary.
+
 Usage (from the repo folder):
+  python scripts\\e2_analysis.py --final                      # E7, model A -> results/E7_analysis.json
+  python scripts\\e2_analysis.py --final --prefix pandermfrozen_ --out results\\E7_analysis_panderm.json
   python scripts\\e2_analysis.py                              # model A
   python scripts\\e2_analysis.py --prefix pandermfrozen_ --out results\\E2_analysis_panderm.json   # model B
 Writes results/E2_analysis.json and prints the tables.
@@ -147,8 +154,14 @@ def main():
     ap.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
     ap.add_argument("--prefix", default="")
     ap.add_argument("--n-boot", type=int, default=2000)
-    ap.add_argument("--out", default=os.path.join("results", "E2_analysis.json"))
+    ap.add_argument("--out", default=None)
+    ap.add_argument("--final", action="store_true", help="E7: add FedPer, final H3b test")
     a = ap.parse_args()
+    if a.out is None:
+        a.out = os.path.join("results", "E7_analysis.json" if a.final else "E2_analysis.json")
+    if a.final:
+        METHODS.append("fedper_r9")
+        PERSONAL.append("fedper_r9")
     if a.prefix:                                   # frozen-encoder models: no FedBN (no BatchNorm in a linear head)
         METHODS.remove("fedbn_r9")
         PERSONAL.remove("fedbn_r9")
@@ -175,7 +188,8 @@ def main():
     ci = {k: [float(np.nanpercentile(v, 2.5)), float(np.nanpercentile(v, 97.5))] for k, v in boot.items()}
 
     names = {"fedavg_r9": "FedAvg", "fedprox_r9": "FedProx", "scaffold_r9": "SCAFFOLD", "fedbn_r9": "FedBN",
-             "fedavgft_r9": "FedAvg-FT", "pooled_e20": "Pooled", "local_e20": "Local-only"}
+             "fedavgft_r9": "FedAvg-FT", "pooled_e20": "Pooled", "local_e20": "Local-only",
+             "fedper_r9": "FedPer"}
     for mt in ("pooled", "mean_of_centers"):
         p = point[mt]
         print(f"\n=== Ranking by {mt} balanced accuracy (mean of {len(a.seeds)} seeds) ===")
@@ -191,12 +205,13 @@ def main():
               f"[{ci[mt + '.tau_noise_floor'][0]:+.3f}, {ci[mt + '.tau_noise_floor'][1]:+.3f}]")
 
     h = point["h3b"]
-    print("\n=== H3b (interim, without FedPer): inflation in centers 0, 2, 3, weighted by new-lesion counts ===")
+    label = "final" if a.final else "interim"
+    print(f"\n=== H3b ({'final, with FedPer' if a.final else 'interim, without FedPer'}): inflation in centers 0, 2, 3, weighted by new-lesion counts ===")
     for m, v in h["inflation_by_method_centers_023"].items():
         print(f"  {names[m]:11s} {100 * v:+.2f} pts")
     print(f"  personalized/local mean {100 * h['personalized_mean']:+.2f} - FedAvg {100 * h['fedavg']:+.2f} = "
           f"{100 * h['difference']:+.2f} pts, 95% CI [{100 * ci['h3b.difference'][0]:+.2f}, {100 * ci['h3b.difference'][1]:+.2f}]"
-          f"  -> {'supported' if ci['h3b.difference'][0] > 0 else 'not supported'} (interim)")
+          f"  -> {'supported' if ci['h3b.difference'][0] > 0 else 'not supported'} ({label})")
     pc = point["per_center"]
     print("\n=== Per-center inflation (pts) and leakage rate ===")
     print("  center      " + " ".join(f"{c:>8d}" for c in range(N_CENTERS)))
@@ -210,7 +225,7 @@ def main():
               f"[{100 * ci['slope.' + m][0]:+.1f}, {100 * ci['slope.' + m][1]:+.1f}]")
 
     os.makedirs(os.path.dirname(a.out), exist_ok=True)
-    json.dump({"point": point, "ci95": ci, "methods": METHODS, "seeds": a.seeds, "n_boot": a.n_boot},
+    json.dump({"point": point, "ci95": ci, "methods": METHODS, "personalized": PERSONAL, "final": a.final, "seeds": a.seeds, "n_boot": a.n_boot},
               open(a.out, "w"), indent=2, default=float)
     print(f"\nsaved {a.out}")
 

@@ -15,6 +15,11 @@ Federated / pooled linear heads on frozen embeddings: model A-frozen (--encoder 
     training loss falls by more than 1% over the last round. The chosen U is saved to
     results/linear_updates_<encoder>.json and used unchanged for every later run of that encoder.
 
+  * FedPer-style head (E7, model B): Linear(dim, 256) - ReLU - Linear(256, 8); the hidden layer is
+    federated (averaged as in FedAvg), the output layer is client-specific; each center is evaluated
+    with its own client's head. Same optimizer, rounds and U as the FedAvg linear head (U is not
+    re-tuned; choice fixed in results/E7_implementation_notes.md).
+
 Outputs as train_fl.py: runs/<split>/<encoder>frozen_<method>_r9_s<seed>/ with metrics.json, preds.npz,
 preds_val.npz, model.pt; a line in runs/runs_log.csv.
 
@@ -37,7 +42,7 @@ import torch.nn as nn
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fedderm.evaluate import summarize  # noqa: E402
-from fedderm.fl import Client, Federation  # noqa: E402
+from fedderm.fl import Client, Federation, personal_check  # noqa: E402
 from fedderm.model import WeightedFocalLoss  # noqa: E402
 from train_fl import git_commit, set_seed  # noqa: E402
 
@@ -167,6 +172,20 @@ def run(a, updates, log):
             cl.local_train(3)
             models.append(cl.model)
         log(f"  FedAvg-FT: 3 local steps per client from {src}")
+    elif a.method == "fedper":                   # FedPer-style two-layer head, client-specific output layer
+        torch.manual_seed(a.seed)
+        mlp = nn.Sequential(nn.Linear(dim, 256), nn.ReLU(), nn.Linear(256, NUM_CLASSES))
+        loaders = [client_rows(c) for c in range(NUM_CLIENTS)]
+        fed = Federation(mlp, loss_fn, loaders, 0.01, device, amp=False, strategy="fedper",
+                         local_names=["2.weight", "2.bias"])
+        for r in range(a.rounds):
+            fed.round(updates)
+            losses.append(float(np.mean([c.last_loss for c in fed.clients])))
+        log(f"  fedper: {a.rounds} rounds x {updates} updates, mean client training loss by round "
+            + " ".join(f"{x:.4f}" for x in losses))
+        sh, lo, ln = personal_check(fed)
+        log(f"  check: max |client difference| shared {sh:.2e} (must be 0), local {lo:.2e} (must be > 0); local {ln}")
+        models = [c.model for c in fed.clients]
     else:                                        # fedavg, fedprox, scaffold
         loaders = [client_rows(c) for c in range(NUM_CLIENTS) if c != a.exclude_center]
         fed = Federation(head, loss_fn, loaders, 0.01, device, amp=False, strategy=a.method,
@@ -183,7 +202,7 @@ def run(a, updates, log):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--encoder", required=True, choices=["effb0", "panderm"])
-    ap.add_argument("--method", default="fedavg", choices=["fedavg", "fedprox", "scaffold", "fedavgft", "pooled", "local"])
+    ap.add_argument("--method", default="fedavg", choices=["fedavg", "fedprox", "scaffold", "fedavgft", "fedper", "pooled", "local"])
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--split", default=os.path.join("splits", "e1", "resplit_lesion_seed0_val.csv"))
     ap.add_argument("--emb-dir", default="embeddings")
@@ -215,7 +234,7 @@ def main():
         print(f"chosen local updates per round for {a.encoder}: {updates} -> {upd_file}")
         return
 
-    if a.method in ("fedavg", "fedprox", "scaffold"):
+    if a.method in ("fedavg", "fedprox", "scaffold", "fedper"):
         assert os.path.exists(upd_file), f"run the convergence check first ({upd_file} missing)"
         cfg = json.load(open(upd_file))
         assert cfg.get("feature_norm", "zscore") == a.feature_norm, f"{upd_file} was made with another --feature-norm"
@@ -259,7 +278,7 @@ def main():
     m.update({"encoder": a.encoder, "method": a.method, "seed": a.seed, "split": a.split, "rounds": a.rounds,
               "updates": updates, "train_loss_by_round": losses, "git": git_commit(), "seconds": round(secs, 1)})
     json.dump(m, open(os.path.join(out_dir, "metrics.json"), "w"), indent=2)
-    if a.method in ("local", "fedavgft"):
+    if a.method in ("local", "fedavgft", "fedper"):
         torch.save([x.state_dict() for x in models], os.path.join(out_dir, "models_per_center.pt"))
     else:
         torch.save(models[0].state_dict(), os.path.join(out_dir, "model.pt"))

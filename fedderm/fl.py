@@ -7,6 +7,9 @@ FLamby conventions kept on purpose:
   * the reported "global" model is client 0's copy (FLamby evaluates `s.run()[0]`).
 FedBN (Li et al., 2021): BatchNorm weights and biases are not averaged either; each client keeps its
 own, and each center is evaluated with its own client's model.
+FedPer (Arivazhagan et al., 2019): the parameters named in `local_names` (the classifier head) are not
+averaged; each client keeps its own head, the body is averaged as in FedAvg, and each center is
+evaluated with its own client's model.
 Mixed precision (AMP) is optional; gradients are unscaled before the FedProx / SCAFFOLD terms.
 """
 import copy
@@ -64,7 +67,7 @@ class Client:
 
 class Federation:
     def __init__(self, model, loss_fn, loaders, lr, device, amp=True, strategy="fedavg",
-                 mu=0.0, server_lr=1.0):
+                 mu=0.0, server_lr=1.0, local_names=None):
         self.clients = [Client(model, loss_fn, l, lr, device, amp) for l in loaders]
         self.sizes = [l.n for l in loaders]
         self.N = float(sum(self.sizes))
@@ -76,8 +79,12 @@ class Federation:
             bn_names = {f"{mn}.{pn}" for mn, m in self.clients[0].model.named_modules()
                         if isinstance(m, torch.nn.modules.batchnorm._BatchNorm)
                         for pn, _ in m.named_parameters(recurse=False)}
-            self.is_bn = [n in bn_names for n, _ in self.clients[0].model.named_parameters()]
-            assert any(self.is_bn), "no BatchNorm parameters found"
+            self.is_local = [n in bn_names for n, _ in self.clients[0].model.named_parameters()]
+            assert any(self.is_local), "no BatchNorm parameters found"
+        elif strategy == "fedper":                      # FedPer: the named head parameters stay local
+            names = [n for n, _ in self.clients[0].model.named_parameters()]
+            assert local_names and set(local_names) <= set(names), f"unknown local parameters {local_names}"
+            self.is_local = [n in set(local_names) for n in names]
         if strategy == "scaffold":
             init = [p.detach().clone() for p in self.clients[0].params()]
             self.prev_client_state = [[t.clone() for t in init] for _ in self.clients]
@@ -93,7 +100,7 @@ class Federation:
             p.copy_(s)
 
     def round(self, num_updates):
-        deltas, own_bn = [], []
+        deltas, own = [], []
         for i, c in enumerate(self.clients):
             server_state = self._snapshot(c)
             if self.strategy == "scaffold":
@@ -113,17 +120,33 @@ class Federation:
                 c.local_train(num_updates)
                 nxt = self._snapshot(c)
             deltas.append([(n - s) * self.sizes[i] for n, s in zip(nxt, server_state)])
-            own_bn.append(nxt)
+            own.append(nxt)
             self._restore(c, server_state)
         with torch.no_grad():
             agg = [sum(d[k] for d in deltas) / self.N for k in range(len(deltas[0]))]
             for i, c in enumerate(self.clients):
                 for k, (p, a) in enumerate(zip(c.params(), agg)):
-                    if self.strategy == "fedbn" and self.is_bn[k]:
-                        p.copy_(own_bn[i][k])           # keep this client's own BatchNorm parameters
+                    if self.strategy in ("fedbn", "fedper") and self.is_local[k]:
+                        p.copy_(own[i][k])              # keep this client's own (BatchNorm / head) parameters
                     else:
                         p.add_(a)
         return [c.last_loss for c in self.clients]
+
+
+@torch.no_grad()
+def personal_check(fed):
+    """Largest |difference| between client 0 and the others, for shared and for local parameters
+    (FedPer / FedBN sanity check: shared must be 0, local must be > 0)."""
+    names = [n for n, _ in fed.clients[0].model.named_parameters()]
+    shared = local = 0.0
+    for c in fed.clients[1:]:
+        for k, (p0, p) in enumerate(zip(fed.clients[0].params(), c.params())):
+            d = (p0 - p).abs().max().item()
+            if fed.is_local[k]:
+                local = max(local, d)
+            else:
+                shared = max(shared, d)
+    return shared, local, [n for n, l in zip(names, fed.is_local) if l]
 
 
 def train_pooled(model, loss_fn, loader, epochs, lr, device, amp=True, log=print):

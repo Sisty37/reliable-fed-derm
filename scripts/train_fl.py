@@ -29,7 +29,7 @@ import torch
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fedderm.data import NUM_CLIENTS, InfiniteLoader, IsicDataset, make_loader  # noqa: E402
 from fedderm.evaluate import predict, summarize  # noqa: E402
-from fedderm.fl import Federation, train_pooled  # noqa: E402
+from fedderm.fl import Federation, personal_check, train_pooled  # noqa: E402
 from fedderm.model import Baseline, WeightedFocalLoss  # noqa: E402
 
 
@@ -49,7 +49,7 @@ def git_commit():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--method", required=True, choices=["fedavg", "fedprox", "scaffold", "fedbn", "pooled", "local"])
+    ap.add_argument("--method", required=True, choices=["fedavg", "fedprox", "scaffold", "fedbn", "fedper", "pooled", "local"])
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--split", default=os.path.join("splits", "split_official.csv"))
     ap.add_argument("--img-dir", default=os.path.join("data", "fedisic", "ISIC_2019_Training_Input_preprocessed"))
@@ -122,13 +122,18 @@ def main():
             ds = IsicDataset(a.split, a.img_dir, "train", center=c, train_aug=True, max_items=max_items)
             loaders.append(InfiniteLoader(make_loader(ds, True, a.batch, a.workers, a.seed + 1000 * c)))
         log("train images per center: " + ", ".join(f"{c}:{l.n}" for c, l in zip(train_centers, loaders)))
-        fed = Federation(model, loss_fn, loaders, lr, device, amp, a.method, mu=a.mu, server_lr=a.server_lr)
+        fed = Federation(model, loss_fn, loaders, lr, device, amp, a.method, mu=a.mu, server_lr=a.server_lr,
+                         local_names=["base_model._fc.weight", "base_model._fc.bias"])   # used by FedPer only
         for r in range(a.rounds):
             losses = fed.round(a.updates)
             log(f"  round {r + 1}/{a.rounds}  client losses " + " ".join(f"{x:.3f}" for x in losses)
                 + f"  ({time.time() - t0:.0f} s)")
+        if a.method in ("fedbn", "fedper"):
+            sh, lo, ln = personal_check(fed)
+            log(f"  check: max |client difference| shared params {sh:.2e} (must be 0), "
+                f"local params {lo:.2e} (must be > 0); {len(ln)} local tensors, e.g. {ln[:2]}")
         eval_model = fed.clients[0].model                  # FLamby convention
-        models = ([c.model for c in fed.clients] if a.method == "fedbn"   # personalized: own model per center
+        models = ([c.model for c in fed.clients] if a.method in ("fedbn", "fedper")   # personalized: own model per center
                   else [eval_model] * NUM_CLIENTS)
         bn = [{k: v.cpu() for k, v in c.model.state_dict().items() if "running" in k or "num_batches" in k}
               for c in fed.clients]
@@ -143,7 +148,7 @@ def main():
     metrics.update({"method": a.method, "seed": a.seed, "split": a.split, "rounds": a.rounds,
                     "updates": a.updates, "lr": lr, "amp": amp, "minutes": round((time.time() - t0) / 60, 1),
                     "git": git_commit(), "eval_model": {"pooled": "pooled model", "local": "own center's model",
-                                   "fedbn": "own center's client model"}.get(a.method, "client 0 copy")})
+                                   "fedbn": "own center's client model", "fedper": "own center's client model"}.get(a.method, "client 0 copy")})
     json.dump(metrics, open(os.path.join(out_dir, "metrics.json"), "w"), indent=2)
     np.savez_compressed(os.path.join(out_dir, "preds.npz"),
                         image=np.array([r[0] for r in rows]), center=np.array([r[1] for r in rows]),
@@ -165,7 +170,7 @@ def main():
                             image=np.array([r[0] for r in vrows]), center=np.array([r[1] for r in vrows]),
                             logits=np.concatenate(vlog), target=np.concatenate(vy))
         log(f"validation predictions saved ({len(vrows)} images)")
-    if a.method in ("local", "fedbn"):
+    if a.method in ("local", "fedbn", "fedper"):
         torch.save([m.state_dict() for m in models], os.path.join(out_dir, "models_per_center.pt"))
     else:
         torch.save(eval_model.state_dict(), os.path.join(out_dir, "model.pt"))
