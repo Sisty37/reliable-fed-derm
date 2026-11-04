@@ -49,7 +49,7 @@ import pandas as pd
 
 N_CENTERS, N_CLASSES = 6, 8
 K_GRID = [0, 10, 25, 50, 100, 200, 500, math.inf]
-METHODS = ["global", "clientwise", "weighted", "fcp", "shrink"]
+METHODS = ["global", "clientwise", "weighted", "fcp", "shrink", "eb"]
 BINS = np.linspace(0.0, 1.0, 1001)
 
 
@@ -77,10 +77,10 @@ def scores(p, y):
     return {"lac": (lac_all[idx, y], lac_all), "aps": (aps_all[idx, y], aps_all)}
 
 
-def load(runs, split_dir, seed, prefix):
+def load(runs, split_dir, seed, run_name):
     name = f"resplit_lesion_seed{seed}_val"
     sp = pd.read_csv(os.path.join(split_dir, name + ".csv")).set_index("image")
-    d = os.path.join(runs, name, f"{prefix}fedavg_r9_s{seed}")
+    d = os.path.join(runs, name, run_name)
     out = {}
     for fold, f in (("test", "preds.npz"), ("val", "preds_val.npz")):
         p = np.load(os.path.join(d, f))
@@ -107,6 +107,31 @@ def level_quantile(s, level):
     if level > 1:
         return 1.0                                    # threshold covering every class
     return float(np.sort(s)[max(int(math.ceil(level * len(s))) - 1, 0)])
+
+
+def eb_inputs(s, alpha, m_c, n_c):
+    """Client side of EB-ShrinkFCP (protocol 5b): q_c and its sampling variance from order statistics."""
+    srt = np.sort(s)
+    p = math.ceil((m_c + 1) * (1 - alpha)) / m_c
+    r = int(math.ceil(p * m_c))
+
+    def val(i):
+        return 1.0 if i > m_c else float(srt[max(i, 1) - 1])
+
+    pc = min(p, 1.0)
+    d = int(math.ceil(math.sqrt(max(m_c * pc * (1 - pc) * (m_c / max(n_c, 1)), 0.0))))
+    sigma = (val(r + d) - val(r - d)) / 2
+    return val(r), sigma ** 2
+
+
+def eb_thresholds(q, var):
+    """Server side of EB-ShrinkFCP: DerSimonian-Laird between-center variance and shrinkage."""
+    v = 1.0 / np.maximum(var, 1e-6)
+    qbar = np.sum(v * q) / np.sum(v)
+    Q = np.sum(v * (q - qbar) ** 2)
+    tau2 = max(0.0, (Q - (len(q) - 1)) / (np.sum(v) - np.sum(v ** 2) / np.sum(v)))
+    w = np.zeros_like(q) if tau2 == 0 else tau2 / (tau2 + var)
+    return w * q + (1 - w) * qbar
 
 
 def hist_quantile(counts, rank):
@@ -157,6 +182,9 @@ def split_eval(unit, rng, alpha, ks, methods=METHODS, k_rule=True):
     if "fcp" in methods:
         thr["fcp"] = np.full(N_CENTERS, hist_quantile(counts, math.ceil((m + N_CENTERS) * (1 - alpha))))
     n_c = np.array(n_c, float)
+    if "eb" in methods:
+        qv = [eb_inputs(cs, alpha, len(cs), int(nc)) for cs, nc in zip(cal_s, n_c)]
+        thr["eb"] = eb_thresholds(np.array([x[0] for x in qv]), np.array([x[1] for x in qv]))
     if k_rule and "shrink" in methods:
         k = float(np.median(n_c))
         w = n_c / (n_c + k)
@@ -205,92 +233,107 @@ def main():
     ap.add_argument("--runs", default="runs")
     ap.add_argument("--split-dir", default=os.path.join("splits", "e1"))
     ap.add_argument("--prefix", default="")
-    ap.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
+    ap.add_argument("--loco", action="store_true",
+                    help="protocol 5b test: the 18 E6 leave-one-center-out models (held-out centers 0-5, seeds 0-2)")
+    ap.add_argument("--seeds", type=int, nargs="+", default=None)
     ap.add_argument("--n-splits", type=int, default=100)
     ap.add_argument("--n-boot", type=int, default=2000)
     ap.add_argument("--boot-splits", type=int, default=20)
     ap.add_argument("--out", default=None)
     a = ap.parse_args()
-    out_path = a.out or os.path.join("results", f"E5_conformal{'_' + a.prefix.rstrip('_') if a.prefix else ''}.json")
-    rng = np.random.default_rng(20261103)
-    data = {s: load(a.runs, a.split_dir, s, a.prefix) for s in a.seeds}
-    res = {"temperature": {s: data[s]["temperature"] for s in a.seeds}}
+    seeds = a.seeds or ([0, 1, 2] if a.loco else [0, 1, 2, 3, 4])
+    if a.loco:
+        units = [(s, f"{a.prefix}fedavg_r9_loco{h}_s{s}") for s in seeds for h in range(N_CENTERS)]
+    else:
+        units = [(s, f"{a.prefix}fedavg_r9_s{s}") for s in seeds]
+    tag = ("E6_conformal_loco" if a.loco else "E5_conformal") + (f"_{a.prefix.rstrip('_')}" if a.prefix else "")
+    out_path = a.out or os.path.join("results", tag + ".json")
+    rng = np.random.default_rng(20261103 if not a.loco else 20261104)
+    data = {u: load(a.runs, a.split_dir, u[0], u[1]) for u in units}
+    res = {"units": [f"{s}:{r}" for s, r in units],
+           "temperature": {f"{s}:{r}": data[(s, r)]["temperature"] for s, r in units}}
 
-    # point estimates, all scores and alphas
+    # point estimates
     for score in ("lac", "aps"):
         for alpha in (0.05, 0.1, 0.2):
-            per_seed = [run_splits(Unit(data[s]["test"], score), rng, alpha, a.n_splits, ks=K_GRID) for s in a.seeds]
-            res[f"{score}_a{alpha}"] = seed_mean(per_seed)
-
-    # primary: LAC, alpha 0.1
+            per = [run_splits(Unit(data[u]["test"], score), rng, alpha, a.n_splits, ks=K_GRID) for u in units]
+            res[f"{score}_a{alpha}"] = seed_mean(per)
     prim = res["lac_a0.1"]
     ref = "global" if prim["global"]["worst_center_q10"] >= prim["clientwise"]["worst_center_q10"] else "clientwise"
-    gain = prim["shrink"]["worst_center_q10"] - prim[ref]["worst_center_q10"]
 
-    # data-driven k on validation lesions (sensitivity)
-    k_choice = {}
-    for s in a.seeds:
-        val = run_splits(Unit(data[s]["val"], "lac"), rng, 0.1, a.n_splits, ks=K_GRID, methods=[], k_rule=False)
-        best = max(K_GRID, key=lambda k: (val[f"shrink_k{k}"]["worst_center_q10"], -K_GRID.index(k)))
-        k_choice[s] = best
-    dd = []
-    for s in a.seeds:
-        r = run_splits(Unit(data[s]["test"], "lac"), rng, 0.1, a.n_splits, ks=[k_choice[s]], methods=[], k_rule=False)
-        dd.append(r[f"shrink_k{k_choice[s]}"]["worst_center_q10"])
-    res["data_driven_k"] = {"k_by_seed": {s: str(k) for s, k in k_choice.items()}, "worst_center_q10_test": float(np.mean(dd))}
+    # data-driven k on validation lesions (ShrinkFCP sensitivity), not needed for the 5b test
+    if not a.loco:
+        k_choice, dd = {}, []
+        for u in units:
+            val = run_splits(Unit(data[u]["val"], "lac"), rng, 0.1, a.n_splits, ks=K_GRID, methods=[], k_rule=False)
+            k_choice[u] = max(K_GRID, key=lambda k: (val[f"shrink_k{k}"]["worst_center_q10"], -K_GRID.index(k)))
+            r = run_splits(Unit(data[u]["test"], "lac"), rng, 0.1, a.n_splits, ks=[k_choice[u]], methods=[], k_rule=False)
+            dd.append(r[f"shrink_k{k_choice[u]}"]["worst_center_q10"])
+        res["data_driven_k"] = {"k": {f"{s}": str(k) for (s, _), k in k_choice.items()},
+                                "worst_center_q10_test": float(np.mean(dd))}
 
-    # lesion bootstrap of the gain (paired: same resample and splits for both methods)
+    # lesion bootstrap of the gains (paired; one resample per test set, shared by its models and methods)
     prep = {}
-    for s in a.seeds:                                   # lesion -> images, for fast resampling
-        o = data[s]["test"]
+    for s in seeds:
+        o = data[[u for u in units if u[0] == s][0]]["test"]
         _, inv = np.unique(o["lesion"], return_inverse=True)
         order = np.argsort(inv, kind="stable")
         lengths = np.bincount(inv)
-        starts = np.concatenate([[0], np.cumsum(lengths)[:-1]])
-        prep[s] = (o, order, lengths, starts)
-    boots = []
+        prep[s] = (order, lengths, np.concatenate([[0], np.cumsum(lengths)[:-1]]))
+    for u in units:      # all models of one seed share the same test images in the same order
+        assert len(data[u]["test"]["lesion"]) == len(prep[u[0]][0])
+    boots = {"shrink": [], "eb": []}
     for b in range(a.n_boot):
-        g = []
-        for s in a.seeds:
-            o, order, lengths, starts = prep[s]
-            chosen = rng.integers(0, len(lengths), len(lengths))      # lesions drawn with replacement
+        g = {"shrink": [], "eb": []}
+        for s in seeds:
+            order, lengths, starts = prep[s]
+            chosen = rng.integers(0, len(lengths), len(lengths))
             ln = lengths[chosen]
-            offs = np.arange(ln.sum()) - np.repeat(np.cumsum(ln) - ln, ln)
-            take = order[np.repeat(starts[chosen], ln) + offs]
-            ob = {"scores": {"lac": (o["scores"]["lac"][0][take], o["scores"]["lac"][1][take])},
-                  "center": o["center"][take], "lesion": np.repeat(np.arange(len(chosen)), ln)}
-            r = run_splits(Unit(ob, "lac"), rng, 0.1, a.boot_splits, methods=["global", "clientwise", "shrink"])
-            g.append(r["shrink"]["worst_center_q10"] - r[ref]["worst_center_q10"])
-        boots.append(np.mean(g))
+            take = order[np.repeat(starts[chosen], ln) + np.arange(ln.sum()) - np.repeat(np.cumsum(ln) - ln, ln)]
+            for u in [u for u in units if u[0] == s]:
+                o = data[u]["test"]
+                ob = {"scores": {"lac": (o["scores"]["lac"][0][take], o["scores"]["lac"][1][take])},
+                      "center": o["center"][take], "lesion": np.repeat(np.arange(len(chosen)), ln)}
+                r = run_splits(Unit(ob, "lac"), rng, 0.1, a.boot_splits,
+                               methods=["global", "clientwise", "shrink", "eb"])
+                for mth in g:
+                    g[mth].append(r[mth]["worst_center_q10"] - r[ref]["worst_center_q10"])
+        for mth in g:
+            boots[mth].append(np.mean(g[mth]))
         if (b + 1) % 200 == 0:
             print(f"  bootstrap {b + 1}/{a.n_boot}")
-    ci = [float(np.percentile(boots, 2.5)), float(np.percentile(boots, 97.5))]
-    size_ok = prim["shrink"]["set_size_equal_weight"] <= 1.10 * prim[ref]["set_size_equal_weight"]
-    cov_ok = min(prim["shrink"]["mean_coverage"]) >= 0.89
-    success = gain >= 0.02 and ci[0] > 0 and size_ok and cov_ok
-    res["rq4"] = {"reference": ref, "gain": gain, "ci95": ci, "set_size_ok": size_ok, "coverage_ok": cov_ok,
-                  "success": success}
+    res["tests"] = {}
+    for mth in ("shrink", "eb"):
+        gain = prim[mth]["worst_center_q10"] - prim[ref]["worst_center_q10"]
+        ci = [float(np.percentile(boots[mth], 2.5)), float(np.percentile(boots[mth], 97.5))]
+        size_ok = prim[mth]["set_size_equal_weight"] <= 1.10 * prim[ref]["set_size_equal_weight"]
+        cov_ok = min(prim[mth]["mean_coverage"]) >= 0.89
+        res["tests"][mth] = {"reference": ref, "gain": gain, "ci95": ci, "set_size_ok": size_ok,
+                             "coverage_ok": cov_ok, "success": bool(gain >= 0.02 and ci[0] > 0 and size_ok and cov_ok)}
 
-    # print
     names = {"global": "Global", "clientwise": "Client-wise", "weighted": "Sample-weighted", "fcp": "FCP",
-             "shrink": "ShrinkFCP (k = median n_c)"}
-    print(f"\nModel {'B (' + a.prefix + ')' if a.prefix else 'A'}; global temperature by seed: "
-          + ", ".join(f"{res['temperature'][s]['global']:.2f}" for s in a.seeds))
+             "shrink": "ShrinkFCP (k = median n_c)", "eb": "EB-ShrinkFCP"}
+    print(f"\n{'E6 leave-one-center-out models (protocol 5b test)' if a.loco else 'E5 models'}; "
+          f"model {'B (' + a.prefix + ')' if a.prefix else 'A'}; {len(units)} models")
     for key in ("lac_a0.1", "aps_a0.1", "lac_a0.05", "lac_a0.2"):
-        print(f"\n=== {key.replace('_a', ', alpha ')} (mean of {len(a.seeds)} seeds, {a.n_splits} splits each) ===")
+        print(f"\n=== {key.replace('_a', ', alpha ')} (mean of {len(units)} models, {a.n_splits} splits each) ===")
         print(f"  {'method':28s} worst q10 | lower-tail q10 by center (0-5)            | min mean cov | set size")
         for mth in METHODS:
             r = res[key][mth]
             print(f"  {names[mth]:28s} {r['worst_center_q10']:.3f}    | "
                   + " ".join(f"{x:.3f}" for x in r["lower_tail_q10"])
                   + f" | {min(r['mean_coverage']):.3f}        | {r['set_size_equal_weight']:.2f}")
-    print("\n=== k curve (LAC, alpha 0.1): worst-center lower-tail coverage ===")
-    print("  " + "  ".join(f"k={k}: {res['lac_a0.1'][f'shrink_k{k}']['worst_center_q10']:.3f}" for k in K_GRID))
-    print(f"  data-driven k by seed {res['data_driven_k']['k_by_seed']} -> test {res['data_driven_k']['worst_center_q10_test']:.3f}")
-    r = res["rq4"]
-    print(f"\n=== RQ4 (LAC, alpha 0.1): reference = {r['reference']} ===")
-    print(f"  gain {100 * r['gain']:+.2f} pts, 95% CI [{100 * ci[0]:+.2f}, {100 * ci[1]:+.2f}] | set size ok: {size_ok}"
-          f" | all centers' mean coverage >= 0.89: {cov_ok}  ->  {'SUCCESS' if success else 'NOT MET'}")
+    print("\n=== ShrinkFCP k curve (LAC, alpha 0.1): worst-center lower-tail coverage ===")
+    print("  " + "  ".join(f"k={k}: {prim[f'shrink_k{k}']['worst_center_q10']:.3f}" for k in K_GRID))
+    if "data_driven_k" in res:
+        print(f"  data-driven k {res['data_driven_k']['k']} -> test {res['data_driven_k']['worst_center_q10_test']:.3f}")
+    label = {"shrink": "ShrinkFCP (RQ4, pre-specified v0.10)",
+             "eb": "EB-ShrinkFCP (pre-specified v0.11)" if a.loco else "EB-ShrinkFCP (POST HOC on E5 models)"}
+    print(f"\n=== Tests (LAC, alpha 0.1), reference = {ref} ===")
+    for mth, t in res["tests"].items():
+        print(f"  {label[mth]:40s} gain {100 * t['gain']:+.2f} pts, 95% CI [{100 * t['ci95'][0]:+.2f}, "
+              f"{100 * t['ci95'][1]:+.2f}] | set size ok: {t['set_size_ok']} | all centers >= 0.89: "
+              f"{t['coverage_ok']}  ->  {'SUCCESS' if t['success'] else 'NOT MET'}")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     json.dump(res, open(out_path, "w"), indent=2, default=lambda x: str(x))
     print(f"saved {out_path}")

@@ -32,3 +32,21 @@ the success criterion. Choices it leaves open:
    the point estimate.
 10. The script was checked on synthetic predictions (centers with different calibration) before being
     run on the real models.
+
+## Protocol 5b test on the E6 models (4 Nov 2026, before running it on the E6 predictions)
+
+`scripts/e5_conformal.py --loco [--prefix pandermfrozen_]` runs the Section 5b test; without `--loco`
+it repeats E5 and adds EB-ShrinkFCP on the E5 models, labelled post hoc.
+
+1. **EB-ShrinkFCP** exactly as in protocol Section 5b. Implementation detail: when the conformal level
+   p exceeds 1 (very small m_c), p(1 − p) in the formula for d is computed with p capped at 1 (so
+   d = 0); the threshold is then 1, as the protocol states.
+2. **Models:** the 18 E6 FedAvg models (held-out center 0–5 × seeds 0–2), each calibrated and
+   evaluated on all 6 centers' lesion-grouped test sets; temperature as in Section 5 (each center's
+   validation lesions, including the held-out center's).
+3. **Bootstrap:** 2,000 replicates; in each, every seed's test lesions are resampled once, and that
+   resample is shared by the 6 models of that seed (they have the same test images) and by all
+   methods; 20 calibration/evaluation splits per model; gains averaged over the 18 models.
+4. The reference (global or client-wise) is taken from the point estimate, as in E5.
+5. Re-running E5 with this script draws the same calibration splits as before (the new method uses no
+   random numbers), so the E5 numbers for the other methods are reproduced exactly; this is checked.

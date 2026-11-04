@@ -1,0 +1,14 @@
+2026-11-03 21:18 | fedavg_r9_loco3_s0 | split splits\e1\resplit_lesion_seed0_val.csv | device cuda (NVIDIA GeForce RTX 4050 Laptop GPU) | AMP True | lr 0.01 | git 794441b
+train images per center: 0:8931, 1:2849, 2:2414, 4:589, 5:319
+  round 1/9  client losses 10.731 1.847 5.379 2.149 1.767  (177 s)
+  round 2/9  client losses 8.384 0.860 3.475 1.717 1.051  (289 s)
+  round 3/9  client losses 7.317 1.025 3.007 1.632 0.919  (402 s)
+  round 4/9  client losses 6.341 0.685 2.426 1.549 0.819  (514 s)
+  round 5/9  client losses 5.514 0.571 2.533 1.489 0.788  (627 s)
+  round 6/9  client losses 4.987 0.618 2.070 1.426 0.700  (739 s)
+  round 7/9  client losses 4.700 0.510 1.997 1.330 0.671  (851 s)
+  round 8/9  client losses 4.481 0.572 1.821 1.378 0.698  (963 s)
+  round 9/9  client losses 4.129 0.518 1.846 1.303 0.672  (1075 s)
+validation predictions saved (1871 images)
+balanced accuracy  pooled 0.4932 | mean of centers 0.4786 | per center 0.482 0.647 0.543 0.404 0.412 0.383
+saved to runs\resplit_lesion_seed0_val\fedavg_r9_loco3_s0 (19.3 min)

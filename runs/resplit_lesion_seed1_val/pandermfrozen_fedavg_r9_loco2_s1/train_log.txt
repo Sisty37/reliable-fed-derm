@@ -1,0 +1,4 @@
+2026-11-04 00:22 | pandermfrozen_fedavg_r9_loco2_s1 | split splits\e1\resplit_lesion_seed1_val.csv | updates 6400 | git 794441b
+  fedavg: 9 rounds x 6400 updates, pooled training loss by round 5.5919 4.9638 4.7154 4.5565 4.4420 4.3652 4.3108 4.2354 4.1985
+balanced accuracy  pooled 0.5088 | mean of centers 0.4913 | per center 0.481 0.734 0.446 0.601 0.316 0.370
+saved to runs\resplit_lesion_seed1_val\pandermfrozen_fedavg_r9_loco2_s1 (709 s)
