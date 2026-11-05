@@ -1,0 +1,20 @@
+{
+  "bacc_center_0": 0.5042925834506543,
+  "bacc_center_1": 0.7731612903225806,
+  "bacc_center_2": 0.6014319283678645,
+  "bacc_center_3": 0.3874611984821341,
+  "bacc_center_4": 0.614460289136964,
+  "bacc_center_5": 0.20842490842490843,
+  "bacc_pooled": 0.5704715433701137,
+  "bacc_mean_of_centers": 0.514872033030851,
+  "method": "fedper",
+  "seed": 1,
+  "split": "splits\\e1\\resplit_lesion_seed1_val.csv",
+  "rounds": 9,
+  "updates": 100,
+  "lr": 0.01,
+  "amp": true,
+  "minutes": 21.7,
+  "git": "25e3e06",
+  "eval_model": "own center's client model"
+}

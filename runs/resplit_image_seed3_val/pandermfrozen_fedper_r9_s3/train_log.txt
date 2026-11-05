@@ -1,0 +1,5 @@
+2026-11-05 01:09 | pandermfrozen_fedper_r9_s3 | split splits\e1\resplit_image_seed3_val.csv | updates 6400 | git 25e3e06
+  fedper: 9 rounds x 6400 updates, mean client training loss by round 1.3806 0.5794 0.3810 0.2769 0.2166 0.1740 0.1446 0.1244 0.1076
+  check: max |client difference| shared 0.00e+00 (must be 0), local 1.89e+00 (must be > 0); local ['2.weight', '2.bias']
+balanced accuracy  pooled 0.6609 | mean of centers 0.5790 | per center 0.693 0.855 0.448 0.447 0.581 0.451
+saved to runs\resplit_image_seed3_val\pandermfrozen_fedper_r9_s3 (920 s)

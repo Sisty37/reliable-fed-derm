@@ -1,0 +1,20 @@
+{
+  "bacc_center_0": 0.6411926761257117,
+  "bacc_center_1": 0.7500645161290322,
+  "bacc_center_2": 0.7547286391907928,
+  "bacc_center_3": 0.46440610223872236,
+  "bacc_center_4": 0.6887673091386354,
+  "bacc_center_5": 0.6322344322344322,
+  "bacc_pooled": 0.6554095172914718,
+  "bacc_mean_of_centers": 0.6552322791762212,
+  "method": "fedper",
+  "seed": 4,
+  "split": "splits\\e1\\resplit_image_seed4_val.csv",
+  "rounds": 9,
+  "updates": 100,
+  "lr": 0.01,
+  "amp": true,
+  "minutes": 25.2,
+  "git": "25e3e06",
+  "eval_model": "own center's client model"
+}

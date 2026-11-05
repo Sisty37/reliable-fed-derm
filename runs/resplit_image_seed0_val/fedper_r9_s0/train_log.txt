@@ -1,0 +1,15 @@
+2026-11-05 02:54 | fedper_r9_s0 | split splits\e1\resplit_image_seed0_val.csv | device cuda (NVIDIA GeForce RTX 4050 Laptop GPU) | AMP True | lr 0.01 | git 25e3e06
+train images per center: 0:8939, 1:2847, 2:2410, 3:1628, 4:591, 5:316
+  round 1/9  client losses 11.237 1.946 5.476 9.908 2.169 1.765  (251 s)
+  round 2/9  client losses 8.774 0.690 3.420 7.075 1.367 0.668  (386 s)
+  round 3/9  client losses 7.245 0.577 2.753 5.824 1.234 0.457  (515 s)
+  round 4/9  client losses 6.441 0.521 2.158 5.728 1.076 0.338  (646 s)
+  round 5/9  client losses 5.953 0.398 1.962 4.540 1.023 0.300  (778 s)
+  round 6/9  client losses 5.523 0.357 1.644 4.463 0.933 0.249  (909 s)
+  round 7/9  client losses 5.312 0.242 1.527 3.580 0.837 0.231  (1040 s)
+  round 8/9  client losses 4.280 0.241 1.519 3.544 0.870 0.207  (1171 s)
+  round 9/9  client losses 4.597 0.208 1.251 3.441 0.773 0.172  (1302 s)
+  check: max |client difference| shared params 0.00e+00 (must be 0), local params 6.12e-01 (must be > 0); 2 local tensors, e.g. ['base_model._fc.weight', 'base_model._fc.bias']
+validation predictions saved (1868 images)
+balanced accuracy  pooled 0.6522 | mean of centers 0.5976 | per center 0.646 0.742 0.664 0.458 0.681 0.395
+saved to runs\resplit_image_seed0_val\fedper_r9_s0 (23.4 min)
