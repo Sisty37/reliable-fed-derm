@@ -1,0 +1,23 @@
+\begin{table}[!t]
+\centering
+\caption{Federated conformal calibration on the 18 leave-one-center-out models per encoder (LAC,
+$\alpha=0.1$, 100 lesion-wise calibration/evaluation splits). q10: worst center's 10th-percentile
+coverage (primary); min cov.: lowest center mean coverage; $|C|$: mean set size. Best in bold.
+$^\dagger$Proposed.}
+\label{tab:conformal}
+\setlength{\tabcolsep}{2.6pt}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{Model A} & \multicolumn{3}{c}{Model B} \\
+\cmidrule(lr){2-4}\cmidrule(l){5-7}
+Method & q10 & min cov. & $|C|$ & q10 & min cov. & $|C|$ \\
+\midrule
+Global & 0.783 & 0.829 & 2.57 & 0.681 & 0.751 & 2.57 \\
+Client-wise & 0.814 & \textbf{0.900} & 2.41 & 0.798 & \textbf{0.900} & 2.60 \\
+Sample-weighted & 0.733 & 0.792 & 2.27 & 0.626 & 0.694 & 2.22 \\
+FCP & 0.785 & 0.831 & 2.59 & 0.684 & 0.755 & 2.59 \\
+ShrinkFCP & 0.815 & 0.860 & 2.45 & 0.731 & 0.793 & 2.43 \\
+EB-ShrinkFCP$^\dagger$ & \textbf{0.837} & 0.899 & 2.50 & \textbf{0.803} & 0.898 & 2.61 \\
+\bottomrule
+\end{tabular}
+\end{table}

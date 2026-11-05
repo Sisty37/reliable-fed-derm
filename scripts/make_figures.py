@@ -15,6 +15,7 @@ import os
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from matplotlib.lines import Line2D
 from matplotlib.patches import FancyBboxPatch, Patch
 
@@ -40,7 +41,8 @@ mpl.rcParams.update({
     "axes.spines.right": False, "axes.grid": False, "grid.color": GRID, "grid.linewidth": 0.5,
     "legend.frameon": False, "figure.dpi": 150, "savefig.dpi": 300, "savefig.bbox": "tight",
     "savefig.pad_inches": 0.02, "lines.linewidth": 1.2, "axes.titleweight": "bold",
-    "axes.titlelocation": "left", "mathtext.default": "regular",
+    "axes.titlelocation": "left", "mathtext.fontset": "custom", "mathtext.rm": "sans",
+    "mathtext.it": "sans:italic", "mathtext.bf": "sans:bold",
 })
 
 NAMES = {"fedavg_r9": "FedAvg", "fedprox_r9": "FedProx", "scaffold_r9": "SCAFFOLD", "fedbn_r9": "FedBN",
@@ -74,88 +76,162 @@ def panel(ax, letter, title=None, x=-0.02):
     ax.set_title(f"({letter})" + (f" {title}" if title else ""), x=x, ha="left", fontsize=8)
 
 
-# ---------------------------------------------------------------- Fig. 1 study design and leakage per center
+# ---------------------------------------------------------------- dermoscopy thumbnails for the schematics
+# Real Fed-ISIC2019 images (ISIC 2019, CC-BY-NC 4.0) are read from the preprocessed image folder. If an image
+# is not on disk (e.g. on a machine without the data), a neutral synthetic placeholder is drawn instead, so
+# the layout can still be checked; the paper version is made on the machine with the data.
+IMG_DIR = os.path.join("data", "fedisic", "ISIC_2019_Training_Input_preprocessed")
+SPLIT_FOR_SCHEMATIC = os.path.join("splits", "e1", "resplit_image_seed0_val.csv")
+SIBLING_LESION = os.environ.get("FIG_LESION", "BCN_0000034")      # one lesion with three images (melanoma)
+OTHER_LESIONS = ["BCN_0000002", "BCN_0000008"]                      # two other lesions for the training set
+_PLACEHOLDER_WARNED = []
+
+
+def _placeholder(seed, size=256):
+    rng = np.random.default_rng(abs(hash(seed)) % (2 ** 32))
+    yy, xx = np.mgrid[0:size, 0:size] / size - 0.5
+    skin = np.array([0.86, 0.70, 0.62]) + rng.normal(0, 0.02, 3)
+    img = np.ones((size, size, 3)) * skin
+    cx, cy = rng.normal(0, 0.05, 2)
+    ang = rng.uniform(0, np.pi)
+    r = np.sqrt(((xx - cx) * np.cos(ang) + (yy - cy) * np.sin(ang)) ** 2 / 1.0
+                + ((xx - cx) * np.sin(ang) - (yy - cy) * np.cos(ang)) ** 2 / 0.6)
+    blob = np.clip(1 - r / rng.uniform(0.22, 0.32), 0, 1) ** 0.6
+    col = np.array([0.36, 0.22, 0.16]) + rng.normal(0, 0.03, 3)
+    img = img * (1 - blob[..., None]) + col * blob[..., None]
+    img += rng.normal(0, 0.025, img.shape)
+    vign = np.clip(1.25 - 1.6 * np.sqrt(xx ** 2 + yy ** 2), 0, 1)[..., None]
+    return np.clip(img * vign, 0, 1)
+
+
+def lesion_img(name, size=256):
+    path = os.path.join(IMG_DIR, f"{name}.jpg")
+    if not os.path.exists(path):
+        if not _PLACEHOLDER_WARNED:
+            print(f"  note: {IMG_DIR} not found; schematic thumbnails are placeholders")
+            _PLACEHOLDER_WARNED.append(1)
+        return _placeholder(name, size)
+    from PIL import Image
+    im = Image.open(path).convert("RGB")
+    w, h = im.size
+    m = min(w, h)
+    im = im.crop(((w - m) // 2, (h - m) // 2, (w + m) // 2, (h + m) // 2)).resize((size, size), Image.LANCZOS)
+    return np.asarray(im) / 255.0
+
+
+def thumb(ax, img, x, y, size, ec=None, lw=1.2, r=0.9, z=3):
+    """Square image with rounded corners, lower-left corner at (x, y), in data units (axes must be equal-aspect)."""
+    im = ax.imshow(img, extent=(x, x + size, y, y + size), zorder=z, interpolation="lanczos")
+    clip = FancyBboxPatch((x, y), size, size, boxstyle=f"round,pad=0,rounding_size={r}", transform=ax.transData,
+                          fc="none", ec="none")
+    im.set_clip_path(clip)
+    if ec:
+        ax.add_patch(FancyBboxPatch((x, y), size, size, boxstyle=f"round,pad=0,rounding_size={r}", fc="none",
+                                    ec=ec, lw=lw, zorder=z + 1))
+
+
+def canvas(width, height):
+    """Figure with one full-size equal-aspect axes in units of 1% of the figure width."""
+    fig = plt.figure(figsize=(width, height))
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.set_xlim(0, 100)
+    ax.set_ylim(0, 100 * height / width)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    return fig, ax
+
+
+def rbox(ax, x, y, w, h, fc="white", ec=AXIS, lw=0.7, r=1.2, z=1, ls="-"):
+    ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle=f"round,pad=0,rounding_size={r}", fc=fc, ec=ec, lw=lw,
+                                zorder=z, ls=ls))
+
+
+def schematic_images():
+    sp = pd.read_csv(SPLIT_FOR_SCHEMATIC)
+    sib = sp[sp.lesion_id == SIBLING_LESION].image.tolist()[:3]
+    others = [sp[sp.lesion_id == l].image.tolist()[:2] for l in OTHER_LESIONS]
+    per_center = []
+    for c in range(6):
+        g = sp[(sp.center == c) & (sp.target == 1)]                     # a nevus from every center
+        per_center.append((g.image.iloc[len(g) // 3] if len(g) else sp[sp.center == c].image.iloc[0],
+                           int((sp.center == c).sum())))
+    return sib, others, per_center
+
+
+# ---------------------------------------------------------------- Fig. 1 leakage: real sibling images + per-center share
 def fig1():
+    sib, others, _ = schematic_images()
+    S = [lesion_img(n) for n in sib]
+    O = [lesion_img(n) for o in others for n in o]
+    Hin = 2.75
+    fig, ax = canvas(DOUBLE, Hin)
+    fig.text(0.004, 0.99, "(a) One lesion, three images: image-level vs lesion-grouped splitting", fontsize=8,
+             weight="bold", va="top")
+
+    # source lesion: three images of the same melanoma
+    rbox(ax, 0.4, 1.0, 12.0, 31.0, fc="#f6f6f4", ec="none")
+    ax.text(6.4, 30.4, "Lesion L", ha="center", fontsize=6.8, weight="bold", va="top")
+    ax.text(6.4, 28.2, "3 images of one\nmelanoma", ha="center", fontsize=5.4, color=INK2, va="top", linespacing=1.05)
+    for k in range(3):
+        y = 16.6 - k * 7.6
+        thumb(ax, S[k], 2.8, y, 6.8)
+        ax.text(3.9, y + 5.7, f"{k + 1}", fontsize=5.2, color="white", weight="bold", ha="center", va="center", zorder=7,
+                bbox=dict(boxstyle="circle,pad=0.18", fc=INK, ec="none"))
+
+    def lane(y0, col, title, sub):
+        ax.add_patch(plt.Rectangle((14.3, y0), 0.45, 14.6, fc=col, ec="none"))
+        ax.text(15.6, y0 + 14.5, title, fontsize=6.8, weight="bold", color=col, va="top")
+        ax.text(15.6, y0 + 12.3, sub, fontsize=5.5, color=INK2, va="top")
+        rbox(ax, 15.6, y0, 22.4, 9.6, fc="#f6f6f4", ec=AXIS)
+        rbox(ax, 40.0, y0, 19.6, 9.6, fc="white", ec=col, lw=0.9)
+        ax.text(16.4, y0 + 8.9, "train", fontsize=5.5, color=INK2, va="top")
+        ax.text(40.8, y0 + 8.9, "test", fontsize=5.5, color=col, va="top", weight="bold")
+
+    # lane 1: image-level split
+    y1 = 17.4
+    lane(y1, IMAGE, "Image-level split", "images are assigned independently")
+    def badge(x, y, t, col=INK):
+        ax.text(x, y, t, fontsize=5.2, color="white", weight="bold", ha="center", va="center", zorder=7,
+                bbox=dict(boxstyle="circle,pad=0.18", fc=col, ec="none"))
+
+    for k, x in enumerate((22.4, 30.0)):
+        thumb(ax, S[k], x, y1 + 1.2, 6.4)
+        badge(x + 1.1, y1 + 6.5, f"{k + 1}")
+    thumb(ax, S[2], 42.4, y1 + 1.2, 6.4, ec=IMAGE, lw=1.4)
+    badge(43.5, y1 + 6.5, "3", IMAGE)
+    ax.annotate("", xy=(36.7, y1 + 3.6), xytext=(42.2, y1 + 3.6),
+                arrowprops=dict(arrowstyle="-|>", color=IMAGE, lw=1.2, mutation_scale=7), zorder=6)
+    ax.text(51.2, y1 + 6.2, "siblings 1, 2\nare in training", fontsize=5.5, color=IMAGE, va="center", linespacing=1.1)
+
+    # lane 2: lesion-grouped split
+    y2 = 1.0
+    lane(y2, LESION, "Lesion-grouped split (this study)", "all images of a lesion stay together")
+    thumb(ax, O[0], 22.4, y2 + 1.2, 6.4)
+    thumb(ax, O[2], 30.0, y2 + 1.2, 6.4)
+    ax.text(37.6, y2 + 8.9, "other lesions", fontsize=5.3, color=MUTED, va="top", ha="right")
+    for k in range(3):
+        thumb(ax, S[k], 41.2 + k * 5.4, y2 + 1.6, 4.9, ec=LESION, lw=1.1)
+    ax.text(58.9, y2 + 8.9, "lesion L: 1, 2, 3", fontsize=5.3, color=LESION, va="top", ha="right")
+
+    # (b) leaked vs new test images per center
     pc = load("E7_analysis.json")["point"]["per_center"]
     leak, new = np.array(pc["leakage_rate"]), np.array(pc["new_lesion_images"])
     leaked = new * leak / (1 - leak)
-    fig = plt.figure(figsize=(DOUBLE, 2.55))
-    gs = fig.add_gridspec(1, 2, width_ratios=[1.55, 1], wspace=0.18)
-
-    # (a) schematic: two lanes (image-level, lesion-grouped), train | test columns
-    ax = fig.add_subplot(gs[0])
-    ax.set_xlim(0, 10)
-    ax.set_ylim(0.1, 6.0)
-    ax.axis("off")
-    panel(ax, "a", "Why image-level splitting leaks", x=0)
-    R_IMG, GAP = 0.19, 0.48
-    TRAIN_FC, TEST_EC = "#6b7280", INK
-
-    def group(x0, y, n, label, test=False):
-        """A lesion = rounded outline around n images; returns centres of the images."""
-        w = (n - 1) * GAP + 2 * R_IMG + 0.22
-        ax.add_patch(FancyBboxPatch((x0, y - 0.33), w, 0.66, boxstyle="round,pad=0,rounding_size=0.3",
-                                    fc="white", ec=AXIS, lw=0.7, zorder=1))
-        xs = [x0 + 0.11 + R_IMG + k * GAP for k in range(n)]
-        for xc in xs:
-            ax.add_patch(plt.Circle((xc, y), R_IMG, fc="white" if test else TRAIN_FC,
-                                    ec=TEST_EC if test else TRAIN_FC, lw=1.0, zorder=2))
-        ax.text(x0 + w / 2, y - 0.52, label, ha="center", va="top", fontsize=5.8, color=INK2)
-        return xs
-
-    # column headers and divider
-    ax.text(4.0, 5.72, "Training set", ha="center", fontsize=7, weight="bold")
-    ax.text(8.3, 5.72, "Test set", ha="center", fontsize=7, weight="bold")
-    ax.plot([6.75, 6.75], [1.05, 5.45], color=AXIS, lw=0.8, ls=(0, (3, 2)))
-    ax.plot([0.05, 9.95], [3.0, 3.0], color=GRID, lw=0.8)
-
-    # lane labels with a colour bar
-    for y, col, t1, t2 in ((4.45, IMAGE, "Image-level", "split"), (1.85, LESION, "Lesion-", "grouped")):
-        ax.add_patch(plt.Rectangle((0.05, y - 0.7), 0.07, 1.4, fc=col, ec="none"))
-        ax.text(0.25, y + 0.05, t1, fontsize=6.8, weight="bold", color=col, va="bottom")
-        ax.text(0.25, y + 0.0, t2, fontsize=6.8, weight="bold", color=col, va="top")
-
-    # lane 1: every lesion has images on both sides; test shown in reverse order so links nest
-    yy = 4.45
-    tr = [group(2.1 + k * 1.45, yy, 2, f"L{k + 1}") for k in range(3)]
-    te = {k: group(7.2 + (2 - k) * 0.82, yy, 1, f"L{k + 1}", test=True) for k in range(3)}
-    for k in range(3):
-        d = te[k][0] - tr[k][-1]
-        ax.annotate("", xy=(tr[k][-1] + 0.1, yy + R_IMG + 0.06), xytext=(te[k][0] - 0.02, yy + R_IMG + 0.06),
-                    arrowprops=dict(arrowstyle="-|>", color=IMAGE, lw=0.9, mutation_scale=6,
-                                    connectionstyle=f"arc3,rad={0.12 + 0.025 * d}", shrinkA=1, shrinkB=1), zorder=3)
-    ax.text(8.3, 3.25, "siblings are in training", ha="center", va="center", fontsize=6.1, color=IMAGE)
-
-    # lane 2: lesions kept whole
-    yy = 1.85
-    group(2.1, yy, 3, "L1")
-    group(4.1, yy, 3, "L2")
-    group(7.55, yy, 3, "L3", test=True)
-    ax.text(8.35, 0.75, "lesions unseen in training", ha="center", va="center", fontsize=6.1, color=LESION)
-
-    # key
-    ax.add_patch(plt.Circle((0.35, 0.35), 0.12, fc=TRAIN_FC, ec=TRAIN_FC))
-    ax.text(0.55, 0.35, "training image", va="center", fontsize=5.9, color=INK2)
-    ax.add_patch(plt.Circle((2.55, 0.35), 0.12, fc="white", ec=TEST_EC, lw=0.9))
-    ax.text(2.75, 0.35, "test image", va="center", fontsize=5.9, color=INK2)
-    ax.text(4.35, 0.35, "outline = one lesion", va="center", fontsize=5.9, color=INK2)
-
-    # (b) leaked vs new test images per center
-    ax = fig.add_subplot(gs[1])
+    bx = fig.add_axes([0.715, 0.16, 0.27, 0.72])
     y = np.arange(6)[::-1]
-    ax.barh(y, leaked, color=IMAGE, height=0.62, label="Lesion also in training (leaked)")
-    ax.barh(y, new, left=leaked, color=LESION, height=0.62, label="New lesion", edgecolor="white", linewidth=0.8)
+    bx.barh(y, leaked, color=IMAGE, height=0.62, label="Lesion also in training")
+    bx.barh(y, new, left=leaked, color=LESION, height=0.62, label="New lesion", edgecolor="white", linewidth=0.8)
     for yi, l, n, r in zip(y, leaked, new, leak):
-        ax.text(l + n + 25, yi, f"{100 * r:.0f}%" if r >= 0.01 else f"{100 * r:.1f}%", va="center", fontsize=6.5, color=INK)
-    ax.set_yticks(y)
-    ax.set_yticklabels([f"Center {c}" for c in range(6)])
-    ax.set_xlabel("Image-level test images (mean of 5 splits)")
-    ax.set_xlim(0, max(leaked + new) * 1.18)
-    xgrid(ax)
-    ax.tick_params(axis="y", length=0)
-    ax.spines["left"].set_visible(False)
-    ax.legend(loc="lower right", handlelength=1.0, borderaxespad=0.1)
-    panel(ax, "b", "Leaked share of each center's test set", x=-0.28)
+        bx.text(l + n + 40, yi, f"{100 * r:.0f}%" if r >= 0.01 else f"{100 * r:.1f}%", va="center", fontsize=6.3)
+    bx.set_yticks(y)
+    bx.set_yticklabels([f"Center {c}" for c in range(6)])
+    bx.set_xlabel("Image-level test images (mean of 5 splits)")
+    bx.set_xlim(0, max(leaked + new) * 1.2)
+    xgrid(bx)
+    bx.tick_params(axis="y", length=0)
+    bx.spines["left"].set_visible(False)
+    bx.legend(loc="lower right", handlelength=1.0, borderaxespad=0.1)
+    fig.text(0.635, 0.99, "(b) Leaked share of each center's test set", fontsize=8, weight="bold", va="top")
     save(fig, "Fig1_design_leakage")
 
 
@@ -207,7 +283,7 @@ def fig2():
                         Line2D([], [], marker="o", ls="-", color=INK2, mfc="white", ms=4, label="27 rounds"),
                         Line2D([], [], marker="s", ls="-", color=INK2, mfc="white", ms=4, label="Pooled")],
                loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.05), handlelength=1.6, columnspacing=1.0)
-    save(fig, "Fig2_leakage_inflation")
+    save(fig, "Fig3_leakage_inflation")
 
 
 # ---------------------------------------------------------------- Fig. 3 rankings image vs lesion
@@ -258,7 +334,7 @@ def fig3():
     bump(axs[0], A, "pooled", "Model A, pooled BA", "a", ["fedper_r9"])
     bump(axs[1], A, "mean_of_centers", "Model A, mean of centers", "b", ["local_e20"])
     bump(axs[2], B, "pooled", "Model B, pooled BA", "c", ["fedper_r9", "pooled_e20"])
-    save(fig, "Fig3_rankings")
+    save(fig, "Fig4_rankings")
 
 
 # ---------------------------------------------------------------- Fig. 4 mechanism: capacity and proximity
@@ -339,7 +415,7 @@ def fig4():
     ygrid(ax)
     ax.legend(loc="upper left", handlelength=1.0, borderaxespad=0.0)
     panel(ax, "c", "Proximity (exploratory)", x=-0.35)
-    save(fig, "Fig4_mechanism")
+    save(fig, "Fig5_mechanism")
 
 
 # ---------------------------------------------------------------- Fig. 5 calibration
@@ -414,7 +490,7 @@ def fig5():
                        Line2D([], [], color=LESION, lw=1.3, label="Lesion-grouped test (clean)")],
               loc="upper center", bbox_to_anchor=(0.3, -0.22), handlelength=1.2, borderaxespad=0)
     panel(a3, "c", "Scaling on clean validation", x=-0.5)
-    save(fig, "Fig5_calibration")
+    save(fig, "Fig6_calibration")
 
 
 # ---------------------------------------------------------------- Fig. 6 federated conformal on unseen-center models
@@ -454,7 +530,7 @@ def fig6():
     h.append(Line2D([], [], color=INK, lw=0.7, ls=(0, (4, 2))))
     l.append("Target 1 − α")
     fig.legend(h, l, loc="upper center", ncol=6, bbox_to_anchor=(0.5, 1.07), handletextpad=0.2, columnspacing=1.2)
-    save(fig, "Fig6_conformal")
+    save(fig, "Fig7_conformal")
 
 
 # ---------------------------------------------------------------- Fig. 7 domain shift
@@ -462,9 +538,37 @@ def fig7():
     ea, eb = load("E3_E6_analysis.json")["e6"], load("E3_E6_analysis_pandermfrozen.json")["e6"]
     pad = load("E6_padufes.json")
     fig = plt.figure(figsize=(DOUBLE, 2.45))
-    gs = fig.add_gridspec(1, 2, width_ratios=[1.05, 1], wspace=0.32)
+    gs = fig.add_gridspec(1, 3, width_ratios=[0.42, 1.0, 0.95], wspace=0.34)
 
-    ax = fig.add_subplot(gs[0])
+    # (a) what the shift looks like: one dermoscopy image and one smartphone image of the same class
+    ia = fig.add_subplot(gs[0])
+    ia.set_xlim(0, 10)
+    ia.set_ylim(0, 26)
+    ia.set_aspect("equal")
+    ia.axis("off")
+    sp = pd.read_csv(SPLIT_FOR_SCHEMATIC)
+    der = sp[(sp.center == 0) & (sp.target == 2)].image.iloc[5]          # a BCC, Fed-ISIC2019
+    pad_csv = os.path.join("splits", "padufes20.csv")
+    pad_img = None
+    if os.path.exists(pad_csv):
+        pdf = pd.read_csv(pad_csv)
+        pad_name = pdf[pdf.diagnostic == "BCC"].image.iloc[5]
+        pth = os.path.join("data", "padufes20", "preprocessed", f"{pad_name}.jpg")
+        if os.path.exists(pth):
+            from PIL import Image
+            im = Image.open(pth).convert("RGB")
+            w, h = im.size
+            m = min(w, h)
+            pad_img = np.asarray(im.crop(((w - m) // 2, (h - m) // 2, (w + m) // 2, (h + m) // 2)).resize((256, 256))) / 255.0
+    if pad_img is None:
+        pad_img = _placeholder("pad-ufes")
+    thumb(ia, lesion_img(der), 0.5, 16.0, 9.0, r=0.6)
+    ia.text(5.0, 15.6, "Fed-ISIC2019\ndermoscopy", ha="center", va="top", fontsize=5.8, linespacing=1.05)
+    thumb(ia, pad_img, 0.5, 3.4, 9.0, r=0.6)
+    ia.text(5.0, 3.0, "PAD-UFES-20\nsmartphone", ha="center", va="top", fontsize=5.8, linespacing=1.05)
+    ia.set_title("(a) Shift (BCC)", x=0.0, ha="left", fontsize=8)
+
+    ax = fig.add_subplot(gs[1])
     for k, (e, col, mk, lab) in enumerate(((ea, BLUE, "o", "Model A"), (eb, MAGENTA, "D", "Model B"))):
         for c in range(6):
             x = c + (-0.14 if k == 0 else 0.14)
@@ -472,7 +576,7 @@ def fig7():
             ax.annotate("", xy=(x, u), xytext=(x, a),
                         arrowprops=dict(arrowstyle="-|>", color=col, lw=1.1, mutation_scale=6, shrinkA=2.5, shrinkB=0.5))
             ax.plot(x, a, mk, ms=3.8, mfc="white", mec=col, mew=1.0, zorder=3)
-        ax.plot([], [], mk, mfc="white", mec=col, label=f"{lab}: in federation → held out")
+        ax.plot([], [], mk, mfc="white", mec=col, label=lab)
     for c in range(5):
         ax.axvline(c + 0.5, color=GRID, lw=0.6)
     ax.set_xticks(range(6))
@@ -482,10 +586,13 @@ def fig7():
     ax.set_ylabel("Balanced accuracy (%)")
     ax.set_ylim(20, 92)
     ax.set_yticks(range(20, 81, 10))
-    ax.legend(loc="upper center", ncol=2, handlelength=1.0, borderaxespad=0.1, columnspacing=0.8, fontsize=6.3)
-    panel(ax, "a", "Unseen centers (lesion-grouped, seeds 0–2)", x=-0.12)
+    ax.plot([], [], " ", label="in federation → held out")
+    h, l = ax.get_legend_handles_labels()
+    ax.legend(h, ["Model A", "Model B", "(○ in federation → held out)"], loc="upper right", ncol=1, handlelength=1.0,
+              borderaxespad=0.1, fontsize=6.0)
+    panel(ax, "b", "Unseen centers (seeds 0–2)", x=-0.12)
 
-    ax = fig.add_subplot(gs[1])
+    ax = fig.add_subplot(gs[2])
     xs = np.arange(2)
     bars = []
     for k, (m, col) in enumerate((("A", BLUE), ("B", MAGENTA))):
@@ -503,23 +610,209 @@ def fig7():
                 ax.text(x, 0.04, f"|C|\n{s:.1f}", ha="center", fontsize=5.4, color="white", linespacing=0.9)
     ax.axhline(0.9, color=INK, lw=0.7, ls=(0, (4, 2)))
     ax.set_xticks(range(3))
-    ax.set_xticklabels(["Fed-ISIC2019\n(in domain)", "PAD-UFES-20\ntransferred", "PAD-UFES-20\nrecalibrated"])
+    ax.set_xticklabels(["Fed-ISIC\n(in domain)", "PAD\ntransferred", "PAD\nrecalibrated"])
     ax.set_ylim(0, 1.17)
     ax.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0])
     ax.set_ylabel("Coverage (LAC, α = 0.1)")
     ygrid(ax)
     ax.legend(loc="upper center", ncol=2, handlelength=1.0, borderaxespad=0.1)
-    panel(ax, "b", "Smartphone-image shift (PAD-UFES-20)", x=-0.12)
+    panel(ax, "c", "Conformal coverage on PAD-UFES-20", x=-0.12)
     ax.text(0.99, -0.27, "|C| = mean prediction-set size (of 6 classes); recalibrated on 50% of patients", transform=ax.transAxes, ha="right",
             fontsize=5.9, color=INK2)
-    save(fig, "Fig7_domain_shift")
+    save(fig, "Fig8_domain_shift")
+
+
+# ---------------------------------------------------------------- Fig. 2 study framework (with real thumbnails)
+def fig_framework():
+    sib, _, per_center = schematic_images()
+    S = [lesion_img(n) for n in sib]
+    W, Hin = DOUBLE, 3.45
+    fig, ax = canvas(W, Hin)
+    H = 100 * Hin / W                                  # about 48 units
+    SOFT, PALE_V = "#f6f6f4", "#f1effc"
+    BOT = 8.6                                           # bottom of the four stage panels
+
+    def stage(x, w, n, title):
+        rbox(ax, x, BOT, w, H - BOT - 0.4, fc=SOFT, ec="none", r=1.4)
+        ax.add_patch(plt.Circle((x + 2.3, H - 3.0), 1.3, fc=INK, ec="none", zorder=3))
+        ax.text(x + 2.3, H - 3.05, n, ha="center", va="center", fontsize=6.3, color="white", weight="bold", zorder=4)
+        ax.text(x + 4.3, H - 3.0, title, ha="left", va="center", fontsize=7.1, weight="bold")
+
+    def flow(x0, x1, y=27.0):
+        ax.annotate("", xy=(x1, y), xytext=(x0, y),
+                    arrowprops=dict(arrowstyle="-|>", color=INK2, lw=1.1, mutation_scale=9), zorder=5)
+
+    # 1 six centers
+    stage(0.3, 15.8, "1", "Six centers")
+    for c, (img, n) in enumerate(per_center):
+        yy = H - 11.0 - c * 5.7
+        thumb(ax, lesion_img(img), 1.5, yy, 4.8, r=0.6)
+        ax.text(7.2, yy + 3.2, f"Center {c}", fontsize=5.9, weight="bold", va="center")
+        ax.text(7.2, yy + 1.3, f"{n:,} images", fontsize=5.3, color=INK2, va="center")
+    flow(16.3, 18.0)
+
+    # 2 splits
+    stage(18.2, 17.6, "2", "Two split types")
+    for k, (yy, col, t, sub) in enumerate(((H - 19.6, IMAGE, "Image-level", "siblings cross the split"),
+                                          (H - 33.8, LESION, "Lesion-grouped", "lesions kept whole"))):
+        rbox(ax, 19.3, yy, 15.4, 12.6, fc="white", ec=col, lw=0.9)
+        ax.text(27.0, yy + 11.6, t, ha="center", fontsize=6.4, weight="bold", color=col, va="top")
+        ax.text(27.0, yy + 9.3, sub, ha="center", fontsize=5.3, color=INK2, va="top")
+        ax.plot([26.9, 26.9], [yy + 0.8, yy + 6.9], color=AXIS, lw=0.7, ls=(0, (2, 1.5)))
+        ax.text(23.1, yy + 0.5, "train", ha="center", fontsize=4.9, color=MUTED, va="bottom")
+        ax.text(30.8, yy + 0.5, "test", ha="center", fontsize=4.9, color=MUTED, va="bottom")
+        if k == 0:
+            thumb(ax, S[0], 20.1, yy + 2.5, 3.0, r=0.4)
+            thumb(ax, S[1], 23.3, yy + 2.5, 3.0, r=0.4)
+            thumb(ax, S[2], 29.3, yy + 2.5, 3.0, ec=IMAGE, lw=1.0, r=0.4)
+        else:
+            for j in range(3):
+                thumb(ax, S[j], 27.3 + j * 2.35, yy + 2.8, 2.2, ec=LESION, lw=0.7, r=0.3)
+    ax.text(27.0, BOT + 0.9, "5 random re-splits each", ha="center", fontsize=5.3, color=MUTED, va="bottom")
+    flow(36.0, 37.7)
+
+    # 3 federated training: server and six clients
+    stage(37.9, 25.6, "3", "Federated training")
+    sx, sy = 50.7, H - 9.2
+    rbox(ax, sx - 6.2, sy - 2.2, 12.4, 4.4, fc=INK, ec="none", r=1.0, z=3)
+    ax.text(sx, sy, "Server: aggregate", ha="center", va="center", fontsize=5.8, color="white", weight="bold", zorder=4)
+    cxs = np.linspace(40.4, 61.0, 6)
+    cy = H - 20.2
+    for c, x in enumerate(cxs):
+        ax.annotate("", xy=(sx + (x - sx) * 0.18, sy - 2.3), xytext=(x, cy + 3.7),
+                    arrowprops=dict(arrowstyle="<|-|>", color=AXIS, lw=0.7, mutation_scale=4), zorder=1)
+        rbox(ax, x - 1.6, cy, 3.2, 3.2, fc="white", ec=INK2, lw=0.8, r=0.6, z=3)
+        ax.text(x, cy + 1.6, f"{c}", ha="center", va="center", fontsize=5.8, weight="bold", zorder=4)
+    ax.text(sx, cy - 0.7, "clients = centers (data never leave)", ha="center", va="top", fontsize=5.0, color=MUTED)
+    ax.text(sx, cy + 5.8, "updates ↑   model ↓", ha="center", fontsize=5.0, color=MUTED, va="center", zorder=4,
+            bbox=dict(fc=SOFT, ec="none", pad=0.5))
+    ax.text(39.2, H - 24.6, "Encoders", fontsize=6.1, weight="bold", va="top")
+    enc = [("A", "EfficientNet-B0, fine-tuned"), ("A-frozen", "EfficientNet-B0, frozen"), ("B", "PanDerm-Base, frozen")]
+    for k, (t, d) in enumerate(enc):
+        ax.text(39.2, H - 26.8 - k * 2.0, t, fontsize=5.4, weight="bold", va="top")
+        ax.text(45.6, H - 26.8 - k * 2.0, d, fontsize=5.4, color=INK2, va="top")
+    ax.text(39.2, H - 33.6, "Methods", fontsize=6.1, weight="bold", va="top")
+    ax.text(39.2, H - 35.8, "FedAvg · FedProx · SCAFFOLD · FedBN\nFedAvg-FT · FedPer · pooled · local-only",
+            fontsize=5.3, color=INK2, va="top", linespacing=1.3)
+    flow(63.7, 65.4)
+
+    # 4 evaluation: four question tiles with small glyphs
+    stage(65.6, 34.0, "4", "Reliability evaluation")
+    tiles = [("RQ2", "Leakage inflation", "full minus new-lesion BA"), ("RQ1", "Calibration", "ECE per center"),
+             ("RQ1 · RQ4", "Conformal coverage", "EB-ShrinkFCP (proposed)"), ("RQ3", "Personalization", "H3b; per-center change")]
+    tw, th = 15.7, 15.4
+    for k, (rq, t, sub) in enumerate(tiles):
+        x0 = 66.6 + (k % 2) * (tw + 0.8)
+        y0 = H - 6.4 - th - (k // 2) * (th + 0.9)
+        hl = k == 2
+        rbox(ax, x0, y0, tw, th, fc=PALE_V if hl else "white", ec=VIOLET if hl else AXIS, lw=1.0 if hl else 0.7)
+        ax.text(x0 + 1.0, y0 + th - 0.9, rq, fontsize=5.0, color=VIOLET if hl else MUTED, va="top")
+        ax.text(x0 + 1.0, y0 + th - 2.9, t, fontsize=6.1, weight="bold", va="top")
+        ax.text(x0 + 1.0, y0 + 0.9, sub, fontsize=5.0, color=VIOLET if hl else INK2, va="bottom",
+                weight="bold" if hl else "normal")
+        gx, gy, gh = x0 + 1.2, y0 + 3.6, 6.2                     # glyph area
+        if k == 0:                                    # two bars: full vs new-lesion test set
+            for j, (v, col, lab) in enumerate(((0.95, IMAGE, "full"), (0.62, LESION, "new"))):
+                bx = gx + 1.0 + j * 5.2
+                ax.add_patch(plt.Rectangle((bx, gy), 3.6, gh * v, fc=col, ec="none"))
+                ax.text(bx + 1.8, gy - 0.25, lab, ha="center", va="top", fontsize=4.7, color=INK2)
+            ax.annotate("", xy=(gx + 10.6, gy + gh * 0.62), xytext=(gx + 10.6, gy + gh * 0.95),
+                        arrowprops=dict(arrowstyle="<->", color=INK, lw=0.7, mutation_scale=5))
+            ax.text(gx + 11.3, gy + gh * 0.78, "Δ", fontsize=6.0, va="center", color=INK)
+        elif k == 1:                                  # reliability diagram
+            ax.add_patch(plt.Rectangle((gx, gy), gh, gh, fc="white", ec=AXIS, lw=0.6))
+            ax.plot([gx, gx + gh], [gy, gy + gh], color=MUTED, lw=0.7, ls=(0, (2, 1.5)))
+            xs = np.linspace(0, 1, 6)
+            ax.step(gx + xs * gh, gy + xs ** 1.6 * gh, where="mid", color=BLUE, lw=1.1)
+            ax.text(gx + gh + 0.9, gy + gh, "accuracy vs\nconfidence", fontsize=4.7, color=INK2, va="top",
+                    linespacing=1.1)
+        elif k == 2:                                  # an image with its prediction set
+            gy, gh = gy + 1.4, gh - 1.2
+            probs = [0.46, 0.31, 0.09, 0.06, 0.04, 0.02, 0.01, 0.01]
+            labs = ["MEL", "NV", "BCC", "AK", "BKL", "DF", "VASC", "SCC"]
+            thr = 0.2
+            for j, (pv, lab) in enumerate(zip(probs, labs)):
+                xx = gx + 0.2 + j * 1.6
+                ax.add_patch(plt.Rectangle((xx, gy), 1.15, gh * pv / 0.5, fc=VIOLET if pv >= thr else AXIS, ec="none"))
+                ax.text(xx + 0.58, gy - 0.25, lab, ha="center", va="top", fontsize=3.6, color=INK2, rotation=90)
+            ax.plot([gx, gx + 12.9], [gy + gh * thr / 0.5] * 2, color=INK, lw=0.7, ls=(0, (2, 1.5)))
+            ax.text(gx + 13.0, gy + gh * thr / 0.5, r"$1{-}\hat{q}_c$", fontsize=5.2, va="center")
+
+        else:                                         # per-center dots: global vs personalized
+            for c in range(6):
+                xx = gx + 0.8 + c * 1.6
+                g, p = 0.30 + 0.10 * np.sin(c * 1.7), 0.62 + 0.14 * np.cos(c * 1.3)
+                ax.plot([xx, xx], [gy + g * gh, gy + p * gh], color=AXIS, lw=0.8)
+                ax.plot(xx, gy + g * gh, "o", ms=2.1, color=MUTED)
+                ax.plot(xx, gy + p * gh, "o", ms=2.3, color=BLUE)
+            ax.plot(gx + 10.3, gy + gh * 0.85, "o", ms=2.3, color=BLUE)
+            ax.text(gx + 11.0, gy + gh * 0.85, "personal", fontsize=4.6, color=INK2, va="center")
+            ax.plot(gx + 10.3, gy + gh * 0.55, "o", ms=2.1, color=MUTED)
+            ax.text(gx + 11.0, gy + gh * 0.55, "global", fontsize=4.6, color=INK2, va="center")
+
+    # bottom ribbon: stress tests and pre-registration
+    rbox(ax, 0.3, 0.4, 99.4, 7.0, fc="white", ec=AXIS, lw=0.6, r=1.2)
+    ax.text(1.6, 3.9, "Stress tests", fontsize=6.0, weight="bold", va="center")
+    ax.text(11.4, 3.9, "leave-one-center-out models  ·  PAD-UFES-20 smartphone images (domain shift)",
+            fontsize=5.5, color=INK2, va="center")
+    ax.plot([57.6, 57.6], [1.8, 6.0], color=AXIS, lw=0.6)
+    ax.text(59.0, 3.9, "Pre-registered", fontsize=6.0, weight="bold", va="center")
+    ax.text(68.6, 3.9, "protocol v0.11 → tagged code → runs → pre-specified tests",
+            fontsize=5.4, color=INK2, va="center")
+    save(fig, "Fig2_framework")
+
+# ---------------------------------------------------------------- Fig. S1 proximity examples (supplementary)
+def figS_proximity(encoder="panderm", seed=0, n_leaked=4, n_new=2):
+    """Randomly chosen image-level test images (seed 0 split) and their nearest training image in the frozen
+    encoder's embedding space (centred, cosine). Needs embeddings/<encoder>.npz and the images; skipped otherwise.
+    Selection is random (fixed seed), not the most similar pairs."""
+    emb = os.path.join("embeddings", f"{encoder}.npz")
+    if not os.path.exists(emb) or not os.path.isdir(IMG_DIR):
+        print(f"  skip Fig. S1: needs {emb} and {IMG_DIR}")
+        return
+    z = np.load(emb)
+    names, X = z["image"].astype(str), z["plain"].astype(np.float32)
+    pos = {n: i for i, n in enumerate(names)}
+    sp = pd.read_csv(os.path.join("splits", "e1", f"resplit_image_seed{seed}_val.csv"))
+    tr, te = sp[sp.fold == "train"].reset_index(drop=True), sp[sp.fold == "test"].reset_index(drop=True)
+    itr, ite = tr.image.astype(str).map(pos).to_numpy(), te.image.astype(str).map(pos).to_numpy()
+    X = X - X[itr].mean(0)
+    X /= np.linalg.norm(X, axis=1, keepdims=True) + 1e-8
+    train_les = set(tr.lesion_id)
+    rng = np.random.default_rng(20261106)
+    leaked = np.flatnonzero(te.lesion_id.isin(train_les).to_numpy())
+    new = np.flatnonzero(~te.lesion_id.isin(train_les).to_numpy())
+    picks = list(rng.choice(leaked, n_leaked, replace=False)) + list(rng.choice(new, n_new, replace=False))
+    rows = []
+    for i in picks:
+        sim = X[itr] @ X[ite[i]]
+        j = int(sim.argmax())
+        rows.append((te.image[i], tr.image[j], float(sim[j]), te.lesion_id[i] == tr.lesion_id[j], i in leaked))
+    fig, ax = canvas(DOUBLE, 1.62)
+    n = len(rows)
+    w = 100 / n
+    for k, (a, b, sv, same, lk) in enumerate(rows):
+        x0 = k * w + 1.0
+        thumb(ax, lesion_img(a), x0, 12.0, 7.0, ec=IMAGE if lk else LESION, lw=1.2, r=0.6)
+        thumb(ax, lesion_img(b), x0 + 7.6, 12.0, 7.0, r=0.6)
+        ax.text(x0 + 3.5, 20.0, "test", ha="center", fontsize=5.6, color=IMAGE if lk else LESION, weight="bold")
+        ax.text(x0 + 11.1, 20.0, "nearest train", ha="center", fontsize=5.6, color=INK2)
+        ax.text(x0 + 7.3, 10.6, f"cosine {sv:.2f}", ha="center", va="top", fontsize=5.8)
+        ax.text(x0 + 7.3, 8.2, "same lesion" if same else "different lesion", ha="center", va="top", fontsize=5.6,
+                color=IMAGE if same else INK2, weight="bold" if same else "normal")
+        ax.text(x0 + 7.3, 5.9, "leaked test image" if lk else "new-lesion test image", ha="center", va="top",
+                fontsize=5.2, color=MUTED)
+    ax.plot([n_leaked * w, n_leaked * w], [4.5, 21.5], color=AXIS, lw=0.7, ls=(0, (3, 2)))
+    save(fig, "FigS1_proximity_examples")
 
 
 if __name__ == "__main__":
     fig1()
+    fig_framework()
     fig2()
     fig3()
     fig4()
     fig5()
     fig6()
     fig7()
+    figS_proximity()

@@ -1,0 +1,22 @@
+\begin{table*}[!t]
+\centering
+\caption{All pre-specified tests, in the order they were registered. Effects in balanced-accuracy points
+(Gates, H3b) or coverage points (RQ4, 5b), with 95\% lesion-bootstrap intervals. RQ4 and 5b require the
+gain for \emph{each} of models A and B; the reference is client-wise calibration. Gate 1 compares with
+the FENDA-FL value.}
+\label{tab:scorecard}
+\begin{tabular}{@{}llccl@{}}
+\toprule
+Test & Hypothesis or criterion & Model & Estimate [95\% CI] & Result \\
+\midrule
+Gate 1 & Pipeline: FedAvg BA, official split (3 seeds) & A & 0.615 vs 0.657 $\pm$ 0.05 & \textbf{met} \\
+Gate 2 (RQ2) & Leakage inflation $>0$, FedAvg (primary) & A & +8.1 [+4.7, +11.2] & \textbf{met} \\
+H3b (RQ3) & Personalized minus FedAvg inflation, centers 0, 2, 3 & A & +3.2 [+2.0, +4.6] & \textbf{met} \\
+ &  & B & +0.9 [$-$0.2, +2.1] & not met \\
+RQ4 & ShrinkFCP, in-federation models: q10 gain $\ge 2$ + guards & A & +2.5 [$-$2.8, +3.9] & not met \\
+ &  & B & $-$7.3 [$-$14.0, $-$5.4] & not met \\
+5b (RQ4) & EB-ShrinkFCP on held-out-center models, same rule & A & +2.3 [+0.8, +3.9] & \textbf{met} \\
+ &  & B & +0.5 [$-$1.7, +0.9] & not met \\
+\bottomrule
+\end{tabular}
+\end{table*}

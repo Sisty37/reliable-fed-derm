@@ -1,0 +1,30 @@
+\begin{table*}[!t]
+\centering
+\caption{Balanced accuracy on image-level (Img) and lesion-grouped (Les) test sets, mean of five seeds.
+Pooled: one balanced accuracy over all test images; mean of centers: average of the six per-center values.
+Best value per column in bold. Model B has no FedBN (no BatchNorm in a linear head); its FedPer is the
+FedPer-style two-layer head.}
+\label{tab:ba}
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{@{}lcccccccc@{}}
+\toprule
+ & \multicolumn{4}{c}{Model A (EfficientNet-B0, fine-tuned)} & \multicolumn{4}{c}{Model B (PanDerm-Base, frozen)} \\
+\cmidrule(lr){2-5}\cmidrule(l){6-9}
+ & \multicolumn{2}{c}{Pooled} & \multicolumn{2}{c}{Mean of centers} & \multicolumn{2}{c}{Pooled} & \multicolumn{2}{c}{Mean of centers} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(l){8-9}
+Method & Img & Les & Img & Les & Img & Les & Img & Les \\
+\midrule
+FedAvg & 0.577 & 0.495 & 0.536 & 0.523 & 0.590 & 0.523 & 0.532 & 0.546 \\
+FedProx & 0.582 & 0.488 & 0.525 & 0.508 & 0.591 & 0.523 & 0.532 & 0.545 \\
+SCAFFOLD & 0.626 & 0.529 & 0.556 & 0.536 & 0.618 & 0.542 & 0.558 & 0.555 \\
+FedBN & 0.608 & 0.514 & 0.593 & 0.568 & -- & -- & -- & -- \\
+FedAvg-FT & 0.579 & 0.501 & 0.562 & 0.556 & 0.602 & 0.529 & 0.544 & 0.554 \\
+FedPer & 0.672 & 0.555 & 0.638 & 0.540 & \textbf{0.656} & 0.502 & 0.583 & 0.500 \\
+\midrule
+Pooled & \textbf{0.733} & \textbf{0.566} & \textbf{0.684} & \textbf{0.608} & 0.599 & 0.562 & \textbf{0.592} & \textbf{0.592} \\
+Local-only & 0.729 & 0.533 & 0.633 & 0.509 & 0.609 & \textbf{0.566} & 0.587 & 0.550 \\
+\midrule
+Kendall $\tau$ (Img vs Les) & \multicolumn{2}{c}{+0.79} & \multicolumn{2}{c}{+0.57} & \multicolumn{2}{c}{+0.05} & \multicolumn{2}{c}{+0.33} \\
+\bottomrule
+\end{tabular}
+\end{table*}
