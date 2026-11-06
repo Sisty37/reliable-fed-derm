@@ -1,6 +1,6 @@
 # Pre-specified Study Protocol
 
-**Version:** 0.11 (3 November 2026; Section 5b added after E5, see Section 12). Earlier: 0.10 (30 October 2026). Version 0.1 is locked at git tag `v0.1-protocol` (commit 5ca4821); changes since then are listed in Section 12. No experiment has been run yet, so no result has informed these changes. Each version is time-stamped by its git tag (`v0.1-protocol` … `v0.7-protocol` and `v0.10-protocol`; v0.8 and v0.9 were not committed separately, so their changes are contained in the v0.10 commit and dated in Section 12); tags are pushed to a remote repository (GitHub) so that their dates are held by a third party.
+**Version:** 0.12 (7 November 2026; Section 5c added after all E0–E7 results and an external review of the manuscript, see Section 12). Earlier: 0.11 (3 November 2026; Section 5b, written after E5), 0.10 (30 October 2026). Version 0.1 is locked at git tag `v0.1-protocol` (commit 5ca4821); changes since then are listed in Section 12. Versions 0.1–0.10 were written before any experiment had been run; v0.11 was written after E5 and before any E6 model was trained; v0.12 was written after E0–E7 and before any E8 or E9 model was trained. Each version is time-stamped by its git tag (`v0.1-protocol` … `v0.7-protocol` and `v0.10-protocol`; v0.8 and v0.9 were not committed separately, so their changes are contained in the v0.10 commit and dated in Section 12); tags are pushed to a remote repository (GitHub) so that their dates are held by a third party.
 **Study:** Revisiting Federated Skin Lesion Benchmarks: Lesion-Level Leakage, Calibration and Conformal Coverage on Real Centers.
 
 Any change after the tag is recorded in Section 12 with date and reason. Results obtained before a change are kept and reported.
@@ -101,6 +101,47 @@ weight per center) ≤ 1.10 × the reference's, and every center's mean coverage
 evaluated on the same models. Results of EB-ShrinkFCP on the E5 models are reported as post hoc.
 If the criterion is not met, the result is reported as negative.
 
+## 5c. Amendment v0.12 (7 November 2026): randomized sibling exposure (E8) and capacity-matched heads (E9)
+
+**Why.** The primary leakage outcome (Gate 2) compares one model's accuracy on all test images with
+its accuracy on the new-lesion subset. That contrast is observational: leaked and new lesions can
+differ in class mix, multiplicity and difficulty, so it measures apparent optimism, not the causal
+effect of having a sibling image in training. An external review of the manuscript (6 November 2026)
+asked for a controlled intervention. Separately, model B's FedPer-style head has two layers while the
+other model-B heads are linear, so its rank change mixes personalization with head capacity. This
+amendment is written after all E0–E7 results and before any E8 or E9 model is trained. The optional
+experiments E4 (balancing applied to all splits) and E8 of v0.10 (model C, calibration-set size) were
+not run; the identifiers E8 and E9 are reused here for the new experiments.
+
+**E8 design (randomized crossover on fixed test images).** Lesion-grouped re-splits with validation
+fold, seeds 0–2 (`scripts/make_e8_splits.py`). Target lesions: test lesions with ≥ 2 test images; one
+randomly drawn image per target lesion is its fixed target image, the others are its siblings.
+Target lesions are randomized to two groups, stratified by center × class and paired by sibling count.
+Arm 1 adds the siblings of group 1 to training (same center) and removes those of group 2; arm 2 does
+the reverse. Everything else (other training images, validation, target and other test images) is
+identical, and the two arms differ by < 0.2% in training size. Each target image is thus predicted once
+exposed and once unexposed by models with the same recipe and seed. Models: model A FedAvg (9 rounds),
+FedPer, pooled and local-only; model A-frozen FedAvg, pooled and local-only; model B FedAvg, FedPer,
+pooled and local-only; recipes unchanged from Section 4 and E7.
+
+**E8 analysis (`scripts/e8_analysis.py`).** Exposure effect = metric on target images when exposed
+minus when unexposed (balanced accuracy over classes with ≥ 5 target images; also accuracy, melanoma
+recall, NLL, Brier), seeds averaged; per center for centers with ≥ 50 target lesions in every seed;
+differences in effect between methods of the same encoder. Intervals: 2,000 paired bootstrap replicates
+over target lesions. Sanity check: BA on non-target test images, arm 1 minus arm 2 (expected ≈ 0).
+**Primary test (fixed now):** model A FedAvg; sibling exposure causes evaluation optimism if the BA
+effect is ≥ 2 points with the 95% interval above zero. All other E8 results are secondary and
+descriptive. The effect applies to lesions with several images; it is not an estimate for single-image
+lesions.
+
+**E9 (descriptive).** Model B with two-layer heads (Linear(768,256)–ReLU–Linear(256,8), PyTorch default
+initialization) for FedAvg, pooled and local-only (`train_linear.py --head mlp`), same optimizers, rounds
+and U as the FedPer-style head, both split types, seeds 0–4. Reported: balanced accuracy, inflation and
+rank next to the FedPer-style head (`e2_analysis.py --final --e9`). H3b and its groups are unchanged.
+
+**Post hoc sensitivity analyses on existing predictions (no new training).** Listed in Section 12 as
+deviations of 7 November 2026; all are labelled post hoc in the manuscript.
+
 ## 6. Experiments
 
 | ID | Content | Runs (model A; models A-frozen and B take minutes each) | RQ |
@@ -170,3 +211,4 @@ Model A total: about 143 run slots; the 12 E1 runs at 9 rounds (FedAvg and poole
 | 29 Oct 2026 (v0.9) | E0b arm (b) split fixed at 70/15/15 and arm (c) given the same training-only balancing as arm (a); per-arm leakage metric with source-image tracking; per-center drop rule for H3b and 2e; ShrinkFCP noise floor, paired bootstrap with 20 redrawn splits per replicate, success required for each of models A and B; embeddings stored in fp16 | Fourth external methodological review; no data analysed |
 | 30 Oct 2026 (v0.10) | ShrinkFCP: images (m_c) used for the quantile level and lesions (n_c) for the weight; model B personalization in E7 defined as FedAvg-FT and a FedPer-style two-layer head (a client-specific linear head would be local-only); RQ order fixed; E0b wording "no code link in the paper"; E1/E2 run reuse and checkpoint retention stated | Fifth external methodological review; no data analysed |
 | 3 Nov 2026 (v0.11) | Section 5b added: EB-ShrinkFCP (DerSimonian–Laird empirical-Bayes shrinkage of client thresholds) with a fixed success criterion, tested on the E6 leave-one-center-out models; ShrinkFCP and RQ4 unchanged | E5/E5b results (RQ4 not met for models A and B; between-center shift identified); specified before any E6 model was trained |
+| 7 Nov 2026 (v0.12) | Section 5c added: E8 randomized sibling-exposure crossover (primary test fixed) and E9 capacity-matched two-layer heads for model B; post hoc sensitivity analyses on existing predictions: cluster bootstrap keeping lesion identity, one-image-per-lesion conformal evaluation, exact-quantile check of the histogram thresholds, calibration-only variability of the lower-tail coverage on a fixed evaluation half, size-matched ECE with NLL and Brier, NLL-optimal global temperature, leave-one-center-out dose-response, per-center set sizes, validation–test overlap audit of the image-level splits, label-shift-weighted federated conformal comparator (personalized FCP was not implemented), data/split audit tables | External review of the manuscript (6 November 2026) after all E0–E7 results; written before any E8/E9 model was trained |

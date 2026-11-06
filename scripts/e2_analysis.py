@@ -156,12 +156,18 @@ def main():
     ap.add_argument("--n-boot", type=int, default=2000)
     ap.add_argument("--out", default=None)
     ap.add_argument("--final", action="store_true", help="E7: add FedPer, final H3b test")
+    ap.add_argument("--e9", action="store_true",
+                    help="E9 (v0.12, model B only): add capacity-matched two-layer heads fedavgmlp_r9, pooledmlp_e20, "
+                         "localmlp_e20 (descriptive; H3b keeps its pre-specified groups)")
     a = ap.parse_args()
     if a.out is None:
         a.out = os.path.join("results", "E7_analysis.json" if a.final else "E2_analysis.json")
     if a.final:
         METHODS.append("fedper_r9")
         PERSONAL.append("fedper_r9")
+    if a.e9:
+        assert a.final and a.prefix == "pandermfrozen_", "E9 is defined for model B with FedPer (--final)"
+        METHODS.extend(["fedavgmlp_r9", "pooledmlp_e20", "localmlp_e20"])
     if a.prefix:                                   # frozen-encoder models: no FedBN (no BatchNorm in a linear head)
         METHODS.remove("fedbn_r9")
         PERSONAL.remove("fedbn_r9")
@@ -189,7 +195,8 @@ def main():
 
     names = {"fedavg_r9": "FedAvg", "fedprox_r9": "FedProx", "scaffold_r9": "SCAFFOLD", "fedbn_r9": "FedBN",
              "fedavgft_r9": "FedAvg-FT", "pooled_e20": "Pooled", "local_e20": "Local-only",
-             "fedper_r9": "FedPer"}
+             "fedper_r9": "FedPer", "fedavgmlp_r9": "FedAvg-MLP", "pooledmlp_e20": "Pooled-MLP",
+             "localmlp_e20": "Local-MLP"}
     for mt in ("pooled", "mean_of_centers"):
         p = point[mt]
         print(f"\n=== Ranking by {mt} balanced accuracy (mean of {len(a.seeds)} seeds) ===")

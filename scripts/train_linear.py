@@ -126,7 +126,13 @@ def run(a, updates, log):
     plain, aug = federated_standardize(df, plain, aug, mode=a.feature_norm)
     tr = df[df.fold == "train"]
     dim = plain.shape[1]
-    head = nn.Linear(dim, NUM_CLASSES)
+
+    def make_head():                             # --head mlp: capacity-matched to the FedPer-style head (E9)
+        if a.head == "mlp":
+            return nn.Sequential(nn.Linear(dim, 256), nn.ReLU(), nn.Linear(256, NUM_CLASSES))
+        return nn.Linear(dim, NUM_CLASSES)       # PyTorch default initialization (not zero)
+    torch.manual_seed(a.seed)
+    head = make_head()
     loss_fn = WeightedFocalLoss()
     tr_aug, tr_y = aug[tr.row.to_numpy()], tr.target.to_numpy().astype(np.int64)
     losses = []
@@ -159,7 +165,7 @@ def run(a, updates, log):
         for c in range(NUM_CLIENTS):
             torch.manual_seed(a.seed + 1000 * c)
             n_c = int((tr.center == c).sum())
-            models.append(adam_epochs(nn.Linear(dim, NUM_CLASSES), client_rows(c), n_c))
+            models.append(adam_epochs(make_head(), client_rows(c), n_c))
         log("  local-only: 20 epochs per center")
     elif a.method == "fedavgft":                 # 3 local SGD steps from the finished FedAvg head
         split_name = os.path.splitext(os.path.basename(a.split))[0]
@@ -211,6 +217,9 @@ def main():
     ap.add_argument("--convergence-check", action="store_true")
     ap.add_argument("--exclude-center", type=int, default=None,
                     help="E6 leave-one-center-out: this center's training rows are not used (FedAvg only)")
+    ap.add_argument("--head", default="linear", choices=["linear", "mlp"],
+                    help="E9: 'mlp' = Linear(dim,256)-ReLU-Linear(256,8) for fedavg/fedprox/scaffold/pooled/local, "
+                         "capacity-matched to the FedPer-style head")
     ap.add_argument("--feature-norm", default="center", choices=["center", "zscore", "none"],
                     help="federated per-dimension centering (default), z-scoring, or raw embeddings")
     a = ap.parse_args()
@@ -242,8 +251,10 @@ def main():
     else:
         updates = 0
     split_name = os.path.splitext(os.path.basename(a.split))[0]
-    tag = f"{a.encoder}frozen_" + (f"{a.method}_e20_s{a.seed}" if a.method in ("pooled", "local")
-                                   else f"{a.method}_r{a.rounds}_s{a.seed}")
+    assert not (a.head == "mlp" and a.method in ("fedper", "fedavgft")), "fedper already has the two-layer head; fedavgft is linear only"
+    mname = a.method + ("mlp" if a.head == "mlp" else "")
+    tag = f"{a.encoder}frozen_" + (f"{mname}_e20_s{a.seed}" if a.method in ("pooled", "local")
+                                   else f"{mname}_r{a.rounds}_s{a.seed}")
     if a.exclude_center is not None:
         assert a.method == "fedavg", "leave-one-center-out is defined for FedAvg"
         tag = f"{a.encoder}frozen_{a.method}_r{a.rounds}_loco{a.exclude_center}_s{a.seed}"
@@ -275,7 +286,7 @@ def main():
         if fold == "test":
             per_center = {c: (lg[part.center.to_numpy() == c], y[part.center.to_numpy() == c]) for c in range(NUM_CLIENTS)}
     m = summarize(per_center)
-    m.update({"encoder": a.encoder, "method": a.method, "seed": a.seed, "split": a.split, "rounds": a.rounds,
+    m.update({"encoder": a.encoder, "method": a.method, "head": a.head, "seed": a.seed, "split": a.split, "rounds": a.rounds,
               "updates": updates, "train_loss_by_round": losses, "git": git_commit(), "seconds": round(secs, 1)})
     json.dump(m, open(os.path.join(out_dir, "metrics.json"), "w"), indent=2)
     if a.method in ("local", "fedavgft", "fedper"):
@@ -286,7 +297,7 @@ def main():
         m["bacc_pooled"], m["bacc_mean_of_centers"], " ".join(f"{m[f'bacc_center_{c}']:.3f}" for c in range(NUM_CLIENTS))))
     log(f"saved to {out_dir} ({secs:.0f} s)")
     with open(os.path.join(a.out, "runs_log.csv"), "a", newline="") as f:
-        csv.writer(f).writerow([f"{dt.datetime.now():%Y-%m-%d %H:%M}", split_name, f"{a.encoder}frozen_{a.method}",
+        csv.writer(f).writerow([f"{dt.datetime.now():%Y-%m-%d %H:%M}", split_name, f"{a.encoder}frozen_{mname}",
                                 a.seed, a.rounds, f"{m['bacc_pooled']:.4f}", f"{m['bacc_mean_of_centers']:.4f}",
                                 round(secs / 60, 1), m["git"], "ok"])
 
