@@ -16,7 +16,9 @@ For skin lesions, Fed-ISIC2019, the dermoscopy benchmark of the FLamby suite \ci
 widely used. Its six clients correspond to acquisition sources of the ISIC 2019 challenge data
 \cite{codella2018isic,tschandl2018ham,combalia2019bcn} and differ in size, class mix and imaging
 device. Federated and personalized methods are compared on its fixed split, and the reported differences
-between them are often a few points of balanced accuracy \cite{flamby2022,tavakoli2024fendafl}.
+between them are often a few points of balanced accuracy \cite{flamby2022,tavakoli2024fendafl};
+in a targeted search we found no Fed-ISIC2019 evaluation that grouped images by lesion
+(Supplementary~S13).
 
 The benchmark split assigns individual images rather than lesions to the training and test sets. Many
 lesions in the underlying collections were photographed several times, for example at follow-up visits or
@@ -60,8 +62,10 @@ failed alongside those that succeeded. Our contributions are:
     with a randomized sibling-exposure experiment that estimates the effect of leakage on fixed test
     images.
   \item Evidence that leakage inflates accuracy also with frozen encoders, including a dermatology
-    foundation model, and randomized and capacity-matched experiments showing that its size grows with how
-    closely a classifier fits its training lesions, not with personalization as such.
+    foundation model, and randomized and capacity-matched experiments in which the size of the effect
+    differed between training regimes and classifier heads; these are consistent with, but do not
+    isolate, an influence of how strongly a classifier fits its training lesions rather than of
+    personalization as such.
   \item A per-client analysis of federated conformal calibration that separates mixture from per-client
     coverage and accounts for repeated images of one lesion, and EB-ShrinkFCP, an empirical-Bayes
     shrinkage rule for per-client thresholds that met its pre-specified criterion for one of two encoders.
