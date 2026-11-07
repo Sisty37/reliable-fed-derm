@@ -1,0 +1,202 @@
+{
+ "A/E6_loco": {
+  "clientwise": {
+   "worst_center_q10": 0.8047967593820706,
+   "min_mean_coverage": 0.8994487583566205,
+   "set_size": 2.4045992901561544
+  },
+  "global": {
+   "worst_center_q10": 0.7805757162726684,
+   "min_mean_coverage": 0.8150710946994947,
+   "set_size": 2.5631351666974744
+  },
+  "prespecified": {
+   "worst_center_q10": 0.8357769372459626,
+   "min_mean_coverage": 0.8976249381002671,
+   "set_size": 2.490904084926467
+  },
+  "re_mean": {
+   "worst_center_q10": 0.8288292002365508,
+   "min_mean_coverage": 0.8946399307798507,
+   "set_size": 2.4369623734145276
+  },
+  "floor_1e-8": {
+   "worst_center_q10": 0.8357769372459626,
+   "min_mean_coverage": 0.8976249381002671,
+   "set_size": 2.490904084926467
+  },
+  "floor_1e-4": {
+   "worst_center_q10": 0.8341112180646807,
+   "min_mean_coverage": 0.8974177402390912,
+   "set_size": 2.4837085952027222
+  },
+  "no_design": {
+   "worst_center_q10": 0.8357949974378293,
+   "min_mean_coverage": 0.8978686242963057,
+   "set_size": 2.4828744421370637
+  },
+  "boot_var": {
+   "worst_center_q10": 0.8341559079934406,
+   "min_mean_coverage": 0.8979328377520422,
+   "set_size": 2.4740382366509315
+  },
+  "_boot_over_spacing_variance_median_by_client": [
+   0.7910664186454717,
+   0.9885671279139459,
+   0.7895038599337691,
+   0.8303409975874929,
+   0.8540602771830934,
+   0.5830947391911931
+  ]
+ },
+ "A/E5": {
+  "clientwise": {
+   "worst_center_q10": 0.802547602752359,
+   "min_mean_coverage": 0.8989590868357178,
+   "set_size": 2.362043067934302
+  },
+  "global": {
+   "worst_center_q10": 0.7862623198993042,
+   "min_mean_coverage": 0.8188722183580456,
+   "set_size": 2.4404544996300204
+  },
+  "prespecified": {
+   "worst_center_q10": 0.8412074757467375,
+   "min_mean_coverage": 0.8962948930693866,
+   "set_size": 2.442840348513992
+  },
+  "re_mean": {
+   "worst_center_q10": 0.8308841508763146,
+   "min_mean_coverage": 0.8947151882124127,
+   "set_size": 2.3889470881723263
+  },
+  "floor_1e-8": {
+   "worst_center_q10": 0.8412074757467375,
+   "min_mean_coverage": 0.8962948930693866,
+   "set_size": 2.442840348513992
+  },
+  "floor_1e-4": {
+   "worst_center_q10": 0.8408062411788363,
+   "min_mean_coverage": 0.8962333848368866,
+   "set_size": 2.4376483092007035
+  },
+  "no_design": {
+   "worst_center_q10": 0.8415010927511843,
+   "min_mean_coverage": 0.8968720374002391,
+   "set_size": 2.431011555256325
+  },
+  "boot_var": {
+   "worst_center_q10": 0.8411310419095311,
+   "min_mean_coverage": 0.8967030322020892,
+   "set_size": 2.4248243731274637
+  },
+  "_boot_over_spacing_variance_median_by_client": [
+   0.8259874499418381,
+   1.0268854514818355,
+   0.8074975580039332,
+   0.953680771014095,
+   0.8378338452389031,
+   0.5847653562020063
+  ]
+ },
+ "B/E6_loco": {
+  "clientwise": {
+   "worst_center_q10": 0.799868001604317,
+   "min_mean_coverage": 0.8993866577501861,
+   "set_size": 2.5978488626952987
+  },
+  "global": {
+   "worst_center_q10": 0.6817758466879235,
+   "min_mean_coverage": 0.7316465991675791,
+   "set_size": 2.561192057550232
+  },
+  "prespecified": {
+   "worst_center_q10": 0.8050624437280298,
+   "min_mean_coverage": 0.8981210093512684,
+   "set_size": 2.611399074755639
+  },
+  "re_mean": {
+   "worst_center_q10": 0.7873383652176051,
+   "min_mean_coverage": 0.8916804344454834,
+   "set_size": 2.5787096669494147
+  },
+  "floor_1e-8": {
+   "worst_center_q10": 0.8050624437280298,
+   "min_mean_coverage": 0.8981210093512684,
+   "set_size": 2.611399074755639
+  },
+  "floor_1e-4": {
+   "worst_center_q10": 0.8030193543543539,
+   "min_mean_coverage": 0.8979332386651561,
+   "set_size": 2.6073252226422525
+  },
+  "no_design": {
+   "worst_center_q10": 0.8042704935853955,
+   "min_mean_coverage": 0.8969933218085158,
+   "set_size": 2.6115899892123564
+  },
+  "boot_var": {
+   "worst_center_q10": 0.8031974271682688,
+   "min_mean_coverage": 0.898450443367597,
+   "set_size": 2.6083301419217304
+  },
+  "_boot_over_spacing_variance_median_by_client": [
+   0.8223320916788548,
+   0.9794435542350355,
+   0.722869607967469,
+   0.8133411202758845,
+   0.8789957176669216,
+   0.6349520592283922
+  ]
+ },
+ "B/E5": {
+  "clientwise": {
+   "worst_center_q10": 0.7965547603594539,
+   "min_mean_coverage": 0.8990409694316277,
+   "set_size": 2.552469774904934
+  },
+  "global": {
+   "worst_center_q10": 0.6660339240560124,
+   "min_mean_coverage": 0.71769515164683,
+   "set_size": 2.3814203605751834
+  },
+  "prespecified": {
+   "worst_center_q10": 0.809623917695566,
+   "min_mean_coverage": 0.8988449454096245,
+   "set_size": 2.571934230615369
+  },
+  "re_mean": {
+   "worst_center_q10": 0.7878715591145963,
+   "min_mean_coverage": 0.8900022242007853,
+   "set_size": 2.5319836936374895
+  },
+  "floor_1e-8": {
+   "worst_center_q10": 0.809623917695566,
+   "min_mean_coverage": 0.8988449454096245,
+   "set_size": 2.571934230615369
+  },
+  "floor_1e-4": {
+   "worst_center_q10": 0.8078125266702957,
+   "min_mean_coverage": 0.8986105059307208,
+   "set_size": 2.5678395009779647
+  },
+  "no_design": {
+   "worst_center_q10": 0.8085678442622763,
+   "min_mean_coverage": 0.8978101782111034,
+   "set_size": 2.568780162981438
+  },
+  "boot_var": {
+   "worst_center_q10": 0.8055404853824975,
+   "min_mean_coverage": 0.8987495725913316,
+   "set_size": 2.566595465182581
+  },
+  "_boot_over_spacing_variance_median_by_client": [
+   0.7664344657301021,
+   0.9742618421800642,
+   0.7562673122883437,
+   0.8469854538400627,
+   0.9382646046690146,
+   0.6320211352278342
+  ]
+ }
+}

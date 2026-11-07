@@ -312,6 +312,170 @@ def s12():
     return "".join(out)
 
 
+
+def s13():
+    """Fed-ISIC2019 studies and their evaluation split (checked online 7 Nov 2026; sources listed below the table)."""
+    rows = [
+        ("du Terrail et al. 2022 (NeurIPS D\\&B) [a]", "defines the benchmark; image-level re-split of the 23,247 images", "BA; strategies shown in a figure, FL between local and pooled"),
+        ("Tavakoli et al. 2024 (MLHC, PMLR 252) [b]", "FLamby split (per-client sizes reproduced from FLamby)", "FedAvg 0.657, central 0.683, Ditto 0.703, FENDA-FL 0.607"),
+        ("Li et al. 2024 (ICLR, FedCompass) [c]", "FLamby default settings (split not named)", "time to 50\\% BA; no final BA comparison"),
+        ("Allouah et al. 2024 (NeurIPS) [d]", "FLamby test set halved into validation/test", "FedAvg 0.731, FedProx 0.750, one-shot FENS 0.579"),
+        ("Siomos et al. 2024 (arXiv) [e]", "``improved version'' of the FLamby benchmark", "FedAvg 59.5--74.8, FedPer up to 84.9 (architectures/settings)"),
+        ("Ayromlou \\& Emerson 2025 (arXiv) [f]", "FLamby settings, per-client held-out test sets", "FedAvg 64.1, Ditto 71.4, Ditto + constraint up to 72.2"),
+        ("Tupper \\& Gagn\\'e 2025 (arXiv) [g]", "same test set as FLamby; 80/20 stratified train/validation", "FedIT 0.656, best (FedSA) 0.737"),
+    ]
+    out = ["\\section*{S13. Fed-ISIC2019 studies and their evaluation split}\n",
+           "Studies found in a targeted search (not a systematic review). None reported a lesion-grouped split; all "
+           "evaluated on the FLamby test set or stated that they followed FLamby's settings. Differences between "
+           "the compared methods in these studies are often a few balanced-accuracy points, comparable to the "
+           "apparent leakage effect measured here.\n",
+           table("Fed-ISIC2019 evaluations (BA, balanced accuracy, as reported by each study).", "tab:s13",
+                 "p{4.2cm}p{5.0cm}p{6.3cm}", "Study & Split as described & Reported results",
+                 [f"{a} & {b} & {c}" for a, b, c in rows], size="\\scriptsize", wide=True),
+           "\\noindent{\\footnotesize [a] arXiv:2210.04620. [b] arXiv:2309.16825; PMLR 252. [c] arXiv:2309.14675; ICLR 2024. "
+           "[d] NeurIPS 2024, ``Revisiting ensembling in one-shot federated learning''. [e] arXiv:2410.02006. "
+           "[f] arXiv:2505.07525. [g] arXiv:2510.12741.}\n"]
+    return "".join(out)
+
+
+CC_RULES = {"global": "Global", "clientwise": "Client-wise", "eb": "EB-ShrinkFCP",
+            "mondrian_pooled": "Mondrian (pooled)", "mondrian_client": "Mondrian (per client)"}
+CLS8 = ["MEL", "NV", "BCC", "AK", "BKL", "DF", "VASC", "SCC"]
+
+
+def s14():
+    d = load("Class_conditional.json")
+    out = ["\\section*{S14. Coverage by diagnostic class (post hoc)}\n",
+           "LAC, $\\alpha=0.1$, FedAvg models, 200 lesion-wise 50/50 draws per model; coverage by true class on the "
+           "evaluation halves, pooled over clients. Mondrian rules use one threshold per class (from the pooled "
+           "calibration scores of that class, or per client with a fallback to the pooled class threshold when a "
+           "client has fewer than 10 calibration images of the class).\n"]
+    if d is None:
+        return out[0] + "Pending.\n"
+    rows = []
+    for key, v in d["isic"].items():
+        model, exp = key.split("/")
+        for r, lab in CC_RULES.items():
+            x = v[r]
+            rows.append(f"{model} & {'LOCO' if 'loco' in exp else 'E5'} & {lab} & " + " & ".join(f3(c) for c in x["cov_by_class"])
+                        + f" & {f3(x['coverage'])} & {x['size']:.2f}")
+        rows.append("\\midrule")
+    out.append(table("Fed-ISIC2019: coverage by class, overall coverage and mean set size.", "tab:s14", "lll" + "r" * 10,
+                     "Model & Exp. & Rule & " + " & ".join(CLS8) + " & All & Size", rows[:-1], size="\\scriptsize", wide=True))
+    rows = []
+    for model, v in d["pad"].items():
+        for r in ("marginal", "mondrian"):
+            rows.append(f"{model} & {'Marginal' if r == 'marginal' else 'Mondrian'} & "
+                        + " & ".join(f3(c) for c in v[r]["cov_by_class"]) + f" & {f3(v[r]['coverage'])} & {v[r]['size']:.2f}")
+    out.append(table("PAD-UFES-20, recalibrated on half of the patients (100 draws per seed, seeds 0--4): coverage by class.",
+                     "tab:s14pad", "ll" + "r" * 8, "Model & Rule & " + " & ".join(d["pad"]["A"]["classes"]) + " & All & Size",
+                     rows, size="\\scriptsize"))
+    return "".join(out)
+
+
+EBV = {"clientwise": "Client-wise", "global": "Global", "prespecified": "EB-ShrinkFCP (pre-specified)",
+       "re_mean": "EB, random-effects mean", "floor_1e-8": "EB, variance floor $10^{-8}$",
+       "floor_1e-4": "EB, variance floor $10^{-4}$", "no_design": "EB, no images-per-lesion factor",
+       "boot_var": "EB, lesion-bootstrap variance"}
+
+
+def s15():
+    d = load("EB_variants.json")
+    out = ["\\section*{S15. Variants of EB-ShrinkFCP (post hoc)}\n",
+           "LAC, $\\alpha=0.1$, FedAvg models, 1,000 lesion-wise draws per model. Variants change one element of the "
+           "pre-specified rule at a time.\n"]
+    if d is None:
+        return out[0] + "Pending.\n"
+    rows = []
+    for key, v in d.items():
+        model, exp = key.split("/")
+        for r, lab in EBV.items():
+            if r in v:
+                x = v[r]
+                rows.append(f"{model} & {'LOCO' if 'loco' in exp else 'E5'} & {lab} & {f3(x['worst_center_q10'])} & "
+                            f"{f3(x['min_mean_coverage'])} & {x['set_size']:.2f}")
+        rows.append("\\midrule")
+    out.append(table("Worst-client q10, lowest client mean coverage and mean set size.", "tab:s15", "lllrrr",
+                     "Model & Exp. & Rule & Worst q10 & Min mean cov. & Size", rows[:-1], size="\\scriptsize"))
+    rows = [f"{k.split('/')[0]} & {'LOCO' if 'loco' in k else 'E5'} & "
+            + ", ".join(f"{x:.2f}" for x in v["_boot_over_spacing_variance_median_by_client"])
+            for k, v in d.items() if "_boot_over_spacing_variance_median_by_client" in v]
+    out.append(table("Lesion-bootstrap variance of each client's threshold divided by the variance used by EB-ShrinkFCP "
+                     "(median over draws; clients 0--5). Values below 1 mean that the pre-specified approximation is "
+                     "conservative, which increases shrinkage.", "tab:s15v", "llp{7cm}", "Model & Exp. & Ratio by client", rows,
+                     size="\\scriptsize"))
+    return "".join(out)
+
+
+SIMR = {"clientwise": "Client-wise", "global": "Global", "eb": "EB-ShrinkFCP", "eb_re_mean": "EB, random-effects mean"}
+
+
+def s16():
+    d = load("Conformal_simulation.json")
+    out = ["\\section*{S16. Simulation with clustered scores and calibration-budget curves (post hoc)}\n"]
+    if d is None:
+        return out[0] + "Pending.\n"
+    out.append("Six clients with " + ", ".join(str(n) for n in d["n_lesions"]) + " calibration lesions; each lesion has "
+               "$1+\\mathrm{Poisson}(1)$ images; latent score $z=\\delta_c+u_\\ell+e_i$ with lesion effect "
+               "$u_\\ell\\sim N(0,\\rho)$, image noise $e_i\\sim N(0,1-\\rho)$ and client shift $\\delta_c\\sim N(0,\\tau^2)$ "
+               "drawn per replicate; conformal score $1/(1+e^{-z})$. The true coverage of each threshold for one image of a "
+               "new lesion is computed from 200,000 draws of the known client distribution; 2,000 replicates per "
+               "scenario.\n")
+    rows = []
+    for sc, v in d["scenarios"].items():
+        tau, rho = sc.replace("tau", "").split("_rho")
+        for r, lab in SIMR.items():
+            x = v[r]
+            rows.append(f"{tau} & {rho} & {lab} & {f3(x['worst_q10'])} & {f3(x['worst_mean'])} & {x['worst_p_below_085']:.2f}")
+        rows.append("\\midrule")
+    out.append(table("True coverage in the simulation: worst client's 10th percentile over calibration samples, lowest "
+                     "client mean, and highest client probability of true coverage below 0.85.", "tab:s16", "lllrrr",
+                     "$\\tau$ & $\\rho$ & Rule & Worst q10 & Min mean & Max P($<$0.85)", rows[:-1], size="\\scriptsize"))
+    rows = [f"{k.replace('rho', '')} & " + " & ".join(f"{x:.2f}" for x in v["ratio_approx_over_true"])
+            for k, v in d["variance_check"].items()]
+    out.append(table("Variance used by EB-ShrinkFCP divided by the actual sampling variance of the client quantile "
+                     "(fixed client distributions, 2,000 replicates), clients ordered from largest to smallest.",
+                     "tab:s16v", "l" + "r" * len(d["n_lesions"]),
+                     "$\\rho$ & " + " & ".join(f"{n} les." for n in d["n_lesions"]), rows, size="\\scriptsize"))
+    rows = []
+    for model, v in d["budget_curves"].items():
+        for b, w in v.items():
+            rows.append(f"{model} & {b} & " + " & ".join(f"{f3(w[r]['worst_q10'])} / {f3(w[r]['min_mean_cov'])}"
+                                                      for r in ("clientwise", "global", "eb")))
+        rows.append("\\midrule")
+    out.append(table("Calibration-budget curves on the LOCO FedAvg models: at most the given number of calibration lesions "
+                     "per client (all available if fewer), evaluation on the other half; worst-client q10 / lowest client "
+                     "mean coverage, 300 draws per model.", "tab:s16b", "llrrr",
+                     "Model & Lesions per client & Client-wise & Global & EB-ShrinkFCP", rows[:-1], size="\\scriptsize"))
+    return "".join(out)
+
+
+BUDGET_NAMES = {"fedavg_r9": "FedAvg, 9 rounds", "fedavg_r27": "FedAvg, 27 rounds", "fedavgft1_r9": "FedAvg-FT, 1 step",
+                "fedavgft_r9": "FedAvg-FT, 3 steps", "fedavgft10_r9": "FedAvg-FT, 10 steps", "fedavgft30_r9": "FedAvg-FT, 30 steps",
+                "fedavgft100_r9": "FedAvg-FT, 100 steps", "pooled_e5": "Pooled, 5 epochs", "pooled_e20": "Pooled, 20 epochs",
+                "pooled_e60": "Pooled, 60 epochs", "local_e5": "Local-only, 5 epochs", "local_e20": "Local-only, 20 epochs",
+                "local_e60": "Local-only, 60 epochs"}
+
+
+def s17():
+    d = load("Budget_controls.json")
+    out = ["\\section*{S17. Training-budget controls (post hoc)}\n"]
+    if d is None or not any(len(v) > 4 for v in d.values()):
+        return ""                                        # optional runs not performed: section omitted
+    rows = []
+    for model, v in d.items():
+        for m, r in v.items():
+            rows.append(f"{model} & {BUDGET_NAMES.get(m, m)}{'$^*$' if r['protocol_setting'] else ''} & "
+                        f"{p1(r['inflation'], r['ci'])} & {p1(r['minus_fedavg_r9'], r['minus_fedavg_r9_ci'])} & "
+                        f"{f3(r['ba_image'])} & {f3(r['ba_lesion'])}")
+        rows.append("\\midrule")
+    out.append(table("Apparent inflation in clients 0, 2 and 3 (points, 95\\% lesion-bootstrap intervals), its difference to "
+                     "FedAvg with 9 rounds, and pooled BA on image-level and lesion-grouped splits, seeds 0--2. $^*$protocol setting.",
+                     "tab:s17", "llrrrr", "Model & Training & Inflation & $-$FedAvg & BA image & BA lesion", rows[:-1],
+                     size="\\scriptsize"))
+    return "".join(out)
+
+
 def s9():
     rows = [("v0.1--v0.3", "26--27 Oct", "none", "Research questions, splits, models, metrics"),
             ("v0.4--v0.6", "27--28 Oct", "none", "Gate 1 and 2, primary outcome, H3b, $\\tau$ noise floor, A-frozen control (reviews 1--2)"),
@@ -320,7 +484,8 @@ def s9():
             ("e0 \\ldots{} e5 tags", "30 Oct--3 Nov", "E0, E0b, E1, E2, E5", "pre-run tags before each batch"),
             ("v0.11", "3 Nov", "E0--E5 (RQ4 failed)", "EB-ShrinkFCP and test 5b on LOCO models (before any LOCO model)"),
             ("e7, PAD, NN tags", "5--6 Nov", "E0--E6", "pre-run tags; PAD interpretation rule; NN analysis exploratory"),
-            ("v0.12", "7 Nov", "E0--E7, PAD, NN; external review", "E8, E9 and their tests; post hoc sensitivity analyses")]
+            ("v0.12", "7 Nov", "E0--E7, PAD, NN; external review", "E8, E9 and their tests; post hoc sensitivity analyses"),
+            ("8 Nov (no new version)", "8 Nov", "all results, incl. E8, E9", "post hoc only: S13--S16")]
     out = ["\\section*{S9. Protocol chronology and deviations}\n",
            table("Protocol versions and pre-run tags (git, pushed to GitHub), with the results available when each was "
                  "written.", "tab:s9", "llp{3.6cm}p{6.2cm}", "Version / tag & Date (2026) & Results available & Content",
@@ -382,7 +547,7 @@ def main():
 \maketitle
 All tables are generated by \texttt{scripts/make\_supplement.py} from the result files in the code repository
 (\url{https://github.com/Sisty37/reliable-fed-derm}).
-""" + s1() + s2() + s3() + s5_s7() + s6() + s8() + s9() + s10() + s11() + s12() + r"""
+""" + s1() + s2() + s3() + s5_s7() + s6() + s8() + s9() + s10() + s11() + s12() + s13() + s14() + s15() + s16() + s17() + r"""
 \section*{Figure S1}
 \begin{figure}[!htbp]
 \centering
