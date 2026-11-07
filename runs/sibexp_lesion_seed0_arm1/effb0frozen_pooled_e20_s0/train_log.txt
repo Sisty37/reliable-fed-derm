@@ -1,0 +1,4 @@
+2026-11-07 12:42 | effb0frozen_pooled_e20_s0 | split splits\e8\sibexp_lesion_seed0_arm1.csv | updates 0 | git 5e5628a
+  pooled: 20 epochs, final training loss 5.1467
+balanced accuracy  pooled 0.5574 | mean of centers 0.5256 | per center 0.468 0.680 0.626 0.387 0.494 0.499
+saved to runs\sibexp_lesion_seed0_arm1\effb0frozen_pooled_e20_s0 (17 s)

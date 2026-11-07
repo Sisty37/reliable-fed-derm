@@ -1,0 +1,22 @@
+{
+  "bacc_center_0": 0.4683222645451809,
+  "bacc_center_1": 0.6797751710654937,
+  "bacc_center_2": 0.6258153168611302,
+  "bacc_center_3": 0.38700170301234127,
+  "bacc_center_4": 0.4937531063085914,
+  "bacc_center_5": 0.499194847020934,
+  "bacc_pooled": 0.5574373969842257,
+  "bacc_mean_of_centers": 0.5256437348022786,
+  "encoder": "effb0",
+  "method": "pooled",
+  "head": "linear",
+  "seed": 0,
+  "split": "splits\\e8\\sibexp_lesion_seed0_arm1.csv",
+  "rounds": 9,
+  "updates": 0,
+  "train_loss_by_round": [
+    5.146717929840088
+  ],
+  "git": "5e5628a",
+  "seconds": 17.1
+}

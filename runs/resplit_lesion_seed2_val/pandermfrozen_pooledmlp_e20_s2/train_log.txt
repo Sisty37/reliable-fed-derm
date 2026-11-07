@@ -1,0 +1,4 @@
+2026-11-07 12:00 | pandermfrozen_pooledmlp_e20_s2 | split splits\e1\resplit_lesion_seed2_val.csv | updates 0 | git 5e5628a
+  pooled: 20 epochs, final training loss 2.2094
+balanced accuracy  pooled 0.5599 | mean of centers 0.6020 | per center 0.461 0.788 0.781 0.548 0.555 0.480
+saved to runs\resplit_lesion_seed2_val\pandermfrozen_pooledmlp_e20_s2 (17 s)

@@ -1,0 +1,4 @@
+2026-11-07 12:54 | pandermfrozen_local_e20_s0 | split splits\e8\sibexp_lesion_seed0_arm1.csv | updates 0 | git 5e5628a
+  local-only: 20 epochs per center
+balanced accuracy  pooled 0.6283 | mean of centers 0.6471 | per center 0.553 0.746 0.634 0.503 0.680 0.767
+saved to runs\sibexp_lesion_seed0_arm1\pandermfrozen_local_e20_s0 (16 s)
