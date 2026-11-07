@@ -48,7 +48,7 @@ def main():
 
     split_name = os.path.splitext(os.path.basename(a.split))[0]
     src = os.path.join(a.out, split_name, f"fedavg_r{a.rounds}_s{a.seed}")
-    out_dir = os.path.join(a.out, split_name, f"fedavgft_r{a.rounds}_s{a.seed}")
+    out_dir = os.path.join(a.out, split_name, f"fedavgft{a.steps if a.steps != 3 else ''}_r{a.rounds}_s{a.seed}")  # steps != 3: post hoc sensitivity
     os.makedirs(out_dir, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     glob_sd = torch.load(os.path.join(src, "model.pt"), map_location="cpu")

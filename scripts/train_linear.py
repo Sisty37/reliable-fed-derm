@@ -145,7 +145,7 @@ def run(a, updates, log):
     def adam_epochs(m, rows, n_rows):
         m, lf = m.to(device), loss_fn.to(device)
         opt = torch.optim.Adam(m.parameters(), lr=5e-4)
-        for ep in range(20):
+        for ep in range(a.epochs):
             m.train()
             for _ in range(int(np.ceil(n_rows / 64))):
                 x, y = rows.next()
@@ -158,7 +158,7 @@ def run(a, updates, log):
     if a.method == "pooled":
         head = adam_epochs(head, EmbRows(tr_aug, tr_y, rng), len(tr))
         losses.append(train_loss(head, loss_fn.to(device), tr_aug, tr_y, device))
-        log(f"  pooled: 20 epochs, final training loss {losses[-1]:.4f}")
+        log(f"  pooled: {a.epochs} epochs, final training loss {losses[-1]:.4f}")
         models = [head] * NUM_CLIENTS
     elif a.method == "local":                    # local-only: pooled recipe on one center's rows
         models = []
@@ -166,7 +166,7 @@ def run(a, updates, log):
             torch.manual_seed(a.seed + 1000 * c)
             n_c = int((tr.center == c).sum())
             models.append(adam_epochs(make_head(), client_rows(c), n_c))
-        log("  local-only: 20 epochs per center")
+        log(f"  local-only: {a.epochs} epochs per center")
     elif a.method == "fedavgft":                 # 3 local SGD steps from the finished FedAvg head
         split_name = os.path.splitext(os.path.basename(a.split))[0]
         src = os.path.join(a.out, split_name, f"{a.encoder}frozen_fedavg_r{a.rounds}_s{a.seed}", "model.pt")
@@ -175,9 +175,9 @@ def run(a, updates, log):
         for c in range(NUM_CLIENTS):
             torch.manual_seed(a.seed + 1000 * c)
             cl = Client(head, loss_fn, client_rows(c, seed_off=7), 0.01, device, amp=False)
-            cl.local_train(3)
+            cl.local_train(a.ft_steps)
             models.append(cl.model)
-        log(f"  FedAvg-FT: 3 local steps per client from {src}")
+        log(f"  FedAvg-FT: {a.ft_steps} local steps per client from {src}")
     elif a.method == "fedper":                   # FedPer-style two-layer head, client-specific output layer
         torch.manual_seed(a.seed)
         mlp = nn.Sequential(nn.Linear(dim, 256), nn.ReLU(), nn.Linear(256, NUM_CLASSES))
@@ -215,6 +215,10 @@ def main():
     ap.add_argument("--out", default="runs")
     ap.add_argument("--rounds", type=int, default=9)
     ap.add_argument("--convergence-check", action="store_true")
+    ap.add_argument("--ft-steps", type=int, default=3,
+                    help="FedAvg-FT local steps (protocol: 3; other values = post hoc sensitivity, tag fedavgft<steps>)")
+    ap.add_argument("--epochs", type=int, default=20,
+                    help="pooled/local epochs (protocol: 20; other values = post hoc matched-budget control, tag _e<epochs>)")
     ap.add_argument("--exclude-center", type=int, default=None,
                     help="E6 leave-one-center-out: this center's training rows are not used (FedAvg only)")
     ap.add_argument("--head", default="linear", choices=["linear", "mlp"],
@@ -252,8 +256,8 @@ def main():
         updates = 0
     split_name = os.path.splitext(os.path.basename(a.split))[0]
     assert not (a.head == "mlp" and a.method in ("fedper", "fedavgft")), "fedper already has the two-layer head; fedavgft is linear only"
-    mname = a.method + ("mlp" if a.head == "mlp" else "")
-    tag = f"{a.encoder}frozen_" + (f"{mname}_e20_s{a.seed}" if a.method in ("pooled", "local")
+    mname = a.method + ("mlp" if a.head == "mlp" else "") + (str(a.ft_steps) if a.method == "fedavgft" and a.ft_steps != 3 else "")
+    tag = f"{a.encoder}frozen_" + (f"{mname}_e{a.epochs}_s{a.seed}" if a.method in ("pooled", "local")
                                    else f"{mname}_r{a.rounds}_s{a.seed}")
     if a.exclude_center is not None:
         assert a.method == "fedavg", "leave-one-center-out is defined for FedAvg"
@@ -287,7 +291,7 @@ def main():
             per_center = {c: (lg[part.center.to_numpy() == c], y[part.center.to_numpy() == c]) for c in range(NUM_CLIENTS)}
     m = summarize(per_center)
     m.update({"encoder": a.encoder, "method": a.method, "head": a.head, "seed": a.seed, "split": a.split, "rounds": a.rounds,
-              "updates": updates, "train_loss_by_round": losses, "git": git_commit(), "seconds": round(secs, 1)})
+              "updates": updates, "ft_steps": a.ft_steps if a.method == "fedavgft" else None, "epochs": a.epochs if a.method in ("pooled", "local") else None, "train_loss_by_round": losses, "git": git_commit(), "seconds": round(secs, 1)})
     json.dump(m, open(os.path.join(out_dir, "metrics.json"), "w"), indent=2)
     if a.method in ("local", "fedavgft", "fedper"):
         torch.save([x.state_dict() for x in models], os.path.join(out_dir, "models_per_center.pt"))

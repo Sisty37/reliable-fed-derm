@@ -1,7 +1,8 @@
 %% Manuscript in the Wiley New Journal Design v5 template (WileyNJDv5.cls).
-%% Single-file version: sections, tables and the reference list are embedded; no BibTeX run needed.
-%% Compiles with pdfLaTeX (Overleaf default) or XeLaTeX. Figures: the 8 PDFs in figures/ (or next to this file).
-%% Generated from paper/main.tex + sections/ + ../tables + refs.bib.
+%% Put the template files (WileyNJDv5.cls, *.bst, *.sty and the Fonts folder) in this folder.
+%% Reference style: Vancouver (numbered). Compile with pdfLaTeX or XeLaTeX:  pdflatex main && bibtex main && pdflatex main && pdflatex main
+%% Figures are read from ../figures and tables from ../tables, both generated from the result
+%% files by scripts/make_figures.py and scripts/make_tables.py.
 % Compatibility with TeX Live 2024 and later (newer etex.sty lacks \reserveinserts, which the class calls)
 \providecommand\reserveinserts[1]{}
 \documentclass[VANCOUVER,Times1COL]{WileyNJDv5}
@@ -9,7 +10,9 @@
 \usepackage{booktabs,multirow}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
-\graphicspath{{figures/}{./}{../figures/}}
+\graphicspath{{figures/}{../figures/}}
+% tables: works with tables/ next to main.tex (Overleaf) or ../tables (repository layout)
+\newcommand{\inputtable}[1]{\IfFileExists{tables/#1.tex}{\input{tables/#1}}{\input{../tables/#1}}}
 
 \articletype{Research Article}
 \received{Date Month Year}
@@ -91,7 +94,9 @@ For skin lesions, Fed-ISIC2019, the dermoscopy benchmark of the FLamby suite \ci
 widely used. Its six clients correspond to acquisition sources of the ISIC 2019 challenge data
 \cite{codella2018isic,tschandl2018ham,combalia2019bcn} and differ in size, class mix and imaging
 device. Federated and personalized methods are compared on its fixed split, and the reported differences
-between them are often a few points of balanced accuracy \cite{flamby2022,tavakoli2024fendafl}.
+between them are often a few points of balanced accuracy \cite{flamby2022,tavakoli2024fendafl};
+in a targeted search we found no Fed-ISIC2019 evaluation that grouped images by lesion
+(Supplementary~S13).
 
 The benchmark split assigns individual images rather than lesions to the training and test sets. Many
 lesions in the underlying collections were photographed several times, for example at follow-up visits or
@@ -135,8 +140,10 @@ failed alongside those that succeeded. Our contributions are:
     with a randomized sibling-exposure experiment that estimates the effect of leakage on fixed test
     images.
   \item Evidence that leakage inflates accuracy also with frozen encoders, including a dermatology
-    foundation model, and randomized and capacity-matched experiments showing that its size grows with how
-    closely a classifier fits its training lesions, not with personalization as such.
+    foundation model, and randomized and capacity-matched experiments in which the size of the effect
+    differed between training regimes and classifier heads; these are consistent with, but do not
+    isolate, an influence of how strongly a classifier fits its training lesions rather than of
+    personalization as such.
   \item A per-client analysis of federated conformal calibration that separates mixture from per-client
     coverage and accounts for repeated images of one lesion, and EB-ShrinkFCP, an empirical-Bayes
     shrinkage rule for per-client thresholds that met its pre-specified criterion for one of two encoders.
@@ -153,7 +160,7 @@ and Section~\ref{sec:conclusion} concludes.
   \centering
   \includegraphics[width=\textwidth]{Fig1_design_leakage}
   \caption{Lesion-level leakage in Fed-ISIC2019. (a) The three images of one melanoma of client~0 (lesion
-  BCN\_0000034; images ISIC\_0054664, ISIC\_0063926 and ISIC\_0072889, all sharing this identifier in the
+  BCN\_0000057; images ISIC\_0057997, ISIC\_0065360 and ISIC\_0068295, all sharing this identifier in the
   ISIC 2019 metadata). In the official FLamby split, the first two are training images and the third is a
   test image; under a lesion-grouped split, all images of a lesion stay on one side. (b) Image-level test
   images per client that are leaked (their lesion also has images in training) or new; percentages give
@@ -297,8 +304,8 @@ and E9. Confirmatory tests followed the protocol version that was fixed before t
 keratosis, BKL; dermatofibroma, DF; vascular lesion, VASC; squamous cell carcinoma, SCC). FLamby defines
 six clients by acquisition source (Table~\ref{tab:dataset}): BCN20000 (client~0), MSK (client~4) and four
 HAM10000 subsets, three of which (clients 1, 2 and 5) come from one institution in Vienna with different
-acquisition devices. We follow FLamby in calling the clients ``centers'', but they are acquisition
-sources rather than six independent hospitals. Images were preprocessed with FLamby's procedure (shorter
+acquisition devices. FLamby calls the clients ``centers''; we call them clients because they are acquisition sources rather
+than six independent hospitals. Images were preprocessed with FLamby's procedure (shorter
 edge resized to 224 pixels, color constancy with power 6).
 
 Lesion identifiers were taken from the HAM10000 metadata (clients 1, 2, 3 and 5) and the ISIC 2019
@@ -569,7 +576,7 @@ of its sampling variance. The variance is obtained from the spread of order stat
 quantile, a standard approximation to the standard error of a sample quantile, with the spacing widened
 by the average number of images per calibration lesion, $m_c/n_c$, as a heuristic allowance for
 correlated images; this factor is not a general design effect for unequal clusters, and its adequacy was
-checked empirically with the lesion bootstrap (Supplementary~S6). The server combines the quantiles into a
+checked post hoc with the lesion bootstrap and in a simulation (Supplementary~S6, S15 and S16). The server combines the quantiles into a
 between-client variance $\tau^2$ and a precision-weighted mean $\bar q$, and returns
 \begin{equation}
   \hat q_c = w_c\,q_c + (1-w_c)\,\bar q, \qquad w_c=\frac{\tau^2}{\tau^2+\sigma_c^2}.
@@ -1005,6 +1012,28 @@ label-shift-weighted comparator did not repair the per-client shortfall of the g
 client mean coverage 0.85 for model~A and 0.72 for model~B), indicating that the clients differ by more than
 their class priors.
 
+All rules in Table~\ref{tab:conformal} target marginal coverage, and none of them provided coverage by
+diagnostic class (post hoc; Supplementary~S14). On the LOCO models, global, client-wise and EB-ShrinkFCP
+thresholds all covered dermatofibroma in only 0.58--0.59 of cases for model~A and 0.50--0.53 for model~B,
+while their overall coverage was 0.90. Class-conditional (Mondrian) thresholds raised every class to
+0.87--0.90, at a mean set size of 3.5--3.6 classes instead of 2.6.
+
+A simulation with clustered synthetic scores, in which true coverage is known, reproduced these patterns
+(post hoc; Supplementary~S16). Without client shift, EB-ShrinkFCP matched the global threshold (worst-client
+q10 of true coverage 0.89) and exceeded client-wise thresholds (0.83--0.85). With client shift, the global
+threshold under-covered the most shifted client (q10 0.62--0.81), whereas EB-ShrinkFCP kept every client's
+mean true coverage at 0.90 and had a worst-client q10 of 0.85--0.86, compared with 0.83--0.85 for
+client-wise thresholds. The variance used by EB-ShrinkFCP was 1.5 to 2.6 times the actual sampling variance
+of the client quantile, so the approximation is conservative and shrinks more than necessary; on the real
+data, a lesion-bootstrap variance was 0.58 to 1.03 times the approximation (median by client). Replacing
+the approximation by the bootstrap variance, dropping the images-per-lesion factor or changing the variance
+floor changed the worst-client q10 of EB-ShrinkFCP by at most 0.4 points, whereas a random-effects mean
+lowered it by 0.7 to 2.2 points (Supplementary~S15). On the real
+LOCO models, restricting each client's calibration set to 10, 25, 50 or 100 lesions showed no gain of
+EB-ShrinkFCP over client-wise thresholds at 10 lesions and gains of 1.4 to 2.9 points in worst-client q10
+from 25 lesions on, for both encoders; the global threshold left some client at a mean coverage of 0.75--0.82
+at every budget.
+
 On personalized models (FedBN, FedAvg-FT, FedPer and local-only; descriptive), a global threshold still
 left some client at a mean coverage of 0.76--0.87, while client-wise thresholds kept every client's mean
 coverage between 0.897 and 0.911 and EB-ShrinkFCP between 0.888 and 0.944 (Supplementary~S7).
@@ -1093,7 +1122,9 @@ class prevalence and label definitions, so it is not attributable to the imaging
 In Fed-ISIC2019, image-level splitting places sibling images of the same lesion in training and test sets
 for 0.1--93\% of each client's test images in the official split. Models looked about 8 balanced-accuracy
 points better on the full image-level test sets than on their new-lesion subsets with any of three encoder
-configurations, and up to 16 points better for centralized training (RQ2). A randomized experiment on fixed test images confirmed that the sibling images themselves cause this gain (9.1 points for FedAvg) and that it grows with how closely a classifier fits its training lesions. Leakage left the
+configurations, and up to 16 points better for centralized training (RQ2). A randomized experiment on fixed test images showed that sibling images in training themselves raise
+accuracy on lesions with several images (9.1 points for FedAvg), by amounts that differed between training
+regimes (4.5 to 28.8 points). Leakage left the
 ranking of fine-tuned methods on the benchmark metric about as stable as re-running with another seed, but
 it reordered methods on per-client accuracy and for a foundation-model encoder, where the most flexible
 head moved from first to seventh place. The size of the apparent inflation was associated with how closely
@@ -1178,7 +1209,8 @@ returning all classes would reach full coverage at the cost of useless sets. The
 therefore mixed. Across the tested models and clients, EB-ShrinkFCP kept mean client coverage close to the
 target; it met its pre-specified criterion on held-out models for model~A, with an interval that excludes
 zero but also includes gains below 2 points; no clear improvement was detected for model~B, so the joint criterion
-was not met; and class-conditional coverage was not established. The post hoc analyses point the same way but do not strengthen the claim: the gain is visible in the
+was not met; and, like the other marginal rules, it left rare classes such as dermatofibroma well below the
+target, which only class-conditional thresholds corrected, at the cost of larger sets. The post hoc analyses point the same way but do not strengthen the claim: the gain is visible in the
 variability of thresholds, but with one image per lesion its interval includes zero, and its size is
 comparable to the Monte Carlo variability of a 100-draw q10. The rule exchanges two
 aggregate statistics per client, a quantile and a variance, rather than images or score lists; we did not
@@ -1190,7 +1222,10 @@ compared only a label-shift-weighted threshold.
 Under the smartphone-image shift, transferred thresholds lost 23--30 points of coverage, consistent with the
 absence of any guarantee under distribution shift \cite{tibshirani2019covariate,barber2023beyond}. Local
 recalibration restored marginal coverage only by returning four to five of six classes, and coverage for
-actinic keratosis and squamous cell carcinoma stayed below the target. Recalibration can make a model's
+actinic keratosis and squamous cell carcinoma stayed below the target. Post hoc class-conditional
+recalibration brought both classes to 0.90 and reduced the mean set size from 4.9 to 3.9 classes for
+model~A and from 4.3 to 4.0 for model~B (Supplementary~S14), still too large to be clinically useful.
+Recalibration can make a model's
 uncertainty honest, but it cannot make an unsuitable model useful, and marginal coverage can hide
 class-conditional failures \cite{lu2022fair}.
 
@@ -1234,7 +1269,9 @@ single pre-specified number of fine-tuning steps, and the benchmark clients and 
 across method development and evaluation. Overlap between PanDerm's pretraining data and the evaluation
 images could not be ruled out. Our FedAvg reproduction was 4.2 points below one published value, though
 above FLamby's own results. EB-ShrinkFCP met its criterion for one of two encoders, it does not carry a
-finite-sample per-client guarantee, and its variance approximation for clustered images is heuristic.
+finite-sample per-client guarantee, and its variance approximation for clustered images is heuristic; in
+our simulation and lesion bootstrap it overstated the variance, which makes the rule shrink more than
+necessary, and the simulation covered only one family of score distributions.
 Finally, the mechanism analysis is exploratory.
 
 \subsection{Future work}
@@ -1252,8 +1289,10 @@ class-conditional coverage for rare and commonly confused classes.
 The Fed-ISIC2019 benchmark split places images of the same lesion in training and test sets, unevenly
 across its acquisition-source clients. Models look about 8 balanced-accuracy points better on the leaky
 test sets than on their new-lesion subsets, and up to 16 points better for centralized training.
-A randomized experiment on fixed test images showed that this gain is caused by the sibling images in training (9.1 points for FedAvg) and grows with how closely a classifier fits its training lesions. Leakage changed which methods appeared best when classifiers differed in how closely they fit
-their training lesions. At the level of individual clients, a shared conformal threshold under-covered some
+In a randomized experiment on fixed test images, which covers lesions with several images, adding sibling
+images to training raised balanced accuracy by 9.1 points for FedAvg, with effects between 4.5 and 28.8
+points across training regimes. Leakage also changed which methods appeared best, mainly among classifiers
+that differed in head architecture or training regime. At the level of individual clients, a shared conformal threshold under-covered some
 sites; an empirical-Bayes shrinkage of per-client thresholds kept mean client coverage near the target and
 improved the worst-client tail for one of two encoders, while a fixed shrinkage rule failed its
 pre-specified test. On unseen clients and smartphone images, reliability dropped further, and local
@@ -1294,7 +1333,6 @@ licences; no new data were collected and no patient was contacted. % TODO: add t
 % TODO: state which AI tools were used and for what (for example code assistance and language editing),
 % and that the authors reviewed all content and take full responsibility for it.
 
-% References (Vancouver style), generated by BibTeX from refs.bib and embedded here
 \begin{thebibliography}{10}
 
 \bibitem{esteva2017dermatologist}

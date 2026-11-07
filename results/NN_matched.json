@@ -1,0 +1,136 @@
+{
+  "effb0": {
+    "per_seed": [
+      {
+        "seed": 0,
+        "sim_raw_diff": 0.06231576204299927,
+        "sim_matched_diff": 0.06351801572135463,
+        "sim_other_lesion_raw_diff": -0.004787743091583252,
+        "sim_other_lesion_matched_diff": 0.0023389352015413035,
+        "nn1_std_inflation": 0.23803655517816552,
+        "nn1_no_sibling_std_inflation": -0.027898943209439253
+      },
+      {
+        "seed": 1,
+        "sim_raw_diff": 0.06026959419250488,
+        "sim_matched_diff": 0.06066096284621054,
+        "sim_other_lesion_raw_diff": -0.004889845848083496,
+        "sim_other_lesion_matched_diff": -0.004936046737561123,
+        "nn1_std_inflation": 0.2804042120720338,
+        "nn1_no_sibling_std_inflation": 0.024639083831919373
+      },
+      {
+        "seed": 2,
+        "sim_raw_diff": 0.054833829402923584,
+        "sim_matched_diff": 0.053744539811179555,
+        "sim_other_lesion_raw_diff": -0.010435223579406738,
+        "sim_other_lesion_matched_diff": -0.010980131425734225,
+        "nn1_std_inflation": 0.24889696358649988,
+        "nn1_no_sibling_std_inflation": -0.022237447980829217
+      },
+      {
+        "seed": 3,
+        "sim_raw_diff": 0.05776822566986084,
+        "sim_matched_diff": 0.061401340642921354,
+        "sim_other_lesion_raw_diff": -0.00503617525100708,
+        "sim_other_lesion_matched_diff": -0.00032986742764832037,
+        "nn1_std_inflation": 0.24854130715478545,
+        "nn1_no_sibling_std_inflation": -0.008647271812898705
+      },
+      {
+        "seed": 4,
+        "sim_raw_diff": 0.05723893642425537,
+        "sim_matched_diff": 0.057664928273258045,
+        "sim_other_lesion_raw_diff": -0.006956815719604492,
+        "sim_other_lesion_matched_diff": -0.003665672981331491,
+        "nn1_std_inflation": 0.2796653769226427,
+        "nn1_no_sibling_std_inflation": 0.03283711452081983
+      }
+    ],
+    "mean": {
+      "seed": 2.0,
+      "sim_raw_diff": 0.05848526954650879,
+      "sim_matched_diff": 0.05939795745898482,
+      "sim_other_lesion_raw_diff": -0.0064211606979370115,
+      "sim_other_lesion_matched_diff": -0.003514556674146771,
+      "nn1_std_inflation": 0.25910888298282553,
+      "nn1_no_sibling_std_inflation": -0.00026149293008559393
+    },
+    "sd": {
+      "seed": 1.5811388300841898,
+      "sim_raw_diff": 0.0028834441429837323,
+      "sim_matched_diff": 0.0037930241277330215,
+      "sim_other_lesion_raw_diff": 0.0024150978268471174,
+      "sim_other_lesion_matched_diff": 0.005054302356550608,
+      "nn1_std_inflation": 0.01959630347706486,
+      "nn1_no_sibling_std_inflation": 0.027534746612585332
+    }
+  },
+  "panderm": {
+    "per_seed": [
+      {
+        "seed": 0,
+        "sim_raw_diff": 0.058676958084106445,
+        "sim_matched_diff": 0.05246079202911978,
+        "sim_other_lesion_raw_diff": -0.00023680925369262695,
+        "sim_other_lesion_matched_diff": -0.00011624403781911182,
+        "nn1_std_inflation": 0.23773674936679468,
+        "nn1_no_sibling_std_inflation": -0.03322846541210922
+      },
+      {
+        "seed": 1,
+        "sim_raw_diff": 0.06061047315597534,
+        "sim_matched_diff": 0.0566172127029021,
+        "sim_other_lesion_raw_diff": 0.002304375171661377,
+        "sim_other_lesion_matched_diff": 0.003267871658150241,
+        "nn1_std_inflation": 0.2750392792254076,
+        "nn1_no_sibling_std_inflation": 0.008350423211170577
+      },
+      {
+        "seed": 2,
+        "sim_raw_diff": 0.06002795696258545,
+        "sim_matched_diff": 0.055617060961908306,
+        "sim_other_lesion_raw_diff": 0.002341747283935547,
+        "sim_other_lesion_matched_diff": 0.0005169212818145752,
+        "nn1_std_inflation": 0.24803996539192125,
+        "nn1_no_sibling_std_inflation": -0.004371683014695482
+      },
+      {
+        "seed": 3,
+        "sim_raw_diff": 0.0576939582824707,
+        "sim_matched_diff": 0.055180023013338866,
+        "sim_other_lesion_raw_diff": 0.0012633204460144043,
+        "sim_other_lesion_matched_diff": 0.0006797485023374982,
+        "nn1_std_inflation": 0.2322299465143285,
+        "nn1_no_sibling_std_inflation": -0.018668303411819964
+      },
+      {
+        "seed": 4,
+        "sim_raw_diff": 0.05862224102020264,
+        "sim_matched_diff": 0.053874281545480095,
+        "sim_other_lesion_raw_diff": 0.0019124150276184082,
+        "sim_other_lesion_matched_diff": 0.0015000224622905764,
+        "nn1_std_inflation": 0.2673575887588759,
+        "nn1_no_sibling_std_inflation": 0.0034808798969163113
+      }
+    ],
+    "mean": {
+      "seed": 2.0,
+      "sim_raw_diff": 0.059126317501068115,
+      "sim_matched_diff": 0.05474987405054983,
+      "sim_other_lesion_raw_diff": 0.001517009735107422,
+      "sim_other_lesion_matched_diff": 0.0011696639733547558,
+      "nn1_std_inflation": 0.2520807058514656,
+      "nn1_no_sibling_std_inflation": -0.008887429746107556
+    },
+    "sd": {
+      "seed": 1.5811388300841898,
+      "sim_raw_diff": 0.0011750895329541078,
+      "sim_matched_diff": 0.0016148183835773366,
+      "sim_other_lesion_raw_diff": 0.00107199825108867,
+      "sim_other_lesion_matched_diff": 0.0013068341347555455,
+      "nn1_std_inflation": 0.01855133795774493,
+      "nn1_no_sibling_std_inflation": 0.017019563254552908
+    }
+  }
+}
