@@ -1,22 +1,27 @@
 \begin{table}[!t]
 \centering
-\caption{Fed-ISIC2019 centers. Leakage rate: share of each center's image-level test images whose lesion
-also appears in training; new-lesion test images: the remaining ones (both means over five image-level
-splits).}
+\caption{Fed-ISIC2019 clients (``centers'' in FLamby), defined by acquisition source; clients 1, 2 and 5
+come from one institution with different devices. Leakage: share of a client's image-level test images
+whose lesion also has images in training, in the official FLamby split and as the mean over five
+image-level re-splits; new test: mean number of new-lesion test images in the re-splits.}
 \label{tab:dataset}
-\setlength{\tabcolsep}{3.5pt}
-\begin{tabular}{@{}lrrrrr@{}}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llrrrrrr@{}}
 \toprule
-Center & Images & Lesions & Img./lesion & Leak. (\%) & New test \\
+ & & & & & \multicolumn{2}{c}{Leakage (\%)} & \\
+\cmidrule(lr){6-7}
+Client & Source & Images & Lesions & Img./lesion & Official & Re-splits & New test \\
 \midrule
-0 & 12,413 & 3,576 & 3.47 & 83.0 & 421 \\
-1 & 3,954 & 3,954 & 1.00 & 0.2 & 789 \\
-2 & 3,363 & 1,695 & 1.98 & 68.0 & 214 \\
-3 & 2,259 & 1,552 & 1.46 & 43.5 & 255 \\
-4 & 819 & 801 & 1.02 & 2.7 & 160 \\
-5 & 439 & 278 & 1.58 & 50.2 & 44 \\
+0 & BCN20000 & 12,413 & 3,576 & 3.47 & 92.7 & 83.0 & 421 \\
+1 & HAM vidir\_molemax & 3,954 & 3,954 & 1.00 & 0.1 & 0.2 & 789 \\
+2 & HAM vidir\_modern & 3,363 & 1,695 & 1.98 & 72.5 & 68.0 & 214 \\
+3 & HAM rosendahl & 2,259 & 1,552 & 1.46 & 49.3 & 43.5 & 255 \\
+4 & MSK & 819 & 801 & 1.02 & 3.0 & 2.7 & 160 \\
+5 & HAM vienna\_dias & 439 & 278 & 1.58 & 55.7 & 50.2 & 44 \\
 \midrule
-All & 23,247 & 11,847 & 1.96 & & \\
+All & & 23,247 & 11,847$^a$ & 1.96 & 65.9 & 59.5 & 1883 \\
 \bottomrule
+\multicolumn{8}{@{}p{0.95\linewidth}@{}}{\footnotesize $^a$Nine lesions have images in clients 1 and 2, so the
+per-client lesion counts sum to 11,856.}
 \end{tabular}
 \end{table}

@@ -1,0 +1,61 @@
+%% Manuscript in the Wiley New Journal Design v5 template (WileyNJDv5.cls).
+%% Put the template files (WileyNJDv5.cls, *.bst, *.sty and the Fonts folder) in this folder.
+%% Reference style: Vancouver (numbered). Compile with pdfLaTeX or XeLaTeX:  pdflatex main && bibtex main && pdflatex main && pdflatex main
+%% Figures are read from ../figures and tables from ../tables, both generated from the result
+%% files by scripts/make_figures.py and scripts/make_tables.py.
+% Compatibility with TeX Live 2024 and later (newer etex.sty lacks \reserveinserts, which the class calls)
+\providecommand\reserveinserts[1]{}
+\documentclass[VANCOUVER,Times1COL]{WileyNJDv5}
+
+\usepackage{booktabs,multirow}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\graphicspath{{figures/}{../figures/}}
+% tables: works with tables/ next to main.tex (Overleaf) or ../tables (repository layout)
+\newcommand{\inputtable}[1]{\IfFileExists{tables/#1.tex}{\input{tables/#1}}{\input{../tables/#1}}}
+
+\articletype{Research Article}
+\received{Date Month Year}
+\revised{Date Month Year}
+\accepted{Date Month Year}
+\journal{Journal}
+\volume{00}
+\copyyear{2026}
+\startpage{1}
+\raggedbottom
+
+\setcounter{secnumdepth}{3}
+\begin{document}
+
+\title{Lesion-level leakage and site-level reliability in Fed-ISIC2019: an audit of federated skin lesion classification}
+
+\author[1]{Abu Jafar Sisty}
+\author[1]{Author Name} % TODO: author 2 name (change [1] if a different affiliation)
+\author[1]{Author Name} % TODO: author 3 name
+\author[1]{Author Name} % TODO: author 4 name
+\authormark{SISTY \textsc{et al.}}
+\titlemark{LESION-LEVEL LEAKAGE AND SITE-LEVEL RELIABILITY IN FED-ISIC2019}
+
+\address[1]{\orgname{American International University-Bangladesh}, \orgaddress{\street{408/1 Kuratoli, Khilkhet}, \city{Dhaka} \postcode{1229}, \country{Bangladesh}}}
+\corres{Corresponding author: Abu Jafar Sisty. \email{22-49133-3@student.aiub.edu}}
+
+\input{sections/00_abstract}
+
+\maketitle
+
+\renewcommand\thefootnote{}
+\footnotetext{\textbf{Abbreviations:} BA, balanced accuracy; CI, confidence interval; ECE, expected calibration error;
+FL, federated learning; LAC, least ambiguous set-valued classifier; LOCO, leave-one-center-out; q10, 10th percentile
+of coverage over calibration draws.}
+\renewcommand\thefootnote{\fnsymbol{footnote}}
+\setcounter{footnote}{1}
+
+\input{sections/01_introduction}
+\input{sections/02_related_work}
+\input{sections/03_methods}
+\input{sections/04_results}
+\input{sections/05_discussion}
+\input{sections/06_conclusion}
+\input{sections/07_backmatter}
+
+\end{document}

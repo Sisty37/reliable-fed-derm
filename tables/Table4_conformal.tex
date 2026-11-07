@@ -1,9 +1,10 @@
 \begin{table}[!t]
 \centering
-\caption{Federated conformal calibration on the 18 leave-one-center-out models per encoder (LAC,
-$\alpha=0.1$, 100 lesion-wise calibration/evaluation splits). q10: worst center's 10th-percentile
-coverage (primary); min cov.: lowest center mean coverage; $|C|$: mean set size. Best in bold.
-$^\dagger$Proposed.}
+\caption{Federated conformal calibration on the 18 LOCO models per encoder (LAC, $\alpha=0.1$, 100
+lesion-wise calibration/evaluation draws). q10: worst client's 10th percentile of coverage over draws,
+averaged over models (primary); min cov.: lowest client mean coverage; $|C|$: mean set size (equal weight
+per client). Best in bold. $^m$Targets coverage on the mixture of clients, not per client.
+$^\dagger$Proposed. $^p$Post hoc comparator (1,000 draws).}
 \label{tab:conformal}
 \setlength{\tabcolsep}{2.6pt}
 \begin{tabular}{@{}lcccccc@{}}
@@ -12,12 +13,13 @@ $^\dagger$Proposed.}
 \cmidrule(lr){2-4}\cmidrule(l){5-7}
 Method & q10 & min cov. & $|C|$ & q10 & min cov. & $|C|$ \\
 \midrule
-Global & 0.783 & 0.829 & 2.57 & 0.681 & 0.751 & 2.57 \\
+Global$^m$ & 0.783 & 0.829 & 2.57 & 0.681 & 0.751 & 2.57 \\
 Client-wise & 0.814 & \textbf{0.900} & 2.41 & 0.798 & \textbf{0.900} & 2.60 \\
-Sample-weighted & 0.733 & 0.792 & 2.27 & 0.626 & 0.694 & 2.22 \\
-FCP & 0.785 & 0.831 & 2.59 & 0.684 & 0.755 & 2.59 \\
+Sample-weighted$^m$ & 0.733 & 0.792 & 2.27 & 0.626 & 0.694 & 2.22 \\
+FCP$^m$ & 0.785 & 0.831 & 2.59 & 0.684 & 0.755 & 2.59 \\
 ShrinkFCP & 0.815 & 0.860 & 2.45 & 0.731 & 0.793 & 2.43 \\
 EB-ShrinkFCP$^\dagger$ & \textbf{0.837} & 0.899 & 2.50 & \textbf{0.803} & 0.898 & 2.61 \\
+Label-shift-weighted$^p$ & 0.786 & 0.846 & 2.36 & 0.640 & 0.716 & 2.45 \\
 \bottomrule
 \end{tabular}
 \end{table}

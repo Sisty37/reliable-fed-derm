@@ -1,0 +1,16 @@
+% ============================================================== 6. Conclusion
+\section{Conclusion}
+\label{sec:conclusion}
+
+The Fed-ISIC2019 benchmark split places images of the same lesion in training and test sets, unevenly
+across its acquisition-source clients. Models look about 8 balanced-accuracy points better on the leaky
+test sets than on their new-lesion subsets, and up to 16 points better for centralized training.
+A randomized experiment on fixed test images showed that this gain is caused by the sibling images in training (9.1 points for FedAvg) and grows with how closely a classifier fits its training lesions. Leakage changed which methods appeared best when classifiers differed in how closely they fit
+their training lesions. At the level of individual clients, a shared conformal threshold under-covered some
+sites; an empirical-Bayes shrinkage of per-client thresholds kept mean client coverage near the target and
+improved the worst-client tail for one of two encoders, while a fixed shrinkage rule failed its
+pre-specified test. On unseen clients and smartphone images, reliability dropped further, and local
+recalibration restored coverage only with large prediction sets. We recommend that federated medical
+imaging benchmarks with repeated imaging use lesion- or patient-grouped splits and report calibration and
+coverage per client, and we release the corrected splits, code, predictions and protocol history to
+support this.

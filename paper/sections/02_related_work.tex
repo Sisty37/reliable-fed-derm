@@ -1,0 +1,77 @@
+% ============================================================== 2. Related work
+\section{Related work}
+\label{sec:related}
+
+\subsection{Federated learning for medical imaging and dermatology}
+
+FedAvg \cite{mcmahan2017fedavg} trains a global model by averaging locally updated parameters. Because
+clients hold non-identically distributed data, many variants correct client drift, for example FedProx
+with a proximal term \cite{li2020fedprox} and SCAFFOLD with control variates
+\cite{karimireddy2020scaffold}, or personalize parts of the model, for example local batch-normalization
+layers in FedBN \cite{li2021fedbn}, local classification layers in FedPer \cite{arivazhagan2019fedper},
+or local fine-tuning of the global model; surveys review these
+families \cite{kairouz2021advances,tan2023pfl}. In medical imaging, FL has been studied for brain tumor
+segmentation, chest imaging and outcome prediction across hospitals
+\cite{sheller2020federated,dayan2021exam}, and its promises and pitfalls have been reviewed
+\cite{rieke2020future}. FLamby introduced Fed-ISIC2019 as a cross-silo dermatology
+benchmark with clients defined by acquisition source \cite{flamby2022}, and Tavakoli et al.\ used it to
+compare personalized methods on heterogeneous clinical data \cite{tavakoli2024fendafl}. Both evaluations
+use FLamby's fixed image-level split. Dermatology foundation models such as PanDerm, pretrained on
+millions of skin images, now offer strong frozen features \cite{yan2025panderm}; how leakage affects
+comparisons on such features has not been examined.
+
+\subsection{Data leakage and evaluation pitfalls in medical imaging}
+
+Leakage, in which information about the test data reaches the training process, is a widespread cause
+of irreproducible results in machine-learning-based science \cite{kapoor2023leakage}. In medical imaging
+it often arises when images from the same subject appear in training and test sets: splitting
+histopathology slides at the tile level \cite{bussola2021tiles} and brain MRI volumes at the slice level
+\cite{yagis2021leakage} markedly overestimated classification performance compared with subject-level
+splits. Related failure modes include confounding by acquisition site \cite{zech2018confounding} and shortcut
+learning \cite{degrave2021shortcuts}, both of which
+can make held-out performance unrepresentative \cite{roberts2021pitfalls,varoquaux2022failures}. In
+dermatology, Cassidy et al.\ found duplicates across the yearly ISIC releases and proposed curated
+training and test sets \cite{cassidy2022isic}; Gr\"oger et al.\ removed near-duplicates and other
+problems from six dermatology evaluation benchmarks \cite{groger2023reliable}; and Abhishek et al.\ showed
+that duplicates leaked across the splits of DermaMNIST and Fitzpatrick17k and released corrected
+partitions \cite{abhishek2025dermamnist}. These studies establish that dermatology benchmarks can contain
+leakage; they concern centralized datasets and accuracy. What we add is the per-client distribution of
+lesion-level leakage in a federated benchmark, a randomized estimate of its effect, and its consequences
+for method rankings, calibration and conformal coverage.
+
+\subsection{Calibration of medical image classifiers}
+
+Modern neural networks are often over-confident \cite{guo2017calibration}. Calibration is typically
+measured with the expected calibration error \cite{naeini2015ece}, class-wise variants
+\cite{kull2019beyond}, the negative log-likelihood and the Brier score \cite{brier1950}, and improved post
+hoc by temperature scaling \cite{guo2017calibration} or by approximate Bayesian and ensemble methods
+\cite{gal2016dropout}. Calibration degrades under dataset shift
+\cite{ovadia2019trust} and depends on architecture and training \cite{minderer2021revisiting}, and it has
+been studied in medical imaging, for example for segmentation networks \cite{mehrtash2020confidence}. The question we
+address is narrower: how calibration varies across the clients of Fed-ISIC2019 and whether a test set with
+lesion-level leakage changes calibration estimates and the effect of temperature scaling.
+
+\subsection{Conformal prediction in federated settings}
+
+Split conformal prediction turns any classifier into a set-valued predictor with marginal coverage of at
+least $1-\alpha$ when calibration and test points are exchangeable
+\cite{vovk2005algorithmic,angelopoulos2023gentle}; common scores for classification
+are LAC \cite{sadinle2019lac} and APS \cite{romano2020aps}. Coverage can fail under
+covariate or label shift \cite{tibshirani2019covariate,podkopaev2021labelshift,barber2023beyond}, can
+differ between subgroups \cite{lu2022fair}, and needs adapted arguments when observations are grouped,
+as are repeated images of one lesion \cite{dunn2022hierarchical,lee2023hierarchical}. Several coverage
+targets must be distinguished: marginal coverage on the mixture of clients, coverage for each client,
+coverage for each class, and the probability over calibration samples that coverage falls short.
+Federated conformal methods compute thresholds without pooling scores: Lu et al.\ derived a federated
+quantile with a guarantee on the mixture of clients under partial exchangeability
+\cite{lu2023fcp}, Humbert et al.\ proposed a one-shot quantile-of-quantiles scheme
+\cite{humbert2023oneshot}, Plassier et al.\ addressed label shift between clients
+\cite{plassier2023labelshift}, Min et al.\ personalized conformal sets through localization
+\cite{min2025pfcp}, and Wen et al.\ targeted group-conditional coverage \cite{wen2026gcfcp}. A method can
+meet its mixture target while under-covering a particular client. Per-client thresholds avoid that bias
+but are noisy for small clients. Shrinking noisy estimates toward a common mean is a classical idea,
+from normal-means empirical Bayes \cite{efron1975stein} to random-effects meta-analysis
+\cite{dersimonian1986meta}. EB-ShrinkFCP applies it to per-client conformal quantiles with only two
+numbers per client; its methodological novelty is limited to this application, and we evaluate it
+empirically on real clients, on held-out clients and against client-wise, global, FCP and
+label-shift-weighted thresholds.

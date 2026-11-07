@@ -1,0 +1,160 @@
+% ============================================================== 5. Discussion
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Principal findings}
+
+In Fed-ISIC2019, image-level splitting places sibling images of the same lesion in training and test sets
+for 0.1--93\% of each client's test images in the official split. Models looked about 8 balanced-accuracy
+points better on the full image-level test sets than on their new-lesion subsets with any of three encoder
+configurations, and up to 16 points better for centralized training (RQ2). A randomized experiment on fixed test images confirmed that the sibling images themselves cause this gain (9.1 points for FedAvg) and that it grows with how closely a classifier fits its training lesions. Leakage left the
+ranking of fine-tuned methods on the benchmark metric about as stable as re-running with another seed, but
+it reordered methods on per-client accuracy and for a foundation-model encoder, where the most flexible
+head moved from first to seventh place. The size of the apparent inflation was associated with how closely
+a model can fit its training lesions rather than with personalization as such (RQ3). Calibration and
+conformal coverage varied more between clients than between methods, and a single global conformal
+threshold left some clients well below the target coverage (RQ1). A pre-specified fixed shrinkage rule
+failed; an empirical-Bayes variant kept every client's mean coverage near the target and improved the
+worst-client tail for one of two encoders (RQ4). Accuracy, calibration and transferred coverage were worse
+on unseen clients and much worse on smartphone images.
+
+\subsection{Why leakage inflates apparent accuracy}
+
+Two observations constrain the explanation. First, frozen encoders with linear heads, which have far less
+trainable capacity than a fully fine-tuned network, still showed about 8 points of apparent inflation.
+Second, inflation was larger for classifiers that fit their training lesions more closely: linear heads
+about 6--9 points, the two-layer FedPer-style head about 11, fully fine-tuned networks trained for 20 epochs
+12--16, and a 1-nearest-neighbor rule about 22. One explanation consistent with both observations is that
+images of one lesion lie close together in feature space, so a test image whose sibling is in training sits
+next to a correctly labelled neighbor even in a generic ImageNet embedding, and that how much of this
+proximity becomes apparent accuracy depends on how closely the classifier follows individual training
+points. This account fits the large inflation of non-personalized pooled training, the small inflation of
+FedBN and FedAvg-FT, and the reversal of the local-only advantage between model~A and model~B. The H3b
+hypothesis, formulated in terms of personalization, was therefore supported for model~A, but the
+supporting difference came mainly from local-only training. Because the capacity comparisons span
+different optimizers, budgets and head architectures, and the nearest-neighbor analysis is exploratory,
+we regard this as an interpretation, not as a tested causal mechanism. The two additional experiments strengthen this account for the
+comparisons they control. In E8, the exposure effect on the same randomized target images ordered the
+methods in the same way as the observational contrast (local-only $>$ pooled $>$ FedPer $>$ FedAvg for
+model~A; the two-layer head far above the linear heads for model~B), and in E9 a FedAvg model with the
+FedPer-style two-layer head inflated as much as the FedPer-style head itself. Head capacity, not the
+client-specific layer, therefore explains the behaviour of the FedPer-style head. For the fine-tuned
+network, the methods still differ in optimizer and training budget, so fitting capacity remains the most
+consistent explanation rather than an isolated cause.
+
+Freezing a foundation model did not remove the apparent inflation: PanDerm showed as much as an ImageNet
+encoder under FedAvg, and its most flexible head was the variant most favored by the leaky split. Since
+PanDerm's pretraining data are not fully public, some of its specific behavior could reflect overlap with
+the evaluation images. The A-frozen control shows that inflation of this size does not require such
+overlap, but it does not tell how much of PanDerm's own inflation is due to it.
+
+\subsection{Implications for federated benchmarking}
+
+Differences between FL methods on Fed-ISIC2019 are often a few balanced-accuracy points: in FLamby's
+benchmark and in the evaluation of Tavakoli et al., FedAvg, FedProx, SCAFFOLD and personalized methods lie
+within about 5 points of each other \cite{flamby2022,tavakoli2024fendafl}. The apparent leakage effect is
+of the same size or larger and is unevenly distributed, with most of it in one client. Two consequences
+follow. Absolute accuracies reported on image-level splits overstate performance on new lesions, and
+leakage can change comparative performance and rankings, with effects that depend on the methods and the
+metric. We observed both a benign and a harmful case: for fine-tuned EfficientNet-B0 the pooled ranking was
+stable, whereas for frozen PanDerm features it was not. Because the harmful case cannot be recognized
+without a grouped split, we recommend lesion- or patient-grouped splits as the default for FL benchmarks
+with repeated imaging. This extends previous findings on duplicates and problematic partitions in
+centralized dermatology datasets \cite{cassidy2022isic,groger2023reliable,abhishek2025dermamnist} and on
+subject-level leakage in other imaging domains \cite{bussola2021tiles,yagis2021leakage} to a federated
+benchmark with acquisition-source clients, and to calibration and coverage. The lesion-grouped splits used
+here are released with the code.
+
+\subsection{Reliability at the level of the site}
+
+For a clinician, the relevant question is whether probabilities and prediction sets are reliable at their
+own site. Four results bear on this. First, pooled ECE values of 0.02--0.05 concealed per-client values up
+to 0.26, so pooled calibration metrics are not informative about individual sites, although small clients
+also have imprecise ECE. Second, the apparent difference in ECE between new-lesion and full leaky test sets was explained by
+sample size and composition; this illustrates that binned ECE should be compared only at matched sample
+sizes, and that NLL and Brier score are useful companions. Third, temperature scaling fitted on lesion-grouped validation
+lesions made the most strongly fitted models worse on a leaky test set, so calibration studies that tune on
+one kind of split and test on another can reach opposite conclusions; validation and test data should be
+grouped in the same way. Fourth, a global threshold, including FCP's \cite{lu2023fcp}, targets coverage on
+the mixture of clients and under-covered clients whose scores were shifted, whereas client-wise thresholds
+were correct on average but noisy in small clients. Client-wise thresholds rest on exchangeability within a
+client, which repeated images of one lesion weaken; randomizing whole lesions between calibration and
+evaluation and the one-image-per-lesion analysis address this empirically, while hierarchical conformal
+methods offer formal guarantees for grouped data \cite{dunn2022hierarchical,lee2023hierarchical}.
+
+EB-ShrinkFCP addresses the noise of client-wise thresholds without returning to a single shared threshold.
+Its weight $w_c=\tau^2/(\tau^2+\sigma_c^2)$ estimates from the data how much the clients differ, so it
+borrows strength only when they agree; the fixed weight of ShrinkFCP borrowed regardless and imported the
+global threshold's bias into the shifted clients. The attainable gain is limited by evaluation noise: with
+about 44 evaluation images per draw in the smallest client, even a rule with exactly nominal conditional
+coverage has a 10th percentile of observed coverage well below 0.90, although trivial rules such as
+returning all classes would reach full coverage at the cost of useless sets. The evidence on RQ4 is
+therefore mixed. Across the tested models and clients, EB-ShrinkFCP kept mean client coverage close to the
+target; it met its pre-specified criterion on held-out models for model~A, with an interval that excludes
+zero but also includes gains below 2 points; no clear improvement was detected for model~B, so the joint criterion
+was not met; and class-conditional coverage was not established. The post hoc analyses point the same way but do not strengthen the claim: the gain is visible in the
+variability of thresholds, but with one image per lesion its interval includes zero, and its size is
+comparable to the Monte Carlo variability of a 100-draw q10. The rule exchanges two
+aggregate statistics per client, a quantile and a variance, rather than images or score lists; we did not
+analyze its formal privacy properties. Related work on federated conformal prediction has addressed label
+shift \cite{plassier2023labelshift}, one-shot aggregation \cite{humbert2023oneshot}, personalization
+through localization \cite{min2025pfcp} and group-conditional coverage \cite{wen2026gcfcp}; of these we
+compared only a label-shift-weighted threshold.
+
+Under the smartphone-image shift, transferred thresholds lost 23--30 points of coverage, consistent with the
+absence of any guarantee under distribution shift \cite{tibshirani2019covariate,barber2023beyond}. Local
+recalibration restored marginal coverage only by returning four to five of six classes, and coverage for
+actinic keratosis and squamous cell carcinoma stayed below the target. Recalibration can make a model's
+uncertainty honest, but it cannot make an unsuitable model useful, and marginal coverage can hide
+class-conditional failures \cite{lu2022fair}.
+
+\subsection{Recommendations}
+
+Based on these results, we suggest that federated dermatology studies (i) split data by lesion or patient
+and report the leakage rate of any image-level split they compare with; (ii) report balanced accuracy,
+calibration and coverage per client, not only pooled, together with the uncertainty of small-client
+estimates; (iii) fit temperature and conformal thresholds on data grouped in the same way as the test data;
+(iv) state which coverage target a conformal rule serves (mixture, client or class) and compare locally
+calibrated and pooled thresholds for that target before adopting a shrinkage rule; (v) evaluate on held-out
+clients and, before deployment in a new imaging modality, recalibrate locally and report set sizes and
+per-class coverage; and (vi) fix primary analyses in advance and report negative results, in line with
+general reporting guidance for clinical prediction models \cite{collins2024tripodai}.
+
+\subsection{Value of a fixed protocol and negative results}
+
+Of the seven pre-specified tests, four were met in full (Gates 1 and 2, the PAD-UFES-20 transfer rule and E8), two were met for one of two encoders (H3b and 5b), and one failed (RQ4). Without a protocol, the failure of ShrinkFCP could have been
+followed by adjusting its constant until it succeeded on the same models. Instead, the failure motivated a
+new rule that was specified before the held-out models existed and tested on them, and the post hoc results
+are labelled as such. The protocol also prevented a selective reading of H3b: the hypothesis was supported
+for model~A but not for model~B. The protocol was version-controlled rather than registered externally, and
+two amendments were written after results were known (Supplementary~S9); we therefore present the chronology in
+full rather than describing the study as pre-registered in the strict sense
+\cite{nosek2018preregistration,kapoor2023leakage,varoquaux2022failures}.
+
+\subsection{Limitations}
+
+This study has several limitations. It audits one benchmark whose six clients are acquisition sources,
+three of them from one institution; other federated datasets with patient or lesion identifiers are needed
+to test generality. Patient identifiers are not available, so different lesions of one patient can fall on
+both sides of a lesion-grouped split, and images of one lesion remain correlated within the calibration and
+evaluation halves. Clients 4 and 5 have fewer than 200 test images, so their per-client estimates are
+imprecise, and much of the leakage effect is driven by client~0. The apparent inflation compares different
+groups of test images and can reflect differences in difficulty and multiplicity even after
+standardization; the randomized experiment E8 addresses this for lesions with several images, but not for single-image lesions, and its method comparisons still differ in optimizer and budget. Binned ECE is biased in small samples, which affected our original leaky-versus-new
+contrast. Three to five seeds limit the precision of ranking comparisons, and the bootstrap intervals
+reflect test-sample uncertainty given the trained models, not retraining variability. The pooled and
+local-only references use a different optimizer and budget from the federated methods, FedAvg-FT used a
+single pre-specified number of fine-tuning steps, and the benchmark clients and test pools were reused
+across method development and evaluation. Overlap between PanDerm's pretraining data and the evaluation
+images could not be ruled out. Our FedAvg reproduction was 4.2 points below one published value, though
+above FLamby's own results. EB-ShrinkFCP met its criterion for one of two encoders, it does not carry a
+finite-sample per-client guarantee, and its variance approximation for clustered images is heuristic.
+Finally, the mechanism analysis is exploratory.
+
+\subsection{Future work}
+
+Future work should extend the analysis to multi-site datasets with patient identifiers, examine
+hierarchical conformal methods that target new patients or lesions directly, compare EB-ShrinkFCP with
+personalized, label-shift-aware and group-conditional federated conformal methods
+\cite{min2025pfcp,plassier2023labelshift,wen2026gcfcp} under the same coverage target, and target
+class-conditional coverage for rare and commonly confused classes.

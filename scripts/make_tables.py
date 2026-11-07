@@ -41,33 +41,54 @@ def write(name, body):
     print(f"saved {OUT}/{name}")
 
 
-# ---------------------------------------------------------------- Table I: centers
+# ---------------------------------------------------------------- Table I: clients
+SOURCE = {0: "BCN20000", 1: "HAM vidir\\_molemax", 2: "HAM vidir\\_modern", 3: "HAM rosendahl", 4: "MSK",
+          5: "HAM vienna\\_dias"}
+
+
 def table1():
-    sp = pd.read_csv(os.path.join("splits", "e1", "resplit_image_seed0_val.csv"))
+    sp = pd.read_csv(os.path.join("splits", "split_official.csv"))
+    au = load("Audit_supplement.json")
+    off = {r["client"]: r for r in au["leakage_official"]}
     pc = load("E7_analysis.json")["point"]["per_center"]
     rows = []
     for c in range(6):
         g = sp[sp.center == c]
-        rows.append(f"{c} & {len(g):,} & {g.lesion_id.nunique():,} & {len(g) / g.lesion_id.nunique():.2f} & "
-                    f"{100 * pc['leakage_rate'][c]:.1f} & {pc['new_lesion_images'][c]:.0f} \\\\")
-    tot = f"All & {len(sp):,} & {sp.lesion_id.nunique():,} & {len(sp) / sp.lesion_id.nunique():.2f} & & \\\\"
+        lo = off[c]["leaked_same_client"] + off[c]["leaked_other_client_only"]
+        rows.append(f"{c} & {SOURCE[c]} & {len(g):,} & {g.lesion_id.nunique():,} & {len(g) / g.lesion_id.nunique():.2f} & "
+                    f"{100 * lo:.1f} & {100 * pc['leakage_rate'][c]:.1f} & {pc['new_lesion_images'][c]:.0f} \\\\")
+    lo = off["all"]["leaked_same_client"] + off["all"]["leaked_other_client_only"]
+    tot = (f"All & & {len(sp):,} & {sp.lesion_id.nunique():,}$^a$ & {len(sp) / sp.lesion_id.nunique():.2f} & "
+           f"{100 * lo:.1f} & {100 * np.average(pc['leakage_rate'], weights=[off[c]['test_images'] for c in range(6)]):.1f} & "
+           f"{sum(pc['new_lesion_images']):.0f} \\\\")
     body = r"""\begin{table}[!t]
 \centering
-\caption{Fed-ISIC2019 centers. Leakage rate: share of each center's image-level test images whose lesion
-also appears in training; new-lesion test images: the remaining ones (both means over five image-level
-splits).}
+\caption{Fed-ISIC2019 clients (``centers'' in FLamby), defined by acquisition source; clients 1, 2 and 5
+come from one institution with different devices. Leakage: share of a client's image-level test images
+whose lesion also has images in training, in the official FLamby split and as the mean over five
+image-level re-splits; new test: mean number of new-lesion test images in the re-splits.}
 \label{tab:dataset}
-\setlength{\tabcolsep}{3.5pt}
-\begin{tabular}{@{}lrrrrr@{}}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llrrrrrr@{}}
 \toprule
-Center & Images & Lesions & Img./lesion & Leak. (\%) & New test \\
+ & & & & & \multicolumn{2}{c}{Leakage (\%)} & \\
+\cmidrule(lr){6-7}
+Client & Source & Images & Lesions & Img./lesion & Official & Re-splits & New test \\
 \midrule
 """ + "\n".join(rows) + "\n\\midrule\n" + tot + r"""
 \bottomrule
+\multicolumn{8}{@{}p{0.95\linewidth}@{}}{\footnotesize $^a$Nine lesions have images in clients 1 and 2, so the
+per-client lesion counts sum to 11,856.}
 \end{tabular}
 \end{table}
 """
     write("Table1_dataset.tex", body)
+
+
+def pad_transfer(pad, key):
+    """Transferred LAC coverage at alpha 0.1 on PAD-UFES-20 with its patient-bootstrap interval."""
+    t = pad.get(key, {}).get("lac_a0.1", {}).get("transfer")
+    return None if t is None else (t["coverage"], t["coverage_ci95"])
 
 
 # ---------------------------------------------------------------- Table II: scorecard of pre-specified tests
@@ -91,24 +112,38 @@ def table2():
     rows = [
         ("Gate 1", "Pipeline: FedAvg BA, official split (3 seeds)", "A", f"{g1:.3f} vs 0.657 $\\pm$ 0.05",
          verdict(abs(g1 - 0.657) <= 0.05)),
-        ("Gate 2 (RQ2)", "Leakage inflation $>0$, FedAvg (primary)", "A", pts(gA["inflation"], gA["ci95"]),
-         verdict(gA["ci95"][0] > 0)),
-        ("H3b (RQ3)", "Personalized minus FedAvg inflation, centers 0, 2, 3", "A", hAv, verdict(hAok)),
+        ("Gate 2 (RQ2)", "Apparent inflation $\\ge 2$, CI $>0$, FedAvg (primary)", "A", pts(gA["inflation"], gA["ci95"]),
+         verdict(gA["inflation"] >= 0.02 and gA["ci95"][0] > 0)),
+        ("H3b (RQ3)", "Personalized minus FedAvg inflation, clients 0, 2, 3", "A", hAv, verdict(hAok)),
         ("", "", "B", hBv, verdict(hBok)),
         ("RQ4", "ShrinkFCP, in-federation models: q10 gain $\\ge 2$ + guards", "A", pts(e5A["shrink"]["gain"], e5A["shrink"]["ci95"]),
          verdict(e5A["shrink"]["success"])),
         ("", "", "B", pts(e5B["shrink"]["gain"], e5B["shrink"]["ci95"]), verdict(e5B["shrink"]["success"])),
-        ("5b (RQ4)", "EB-ShrinkFCP on held-out-center models, same rule", "A", pts(e6A["eb"]["gain"], e6A["eb"]["ci95"]),
+        ("5b (RQ4)", "EB-ShrinkFCP on LOCO models, same rule", "A", pts(e6A["eb"]["gain"], e6A["eb"]["ci95"]),
          verdict(e6A["eb"]["success"])),
         ("", "", "B", pts(e6B["eb"]["gain"], e6B["eb"]["ci95"]), verdict(e6B["eb"]["success"])),
     ]
+    pad = load("E6_padufes.json") if os.path.exists(os.path.join(R, "E6_padufes.json")) else None
+    if pad is not None:
+        for mdl, key in (("A", "A"), ("B", "B")):
+            t = pad_transfer(pad, key)
+            if t is not None:
+                cov, ci = t
+                rows.append(("PAD (RQ1)" if mdl == "A" else "", "Transferred coverage fails ($<0.90$, CI excl.\\ 0.90)" if mdl == "A" else "",
+                             mdl, f"{cov:.3f} [{ci[0]:.3f}, {ci[1]:.3f}]", r"\textbf{met}" if ci[1] < 0.90 else "not met"))
+    e8 = load("E8_sibling_exposure.json") if os.path.exists(os.path.join(R, "E8_sibling_exposure.json")) else None
+    if e8 is not None and "primary" in e8:
+        p8 = e8["primary"]
+        rows.append(("E8 (RQ2)", "Exposure effect $\\ge 2$, CI $>0$, FedAvg", "A", pts(p8["effect"], p8["ci"]), verdict(p8["met"])))
     lines = [f"{a} & {b} & {m} & {v} & {r} \\\\" for a, b, m, v, r in rows]
     body = r"""\begin{table*}[!t]
 \centering
 \caption{All pre-specified tests, in the order they were registered. Effects in balanced-accuracy points
-(Gates, H3b) or coverage points (RQ4, 5b), with 95\% lesion-bootstrap intervals. RQ4 and 5b require the
-gain for \emph{each} of models A and B; the reference is client-wise calibration. Gate 1 compares with
-the FENDA-FL value.}
+(Gates, H3b, E8) or coverage points (RQ4, 5b), with 95\% lesion-bootstrap intervals (patients for
+PAD-UFES-20). RQ4 and 5b require the gain for \emph{each} of models A and B; the reference is client-wise
+calibration. Gate 1 compares with the FedAvg baseline reported in the FENDA-FL study
+\cite{tavakoli2024fendafl}; meeting it is a replication tolerance. Gate 2 is the single primary outcome;
+the other tests are secondary and not adjusted for multiplicity.}
 \label{tab:scorecard}
 \begin{tabular}{@{}llccl@{}}
 \toprule
@@ -146,23 +181,25 @@ def table3():
             lines.append(r"\midrule")
     body = r"""\begin{table*}[!t]
 \centering
-\caption{Balanced accuracy on image-level (Img) and lesion-grouped (Les) test sets, mean of five seeds.
-Pooled: one balanced accuracy over all test images; mean of centers: average of the six per-center values.
-Best value per column in bold. Model B has no FedBN (no BatchNorm in a linear head); its FedPer is the
-FedPer-style two-layer head.}
+\caption{Balanced accuracy on image-level (Img) and lesion-grouped (Les) test sets (E2/E7, mean of five
+seeds). Pooled: one balanced accuracy over all test images; mean of clients: average of the six per-client
+values. Best value per column in bold; differences of a few points are within seed-to-seed variation
+(Supplementary~S10). Model B has no FedBN (no BatchNorm in a linear head); its FedPer is the FedPer-style
+two-layer head, whereas its other heads are linear. Kendall's $\tau_b$ compares the rankings of the
+seven methods common to both split types.}
 \label{tab:ba}
 \setlength{\tabcolsep}{4.5pt}
 \begin{tabular}{@{}lcccccccc@{}}
 \toprule
  & \multicolumn{4}{c}{Model A (EfficientNet-B0, fine-tuned)} & \multicolumn{4}{c}{Model B (PanDerm-Base, frozen)} \\
 \cmidrule(lr){2-5}\cmidrule(l){6-9}
- & \multicolumn{2}{c}{Pooled} & \multicolumn{2}{c}{Mean of centers} & \multicolumn{2}{c}{Pooled} & \multicolumn{2}{c}{Mean of centers} \\
+ & \multicolumn{2}{c}{Pooled} & \multicolumn{2}{c}{Mean of clients} & \multicolumn{2}{c}{Pooled} & \multicolumn{2}{c}{Mean of clients} \\
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(l){8-9}
 Method & Img & Les & Img & Les & Img & Les & Img & Les \\
 \midrule
 """ + "\n".join(lines) + r"""
 \midrule
-Kendall $\tau$ (Img vs Les) & \multicolumn{2}{c}{""" + f"{A['point']['pooled']['tau_between']:+.2f}" + r"""} & \multicolumn{2}{c}{""" \
+Kendall $\tau_b$ (Img vs Les) & \multicolumn{2}{c}{""" + f"{A['point']['pooled']['tau_between']:+.2f}" + r"""} & \multicolumn{2}{c}{""" \
         + f"{A['point']['mean_of_centers']['tau_between']:+.2f}" + r"""} & \multicolumn{2}{c}{""" \
         + f"{B['point']['pooled']['tau_between']:+.2f}" + r"""} & \multicolumn{2}{c}{""" \
         + f"{B['point']['mean_of_centers']['tau_between']:+.2f}" + r"""} \\
@@ -175,9 +212,14 @@ Kendall $\tau$ (Img vs Les) & \multicolumn{2}{c}{""" + f"{A['point']['pooled']['
 
 # ---------------------------------------------------------------- Table IV: conformal methods on held-out-center models
 def table4():
-    meth = [("global", "Global"), ("clientwise", "Client-wise"), ("weighted", "Sample-weighted"), ("fcp", "FCP"),
+    meth = [("global", "Global$^m$"), ("clientwise", "Client-wise"), ("weighted", "Sample-weighted$^m$"), ("fcp", "FCP$^m$"),
             ("shrink", "ShrinkFCP"), ("eb", r"EB-ShrinkFCP$^\dagger$")]
     data = [load("E6_conformal_loco.json")["lac_a0.1"], load("E6_conformal_loco_pandermfrozen.json")["lac_a0.1"]]
+    sens = load("Conformal_sensitivity.json") if os.path.exists(os.path.join(R, "Conformal_sensitivity.json")) else None
+    if sens is not None and "A/E6_loco" in sens and "B/E6_loco" in sens:     # post hoc comparator, 1,000 draws
+        meth.append(("lsw", "Label-shift-weighted$^p$"))
+        for d, key in zip(data, ("A/E6_loco", "B/E6_loco")):
+            d["lsw"] = sens[key]["mc_1000"]["lsw"]
     cols = []
     for d in data:
         cols.append({k: d[k]["worst_center_q10"] for k, _ in meth})
@@ -194,10 +236,11 @@ def table4():
         lines.append(f"{lab} & " + " & ".join(cells) + r" \\")
     body = r"""\begin{table}[!t]
 \centering
-\caption{Federated conformal calibration on the 18 leave-one-center-out models per encoder (LAC,
-$\alpha=0.1$, 100 lesion-wise calibration/evaluation splits). q10: worst center's 10th-percentile
-coverage (primary); min cov.: lowest center mean coverage; $|C|$: mean set size. Best in bold.
-$^\dagger$Proposed.}
+\caption{Federated conformal calibration on the 18 LOCO models per encoder (LAC, $\alpha=0.1$, 100
+lesion-wise calibration/evaluation draws). q10: worst client's 10th percentile of coverage over draws,
+averaged over models (primary); min cov.: lowest client mean coverage; $|C|$: mean set size (equal weight
+per client). Best in bold. $^m$Targets coverage on the mixture of clients, not per client.
+$^\dagger$Proposed. $^p$Post hoc comparator (1,000 draws).}
 \label{tab:conformal}
 \setlength{\tabcolsep}{2.6pt}
 \begin{tabular}{@{}lcccccc@{}}

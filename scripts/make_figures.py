@@ -231,7 +231,7 @@ def fig1():
     bx.tick_params(axis="y", length=0)
     bx.spines["left"].set_visible(False)
     bx.legend(loc="lower right", handlelength=1.0, borderaxespad=0.1)
-    fig.text(0.635, 0.99, "(b) Leaked share of each center's test set", fontsize=8, weight="bold", va="top")
+    fig.text(0.635, 0.99, "(b) Leaked share of each client's test set", fontsize=8, weight="bold", va="top")
     save(fig, "Fig1_design_leakage")
 
 
@@ -367,7 +367,7 @@ def fig4():
     ax.set_xlabel("Center leakage rate (% of test images)")
     ax.set_ylabel("Per-center inflation (BA points)")
     ygrid(ax)
-    panel(ax, "a", "Dose-response (model A)", x=-0.2)
+    panel(ax, "a", "Inflation vs leakage rate (model A)", x=-0.2)
 
     # (b) H3b inflation by method, models A and B
     ax = fig.add_subplot(gs[1])
@@ -394,7 +394,7 @@ def fig4():
     ax.legend(handles=[Line2D([], [], marker="o", ls="", color=BLUE, ms=4.5, label="Model A (full fine-tuning)"),
                        Line2D([], [], marker="D", ls="", color=MAGENTA, ms=4, label="Model B (frozen; FedPer = 256-unit head)")],
               loc="upper right", bbox_to_anchor=(1.03, 1.0), handletextpad=0.3, fontsize=6.2)
-    panel(ax, "b", "Inflation follows capacity", x=-0.35)
+    panel(ax, "b", "Inflation by method (H3b clients)", x=-0.35)
 
     # (c) 1-NN vs linear head, frozen encoders
     ax = fig.add_subplot(gs[2])
@@ -610,7 +610,7 @@ def fig7():
                 ax.text(x, 0.04, f"|C|\n{s:.1f}", ha="center", fontsize=5.4, color="white", linespacing=0.9)
     ax.axhline(0.9, color=INK, lw=0.7, ls=(0, (4, 2)))
     ax.set_xticks(range(3))
-    ax.set_xticklabels(["Fed-ISIC\n(in domain)", "PAD\ntransferred", "PAD\nrecalibrated"])
+    ax.set_xticklabels(["Fed-ISIC\n(calibration)", "PAD\ntransferred", "PAD\nrecalibrated"])
     ax.set_ylim(0, 1.17)
     ax.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0])
     ax.set_ylabel("Coverage (LAC, α = 0.1)")
