@@ -686,6 +686,7 @@ e0 \ldots{} e5 tags & 30 Oct--3 Nov & E0, E0b, E1, E2, E5 & pre-run tags before 
 v0.11 & 3 Nov & E0--E5 (RQ4 failed) & EB-ShrinkFCP and test 5b on LOCO models (before any LOCO model) \\
 e7, PAD, NN tags & 5--6 Nov & E0--E6 & pre-run tags; PAD interpretation rule; NN analysis exploratory \\
 v0.12 & 7 Nov & E0--E7, PAD, NN; external review & E8, E9 and their tests; post hoc sensitivity analyses \\
+8 Nov (no new version) & 8 Nov & all results, incl. E8, E9 & post hoc only: S13--S17 \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -822,6 +823,240 @@ Local-only (2-layer) & 0.677 & 0.559 & 11.7 \\
 \end{tabular}
 \end{table}
 Kendall's $\tau_b$ between the two rankings with the two-layer heads included: 0.20.
+\section*{S13. Fed-ISIC2019 studies and their evaluation split}
+Studies found in a targeted search (not a systematic review). None reported a lesion-grouped split; all evaluated on the FLamby test set or stated that they followed FLamby's settings. Differences between the compared methods in these studies are often a few balanced-accuracy points, comparable to the apparent leakage effect measured here.
+\begin{table*}[!htbp]
+\centering
+\scriptsize
+\caption{Fed-ISIC2019 evaluations (BA, balanced accuracy, as reported by each study).}
+\label{tab:s13}
+\begin{tabular}{@{}p{4.2cm}p{5.0cm}p{6.3cm}@{}}
+\toprule
+Study & Split as described & Reported results \\
+\midrule
+du Terrail et al. 2022 (NeurIPS D\&B) [a] & defines the benchmark; image-level re-split of the 23,247 images & BA; strategies shown in a figure, FL between local and pooled \\
+Tavakoli et al. 2024 (MLHC, PMLR 252) [b] & FLamby split (per-client sizes reproduced from FLamby) & FedAvg 0.657, central 0.683, Ditto 0.703, FENDA-FL 0.607 \\
+Li et al. 2024 (ICLR, FedCompass) [c] & FLamby default settings (split not named) & time to 50\% BA; no final BA comparison \\
+Allouah et al. 2024 (NeurIPS) [d] & FLamby test set halved into validation/test & FedAvg 0.731, FedProx 0.750, one-shot FENS 0.579 \\
+Siomos et al. 2024 (arXiv) [e] & ``improved version'' of the FLamby benchmark & FedAvg 59.5--74.8, FedPer up to 84.9 (architectures/settings) \\
+Ayromlou \& Emerson 2025 (arXiv) [f] & FLamby settings, per-client held-out test sets & FedAvg 64.1, Ditto 71.4, Ditto + constraint up to 72.2 \\
+Tupper \& Gagn\'e 2025 (arXiv) [g] & same test set as FLamby; 80/20 stratified train/validation & FedIT 0.656, best (FedSA) 0.737 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+\noindent{\footnotesize [a] arXiv:2210.04620. [b] arXiv:2309.16825; PMLR 252. [c] arXiv:2309.14675; ICLR 2024. [d] NeurIPS 2024, ``Revisiting ensembling in one-shot federated learning''. [e] arXiv:2410.02006. [f] arXiv:2505.07525. [g] arXiv:2510.12741.}
+\section*{S14. Coverage by diagnostic class (post hoc)}
+LAC, $\alpha=0.1$, FedAvg models, 200 lesion-wise 50/50 draws per model; coverage by true class on the evaluation halves, pooled over clients. Mondrian rules use one threshold per class (from the pooled calibration scores of that class, or per client with a fallback to the pooled class threshold when a client has fewer than 10 calibration images of the class).
+\begin{table*}[!htbp]
+\centering
+\scriptsize
+\caption{Fed-ISIC2019: coverage by class, overall coverage and mean set size.}
+\label{tab:s14}
+\begin{tabular}{@{}lllrrrrrrrrrr@{}}
+\toprule
+Model & Exp. & Rule & MEL & NV & BCC & AK & BKL & DF & VASC & SCC & All & Size \\
+\midrule
+A & LOCO & Global & 0.931 & 0.977 & 0.820 & 0.669 & 0.787 & 0.589 & 0.851 & 0.635 & 0.900 & 2.59 \\
+A & LOCO & Client-wise & 0.932 & 0.953 & 0.858 & 0.719 & 0.810 & 0.582 & 0.842 & 0.719 & 0.901 & 2.56 \\
+A & LOCO & EB-ShrinkFCP & 0.935 & 0.959 & 0.859 & 0.719 & 0.816 & 0.590 & 0.844 & 0.717 & 0.905 & 2.58 \\
+A & LOCO & Mondrian (pooled) & 0.899 & 0.900 & 0.900 & 0.897 & 0.900 & 0.884 & 0.879 & 0.902 & 0.900 & 3.53 \\
+A & LOCO & Mondrian (per client) & 0.902 & 0.901 & 0.901 & 0.898 & 0.905 & 0.879 & 0.876 & 0.908 & 0.901 & 3.54 \\
+\midrule
+A & E5 & Global & 0.935 & 0.978 & 0.818 & 0.710 & 0.764 & 0.698 & 0.913 & 0.553 & 0.900 & 2.47 \\
+A & E5 & Client-wise & 0.935 & 0.959 & 0.842 & 0.755 & 0.795 & 0.695 & 0.912 & 0.635 & 0.901 & 2.47 \\
+A & E5 & EB-ShrinkFCP & 0.938 & 0.964 & 0.844 & 0.756 & 0.799 & 0.701 & 0.913 & 0.634 & 0.905 & 2.49 \\
+A & E5 & Mondrian (pooled) & 0.898 & 0.902 & 0.899 & 0.898 & 0.900 & 0.899 & 0.892 & 0.904 & 0.900 & 3.27 \\
+A & E5 & Mondrian (per client) & 0.901 & 0.903 & 0.900 & 0.895 & 0.905 & 0.901 & 0.890 & 0.902 & 0.902 & 3.31 \\
+\midrule
+B & LOCO & Global & 0.883 & 0.949 & 0.885 & 0.716 & 0.894 & 0.532 & 0.810 & 0.672 & 0.900 & 2.61 \\
+B & LOCO & Client-wise & 0.896 & 0.930 & 0.916 & 0.752 & 0.904 & 0.499 & 0.800 & 0.722 & 0.901 & 2.56 \\
+B & LOCO & EB-ShrinkFCP & 0.899 & 0.935 & 0.916 & 0.752 & 0.908 & 0.506 & 0.801 & 0.722 & 0.904 & 2.58 \\
+B & LOCO & Mondrian (pooled) & 0.900 & 0.900 & 0.900 & 0.898 & 0.900 & 0.900 & 0.874 & 0.901 & 0.900 & 3.63 \\
+B & LOCO & Mondrian (per client) & 0.904 & 0.902 & 0.900 & 0.898 & 0.905 & 0.896 & 0.873 & 0.902 & 0.902 & 3.64 \\
+\midrule
+B & E5 & Global & 0.858 & 0.942 & 0.922 & 0.794 & 0.881 & 0.549 & 0.847 & 0.688 & 0.900 & 2.43 \\
+B & E5 & Client-wise & 0.881 & 0.924 & 0.936 & 0.820 & 0.896 & 0.537 & 0.834 & 0.721 & 0.901 & 2.42 \\
+B & E5 & EB-ShrinkFCP & 0.883 & 0.931 & 0.937 & 0.821 & 0.900 & 0.541 & 0.837 & 0.722 & 0.905 & 2.44 \\
+B & E5 & Mondrian (pooled) & 0.898 & 0.901 & 0.898 & 0.895 & 0.901 & 0.907 & 0.893 & 0.902 & 0.900 & 3.36 \\
+B & E5 & Mondrian (per client) & 0.902 & 0.903 & 0.899 & 0.894 & 0.906 & 0.911 & 0.895 & 0.901 & 0.902 & 3.37 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+\begin{table}[!htbp]
+\centering
+\scriptsize
+\caption{PAD-UFES-20, recalibrated on half of the patients (100 draws per seed, seeds 0--4): coverage by class.}
+\label{tab:s14pad}
+\begin{tabular}{@{}llrrrrrrrr@{}}
+\toprule
+Model & Rule & MEL & NV & BCC & AK & BKL & SCC & All & Size \\
+\midrule
+A & Marginal & 1.000 & 0.998 & 0.917 & 0.824 & 0.998 & 0.845 & 0.900 & 4.87 \\
+A & Mondrian & 0.917 & 0.903 & 0.900 & 0.902 & 0.901 & 0.903 & 0.902 & 3.92 \\
+B & Marginal & 0.904 & 0.942 & 0.971 & 0.801 & 0.993 & 0.803 & 0.900 & 4.30 \\
+B & Mondrian & 0.917 & 0.905 & 0.901 & 0.899 & 0.903 & 0.902 & 0.901 & 4.04 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\section*{S15. Variants of EB-ShrinkFCP (post hoc)}
+LAC, $\alpha=0.1$, FedAvg models, 1,000 lesion-wise draws per model. Variants change one element of the pre-specified rule at a time.
+\begin{table}[!htbp]
+\centering
+\scriptsize
+\caption{Worst-client q10, lowest client mean coverage and mean set size.}
+\label{tab:s15}
+\begin{tabular}{@{}lllrrr@{}}
+\toprule
+Model & Exp. & Rule & Worst q10 & Min mean cov. & Size \\
+\midrule
+A & LOCO & Client-wise & 0.805 & 0.899 & 2.40 \\
+A & LOCO & Global & 0.781 & 0.815 & 2.56 \\
+A & LOCO & EB-ShrinkFCP (pre-specified) & 0.836 & 0.898 & 2.49 \\
+A & LOCO & EB, random-effects mean & 0.829 & 0.895 & 2.44 \\
+A & LOCO & EB, variance floor $10^{-8}$ & 0.836 & 0.898 & 2.49 \\
+A & LOCO & EB, variance floor $10^{-4}$ & 0.834 & 0.897 & 2.48 \\
+A & LOCO & EB, no images-per-lesion factor & 0.836 & 0.898 & 2.48 \\
+A & LOCO & EB, lesion-bootstrap variance & 0.834 & 0.898 & 2.47 \\
+\midrule
+A & E5 & Client-wise & 0.803 & 0.899 & 2.36 \\
+A & E5 & Global & 0.786 & 0.819 & 2.44 \\
+A & E5 & EB-ShrinkFCP (pre-specified) & 0.841 & 0.896 & 2.44 \\
+A & E5 & EB, random-effects mean & 0.831 & 0.895 & 2.39 \\
+A & E5 & EB, variance floor $10^{-8}$ & 0.841 & 0.896 & 2.44 \\
+A & E5 & EB, variance floor $10^{-4}$ & 0.841 & 0.896 & 2.44 \\
+A & E5 & EB, no images-per-lesion factor & 0.842 & 0.897 & 2.43 \\
+A & E5 & EB, lesion-bootstrap variance & 0.841 & 0.897 & 2.42 \\
+\midrule
+B & LOCO & Client-wise & 0.800 & 0.899 & 2.60 \\
+B & LOCO & Global & 0.682 & 0.732 & 2.56 \\
+B & LOCO & EB-ShrinkFCP (pre-specified) & 0.805 & 0.898 & 2.61 \\
+B & LOCO & EB, random-effects mean & 0.787 & 0.892 & 2.58 \\
+B & LOCO & EB, variance floor $10^{-8}$ & 0.805 & 0.898 & 2.61 \\
+B & LOCO & EB, variance floor $10^{-4}$ & 0.803 & 0.898 & 2.61 \\
+B & LOCO & EB, no images-per-lesion factor & 0.804 & 0.897 & 2.61 \\
+B & LOCO & EB, lesion-bootstrap variance & 0.803 & 0.898 & 2.61 \\
+\midrule
+B & E5 & Client-wise & 0.797 & 0.899 & 2.55 \\
+B & E5 & Global & 0.666 & 0.718 & 2.38 \\
+B & E5 & EB-ShrinkFCP (pre-specified) & 0.810 & 0.899 & 2.57 \\
+B & E5 & EB, random-effects mean & 0.788 & 0.890 & 2.53 \\
+B & E5 & EB, variance floor $10^{-8}$ & 0.810 & 0.899 & 2.57 \\
+B & E5 & EB, variance floor $10^{-4}$ & 0.808 & 0.899 & 2.57 \\
+B & E5 & EB, no images-per-lesion factor & 0.809 & 0.898 & 2.57 \\
+B & E5 & EB, lesion-bootstrap variance & 0.806 & 0.899 & 2.57 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\begin{table}[!htbp]
+\centering
+\scriptsize
+\caption{Lesion-bootstrap variance of each client's threshold divided by the variance used by EB-ShrinkFCP (median over draws; clients 0--5). Values below 1 mean that the pre-specified approximation is conservative, which increases shrinkage.}
+\label{tab:s15v}
+\begin{tabular}{@{}llp{7cm}@{}}
+\toprule
+Model & Exp. & Ratio by client \\
+\midrule
+A & LOCO & 0.79, 0.99, 0.79, 0.83, 0.85, 0.58 \\
+A & E5 & 0.83, 1.03, 0.81, 0.95, 0.84, 0.58 \\
+B & LOCO & 0.82, 0.98, 0.72, 0.81, 0.88, 0.63 \\
+B & E5 & 0.77, 0.97, 0.76, 0.85, 0.94, 0.63 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\section*{S16. Simulation with clustered scores and calibration-budget curves (post hoc)}
+Six clients with 600, 300, 150, 80, 40, 20 calibration lesions; each lesion has $1+\mathrm{Poisson}(1)$ images; latent score $z=\delta_c+u_\ell+e_i$ with lesion effect $u_\ell\sim N(0,\rho)$, image noise $e_i\sim N(0,1-\rho)$ and client shift $\delta_c\sim N(0,\tau^2)$ drawn per replicate; conformal score $1/(1+e^{-z})$. The true coverage of each threshold for one image of a new lesion is computed from 200,000 draws of the known client distribution; 2,000 replicates per scenario.
+\begin{table}[!htbp]
+\centering
+\scriptsize
+\caption{True coverage in the simulation: worst client's 10th percentile over calibration samples, lowest client mean, and highest client probability of true coverage below 0.85.}
+\label{tab:s16}
+\begin{tabular}{@{}lllrrr@{}}
+\toprule
+$\tau$ & $\rho$ & Rule & Worst q10 & Min mean & Max P($<$0.85) \\
+\midrule
+0.0 & 0.2 & Client-wise & 0.845 & 0.900 & 0.11 \\
+0.0 & 0.2 & Global & 0.892 & 0.900 & 0.00 \\
+0.0 & 0.2 & EB-ShrinkFCP & 0.892 & 0.902 & 0.00 \\
+0.0 & 0.2 & EB, random-effects mean & 0.893 & 0.902 & 0.00 \\
+\midrule
+0.0 & 0.6 & Client-wise & 0.831 & 0.900 & 0.15 \\
+0.0 & 0.6 & Global & 0.890 & 0.900 & 0.00 \\
+0.0 & 0.6 & EB-ShrinkFCP & 0.890 & 0.901 & 0.00 \\
+0.0 & 0.6 & EB, random-effects mean & 0.891 & 0.902 & 0.00 \\
+\midrule
+0.3 & 0.2 & Client-wise & 0.848 & 0.901 & 0.11 \\
+0.3 & 0.2 & Global & 0.812 & 0.894 & 0.21 \\
+0.3 & 0.2 & EB-ShrinkFCP & 0.853 & 0.902 & 0.09 \\
+0.3 & 0.2 & EB, random-effects mean & 0.853 & 0.901 & 0.09 \\
+\midrule
+0.3 & 0.6 & Client-wise & 0.829 & 0.900 & 0.16 \\
+0.3 & 0.6 & Global & 0.804 & 0.893 & 0.21 \\
+0.3 & 0.6 & EB-ShrinkFCP & 0.847 & 0.901 & 0.11 \\
+0.3 & 0.6 & EB, random-effects mean & 0.846 & 0.901 & 0.11 \\
+\midrule
+0.8 & 0.2 & Client-wise & 0.850 & 0.900 & 0.10 \\
+0.8 & 0.2 & Global & 0.632 & 0.871 & 0.30 \\
+0.8 & 0.2 & EB-ShrinkFCP & 0.861 & 0.901 & 0.08 \\
+0.8 & 0.2 & EB, random-effects mean & 0.850 & 0.900 & 0.10 \\
+\midrule
+0.8 & 0.6 & Client-wise & 0.833 & 0.900 & 0.16 \\
+0.8 & 0.6 & Global & 0.619 & 0.864 & 0.31 \\
+0.8 & 0.6 & EB-ShrinkFCP & 0.848 & 0.901 & 0.10 \\
+0.8 & 0.6 & EB, random-effects mean & 0.831 & 0.900 & 0.14 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\begin{table}[!htbp]
+\centering
+\scriptsize
+\caption{Variance used by EB-ShrinkFCP divided by the actual sampling variance of the client quantile (fixed client distributions, 2,000 replicates), clients ordered from largest to smallest.}
+\label{tab:s16v}
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+$\rho$ & 600 les. & 300 les. & 150 les. & 80 les. & 40 les. & 20 les. \\
+\midrule
+0.2 & 1.95 & 1.99 & 2.29 & 2.22 & 2.61 & 2.62 \\
+0.6 & 1.52 & 1.53 & 1.67 & 1.72 & 1.88 & 1.91 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\begin{table}[!htbp]
+\centering
+\scriptsize
+\caption{Calibration-budget curves on the LOCO FedAvg models: at most the given number of calibration lesions per client (all available if fewer), evaluation on the other half; worst-client q10 / lowest client mean coverage, 300 draws per model.}
+\label{tab:s16b}
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+Model & Lesions per client & Client-wise & Global & EB-ShrinkFCP \\
+\midrule
+A & 10 & 0.766 / 0.892 & 0.725 / 0.809 & 0.769 / 0.891 \\
+A & 25 & 0.799 / 0.895 & 0.744 / 0.804 & 0.813 / 0.895 \\
+A & 50 & 0.803 / 0.897 & 0.763 / 0.811 & 0.830 / 0.894 \\
+A & 100 & 0.808 / 0.898 & 0.774 / 0.815 & 0.837 / 0.895 \\
+\midrule
+B & 10 & 0.765 / 0.892 & 0.667 / 0.769 & 0.767 / 0.896 \\
+B & 25 & 0.798 / 0.896 & 0.686 / 0.761 & 0.813 / 0.906 \\
+B & 50 & 0.799 / 0.897 & 0.690 / 0.756 & 0.816 / 0.896 \\
+B & 100 & 0.801 / 0.898 & 0.687 / 0.746 & 0.815 / 0.897 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\section*{S17. Nearest-neighbor proximity matched by client and class (post hoc)}
+Frozen plain-view embeddings, centered with the training mean of each split and L2-normalized; image-level splits, seeds 0--4. Matched differences average the within-stratum (client $\times$ class) differences, weighted by the stratum's new-lesion count (strata with at least three leaked and three new images). 1-NN inflation is standardized like Eq.~(1); ``siblings removed'' excludes all training images of the test image's lesion from the neighbor search.
+\begin{table*}[!htbp]
+\centering
+\scriptsize
+\caption{Leaked minus new-lesion test images: cosine similarity to the nearest training image and to the nearest training image of another lesion (raw and client $\times$ class matched), and standardized 1-NN inflation in points with and without siblings in the training set; mean (SD) over seeds.}
+\label{tab:s17nn}
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+Model & NN raw & NN matched & Other-lesion raw & Other-lesion matched & 1-NN infl. & 1-NN, no siblings \\
+\midrule
+A-frozen & +0.058 & +0.059 (0.004) & -0.006 & -0.004 (0.005) & +25.9 (2.0) & -0.0 (2.8) \\
+B & +0.059 & +0.055 (0.002) & +0.002 & +0.001 (0.001) & +25.2 (1.9) & -0.9 (1.7) \\
+\bottomrule
+\end{tabular}
+\end{table*}
 
 \section*{Figure S1}
 \begin{figure}[!htbp]
