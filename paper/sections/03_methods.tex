@@ -118,7 +118,8 @@ full fine-tuning that keeps architecture and initial weights fixed; it also diff
 optimizer schedule, the number of updates and the use of cached augmented views, so it does not isolate
 fine-tuning completely. \emph{Model B} is PanDerm-Base \cite{yan2025panderm}, a ViT-B/16
 \cite{dosovitskiy2021vit} dermatology foundation model (checkpoint
-\texttt{panderm\_bb\_data6\_checkpoint-499.pth}), frozen, with a federated head on the 768-dimensional
+\texttt{panderm\_bb\_data6\_checkpoint-499.pth}, SHA-256 \texttt{be1e0fb1\ldots0ac1ff1}, full hash in the
+repository), frozen, with a federated head on the 768-dimensional
 CLS token after the final layer normalization. ISIC 2019, HAM10000, BCN20000 and PAD-UFES-20 are not
 listed among PanDerm's pretraining sources, but overlap could not be ruled out, so results for model~B
 are reported with this caveat.
@@ -300,7 +301,7 @@ of its sampling variance. The variance is obtained from the spread of order stat
 quantile, a standard approximation to the standard error of a sample quantile, with the spacing widened
 by the average number of images per calibration lesion, $m_c/n_c$, as a heuristic allowance for
 correlated images; this factor is not a general design effect for unequal clusters, and its adequacy was
-checked empirically with the lesion bootstrap (Supplementary~S6). The server combines the quantiles into a
+checked post hoc with the lesion bootstrap and in a simulation (Supplementary~S6, S15 and S16). The server combines the quantiles into a
 between-client variance $\tau^2$ and a precision-weighted mean $\bar q$, and returns
 \begin{equation}
   \hat q_c = w_c\,q_c + (1-w_c)\,\bar q, \qquad w_c=\frac{\tau^2}{\tau^2+\sigma_c^2}.

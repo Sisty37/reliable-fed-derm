@@ -148,7 +148,12 @@ training image 0.81 vs 0.75 for A-frozen; 0.85 vs 0.79 for model~B), and for 54\
 (model~B) of the leaked images the nearest training image belonged to the same lesion. A 1-nearest-neighbor
 classifier, which fully exploits this proximity, showed 22.7 and 22.4 points of unweighted inflation, and
 the linear heads 6.2 and 6.6 points on the same measure. Leaked and new lesions also differ in class and
-client composition, so this comparison does not by itself separate proximity from those differences.
+client composition; a post hoc analysis matched by client and class (Supplementary~S17) gave the same
+excess proximity (0.059 for A-frozen and 0.055 for model~B), whereas the nearest training image from
+another lesion was not closer for leaked than for new images ($-0.004$ and $+0.001$). With the siblings
+removed from the training set, the standardized 1-nearest-neighbor inflation fell from 25.9 to 0.0 points
+(A-frozen) and from 25.2 to $-0.9$ points (model~B). The proximity of leaked images therefore comes from
+their siblings rather than from lying in denser regions of the feature space.
 
 \begin{figure*}[!t]
   \centering
@@ -257,6 +262,28 @@ Fifth, exact order statistics changed the global and FCP thresholds' q10 by at m
 label-shift-weighted comparator did not repair the per-client shortfall of the global threshold (lowest
 client mean coverage 0.85 for model~A and 0.72 for model~B), indicating that the clients differ by more than
 their class priors.
+
+All rules in Table~\ref{tab:conformal} target marginal coverage, and none of them provided coverage by
+diagnostic class (post hoc; Supplementary~S14). On the LOCO models, global, client-wise and EB-ShrinkFCP
+thresholds all covered dermatofibroma in only 0.58--0.59 of cases for model~A and 0.50--0.53 for model~B,
+while their overall coverage was 0.90. Class-conditional (Mondrian) thresholds raised every class to
+0.87--0.90, at a mean set size of 3.5--3.6 classes instead of 2.6.
+
+A simulation with clustered synthetic scores, in which true coverage is known, reproduced these patterns
+(post hoc; Supplementary~S16). Without client shift, EB-ShrinkFCP matched the global threshold (worst-client
+q10 of true coverage 0.89) and exceeded client-wise thresholds (0.83--0.85). With client shift, the global
+threshold under-covered the most shifted client (q10 0.62--0.81), whereas EB-ShrinkFCP kept every client's
+mean true coverage at 0.90 and had a worst-client q10 of 0.85--0.86, compared with 0.83--0.85 for
+client-wise thresholds. The variance used by EB-ShrinkFCP was 1.5 to 2.6 times the actual sampling variance
+of the client quantile, so the approximation is conservative and shrinks more than necessary; on the real
+data, a lesion-bootstrap variance was 0.58 to 1.03 times the approximation (median by client). Replacing
+the approximation by the bootstrap variance, dropping the images-per-lesion factor or changing the variance
+floor changed the worst-client q10 of EB-ShrinkFCP by at most 0.4 points, whereas a random-effects mean
+lowered it by 0.7 to 2.2 points (Supplementary~S15). On the real
+LOCO models, restricting each client's calibration set to 10, 25, 50 or 100 lesions showed no gain of
+EB-ShrinkFCP over client-wise thresholds at 10 lesions and gains of 1.4 to 2.9 points in worst-client q10
+from 25 lesions on, for both encoders; the global threshold left some client at a mean coverage of 0.75--0.82
+at every budget.
 
 On personalized models (FedBN, FedAvg-FT, FedPer and local-only; descriptive), a global threshold still
 left some client at a mean coverage of 0.76--0.87, while client-wise thresholds kept every client's mean

@@ -394,7 +394,8 @@ full fine-tuning that keeps architecture and initial weights fixed; it also diff
 optimizer schedule, the number of updates and the use of cached augmented views, so it does not isolate
 fine-tuning completely. \emph{Model B} is PanDerm-Base \cite{yan2025panderm}, a ViT-B/16
 \cite{dosovitskiy2021vit} dermatology foundation model (checkpoint
-\texttt{panderm\_bb\_data6\_checkpoint-499.pth}), frozen, with a federated head on the 768-dimensional
+\texttt{panderm\_bb\_data6\_checkpoint-499.pth}, SHA-256 \texttt{be1e0fb1\ldots0ac1ff1}, full hash in the
+repository), frozen, with a federated head on the 768-dimensional
 CLS token after the final layer normalization. ISIC 2019, HAM10000, BCN20000 and PAD-UFES-20 are not
 listed among PanDerm's pretraining sources, but overlap could not be ruled out, so results for model~B
 are reported with this caveat.
@@ -902,7 +903,12 @@ training image 0.81 vs 0.75 for A-frozen; 0.85 vs 0.79 for model~B), and for 54\
 (model~B) of the leaked images the nearest training image belonged to the same lesion. A 1-nearest-neighbor
 classifier, which fully exploits this proximity, showed 22.7 and 22.4 points of unweighted inflation, and
 the linear heads 6.2 and 6.6 points on the same measure. Leaked and new lesions also differ in class and
-client composition, so this comparison does not by itself separate proximity from those differences.
+client composition; a post hoc analysis matched by client and class (Supplementary~S17) gave the same
+excess proximity (0.059 for A-frozen and 0.055 for model~B), whereas the nearest training image from
+another lesion was not closer for leaked than for new images ($-0.004$ and $+0.001$). With the siblings
+removed from the training set, the standardized 1-nearest-neighbor inflation fell from 25.9 to 0.0 points
+(A-frozen) and from 25.2 to $-0.9$ points (model~B). The proximity of leaked images therefore comes from
+their siblings rather than from lying in denser regions of the feature space.
 
 \begin{figure*}[!t]
   \centering
@@ -1322,7 +1328,8 @@ terms) and PAD-UFES-20 from Mendeley Data (doi:10.17632/zr7vgbcyr2.1, CC-BY 4.0)
 \url{https://github.com/Sisty37/reliable-fed-derm} contains the split files with SHA-256 checksums and the
 script that builds them from the public metadata, the code for training, analysis, tables and figures,
 the protocol versions with git tags marking each pre-run state, run logs, the predictions of every model and
-all result files; frozen-encoder embeddings and PanDerm-derived heads are not redistributed because of the
+all result files, a pinned dependency list (\texttt{requirements-lock.txt}) and the SHA-256 checksums of the
+encoder checkpoints and metadata files; frozen-encoder embeddings and PanDerm-derived heads are not redistributed because of the
 PanDerm licence. % TODO: archive the submitted version on Zenodo and add its DOI.
 
 \bmsection*{Ethics statement}
@@ -1726,7 +1733,7 @@ Collins GS, Moons KGM, Dhiman P, et~al.
 
 
 \bmsection*{Supporting information}
-Supplementary material S1--S12 and Figure S1 are provided as a separate file with this submission.
+Supplementary material S1--S17 and Figure S1 are provided as a separate file with this submission.
 
 
 \end{document}

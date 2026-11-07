@@ -1,0 +1,35 @@
+{
+  "python": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "machine": "AMD64",
+  "git_commit": "95ca0d0141868cc42709a4820d34498815d858ec",
+  "torch": "2.5.1+cu121",
+  "cuda": "12.1",
+  "cudnn": 90100,
+  "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU",
+  "numpy": "2.4.6",
+  "pandas": "3.0.5",
+  "scipy": "1.17.1",
+  "timm": "0.9.16",
+  "torchvision": "0.20.1+cu121",
+  "sklearn": "1.9.0",
+  "flamby": null,
+  "sha256": {
+    "..\\models\\panderm\\panderm_bb_data6_checkpoint-499.pth": {
+      "sha256": "be1e0fb108b3bc58721cb5195f136c948160799438f222acf1fd142230ac1ff1",
+      "bytes": 343298382
+    },
+    "C:\\Users\\User\\.cache\\torch\\hub\\checkpoints\\efficientnet-b0-355c32eb.pth": {
+      "sha256": "355c32ebf5c7b2e19ed8f926daea5b6d71c8744a49aab3148fc90775fbaac5a3",
+      "bytes": 21388428
+    },
+    "data\\fedisic\\manifest_preprocessed.csv": {
+      "sha256": "cba8af7b4ad0c652e2a634ece282c7d8ad301c1e01474b7ba88cc50319b94436",
+      "bytes": 2032308
+    },
+    "data\\padufes20\\metadata.csv": {
+      "sha256": "14d145235cedb022548257acb0d84dcd949e2c916f65d2baa7c38ed5339e9527",
+      "bytes": 316209
+    }
+  }
+}
