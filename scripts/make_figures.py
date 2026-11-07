@@ -7,7 +7,7 @@ Colours: a validated colour-blind-safe categorical palette (adjacent-pair CVD dE
 identity is never carried by colour alone (direct labels, markers or legends).
 
 Usage (from the repo folder):  python scripts\\make_figures.py
-Writes figures/Fig1_*.pdf/.png ... figures/Fig7_*.pdf/.png
+Writes figures/Fig1_*.pdf ... figures/Fig8_*.pdf and figures/FigS1_*.pdf (PDF only)
 """
 import json
 import os
@@ -56,10 +56,9 @@ def load(name):
 
 def save(fig, name):
     os.makedirs(OUT, exist_ok=True)
-    for ext in ("pdf", "png"):
-        fig.savefig(os.path.join(OUT, f"{name}.{ext}"))
+    fig.savefig(os.path.join(OUT, f"{name}.pdf"))          # vector PDF only (fonts embedded, type 42)
     plt.close(fig)
-    print(f"saved {OUT}/{name}.pdf / .png")
+    print(f"saved {OUT}/{name}.pdf")
 
 
 def ygrid(ax):
@@ -82,7 +81,7 @@ def panel(ax, letter, title=None, x=-0.02):
 # the layout can still be checked; the paper version is made on the machine with the data.
 IMG_DIR = os.path.join("data", "fedisic", "ISIC_2019_Training_Input_preprocessed")
 SPLIT_FOR_SCHEMATIC = os.path.join("splits", "split_official.csv")   # Fig. 1a shows a lesion leaked in the official split
-SIBLING_LESION = os.environ.get("FIG_LESION", "BCN_0000034")      # one lesion with three images (melanoma)
+SIBLING_LESION = os.environ.get("FIG_LESION", "BCN_0000057")      # one lesion with three images (melanoma)
 OTHER_LESIONS = ["BCN_0000002", "BCN_0000008"]                      # two other lesions for the training set
 _PLACEHOLDER_WARNED = []
 
@@ -279,7 +278,7 @@ def fig2():
     ax.spines["left"].set_visible(False)
     ax.set_ylim(y + 0.2, 0.4)
     ax.set_xlim(-1, 29)
-    ax.set_xlabel("Leakage inflation (balanced-accuracy points)\nfull image-level test set minus new-lesion subset")
+    ax.set_xlabel("Apparent inflation (balanced-accuracy points)\nfull image-level test set minus standardized new-lesion subset")
     xgrid(ax)
     fig.legend(handles=[Line2D([], [], marker="o", ls="-", color=INK, mfc=INK, ms=4.5, label="Primary (pre-specified)"),
                         Line2D([], [], marker="o", ls="-", color=INK2, mfc="white", ms=4, label="27 rounds"),
@@ -334,7 +333,7 @@ def fig3():
     A, B = load("E7_analysis.json"), load("E7_analysis_panderm.json")
     fig, axs = plt.subplots(1, 3, figsize=(DOUBLE, 2.75), gridspec_kw={"wspace": 0.22})
     bump(axs[0], A, "pooled", "Model A, pooled BA", "a", ["fedper_r9"])
-    bump(axs[1], A, "mean_of_centers", "Model A, mean of centers", "b", ["local_e20"])
+    bump(axs[1], A, "mean_of_centers", "Model A, mean of clients", "b", ["local_e20"])
     bump(axs[2], B, "pooled", "Model B, pooled BA", "c", ["fedper_r9", "pooled_e20"])
     save(fig, "Fig4_rankings")
 
@@ -366,8 +365,8 @@ def fig4():
     ax.axhline(0, color=AXIS, lw=0.7)
     ax.set_xlim(-3, 120)
     ax.set_xticks([0, 25, 50, 75])
-    ax.set_xlabel("Center leakage rate (% of test images)")
-    ax.set_ylabel("Per-center inflation (BA points)")
+    ax.set_xlabel("Client leakage rate (% of test images)")
+    ax.set_ylabel("Per-client inflation (BA points)")
     ygrid(ax)
     panel(ax, "a", "Inflation vs leakage rate (model A)", x=-0.2)
 
@@ -391,7 +390,7 @@ def fig4():
     ax.spines["left"].set_visible(False)
     ax.set_xlim(0, 16)
     ax.set_ylim(-0.6, len(order) + 0.9)
-    ax.set_xlabel("Inflation, centers 0, 2, 3 (BA points)")
+    ax.set_xlabel("Inflation, clients 0, 2, 3 (BA points)")
     xgrid(ax)
     ax.legend(handles=[Line2D([], [], marker="o", ls="", color=BLUE, ms=4.5, label="Model A (full fine-tuning)"),
                        Line2D([], [], marker="D", ls="", color=MAGENTA, ms=4, label="Model B (frozen; FedPer = 256-unit head)")],
@@ -438,7 +437,7 @@ def heat(ax, cal, methods, title, letter, vmax, ylabels=True):
     ax.set_xticklabels([str(c) for c in range(6)])
     ax.set_yticks(range(len(methods)))
     ax.set_yticklabels([NAMES[m] for m in methods] if ylabels else [])
-    ax.set_xlabel("Center")
+    ax.set_xlabel("Client")
     ax.tick_params(length=0)
     for s in ax.spines.values():
         s.set_visible(False)
@@ -459,7 +458,7 @@ def fig5():
     a1, a2, cax = (fig.add_subplot(left[i]) for i in range(3))
     a3 = fig.add_subplot(outer[1])
     vmax = 0.26
-    heat(a1, ca, ma, "Model A: ECE per center", "a", vmax)
+    heat(a1, ca, ma, "Model A: ECE per client", "a", vmax)
     im = heat(a2, cb, ma, "Model B (no FedBN)", "b", vmax, ylabels=False)
     cb_ = fig.colorbar(im, cax=cax)
     cb_.outline.set_visible(False)
@@ -519,13 +518,13 @@ def fig6():
         ax.set_xticks(range(6))
         ax.set_xticklabels([str(c) for c in range(6)])
         ax.set_xlim(-0.5, 5.5)
-        ax.set_xlabel("Held-out-center model, evaluated on center")
+        ax.set_xlabel("Held-out-client model, evaluated on client")
         t = d["tests"]["eb"]
-        ax.text(0.02, 0.03, f"Pre-specified test (vs client-wise, worst-center q10):\n"
+        ax.text(0.02, 0.03, f"Pre-specified test (vs client-wise, worst-client q10):\n"
                 f"{100 * t['gain']:+.1f} pts [{100 * t['ci95'][0]:+.1f}, {100 * t['ci95'][1]:+.1f}], "
                 f"{'criterion met' if t['success'] else 'criterion not met'}",
                 transform=ax.transAxes, fontsize=6.2, color=INK, weight="bold" if t["success"] else "normal")
-        panel(ax, letter, title + " (leave-one-center-out, LAC, α = 0.1)", x=0.0)
+        panel(ax, letter, title + " (leave-one-client-out, LAC, α = 0.1)", x=0.0)
     axs[0].set_ylabel("Coverage: mean (marker), 10th percentile (tick)")
     axs[0].set_ylim(0.6, 1.0)
     h, l = axs[0].get_legend_handles_labels()
@@ -584,7 +583,7 @@ def fig7():
     ax.set_xticks(range(6))
     ax.set_xticklabels([f"{c}" for c in range(6)])
     ax.set_xlim(-0.5, 5.5)
-    ax.set_xlabel("Center (4, 5: < 200 test images)")
+    ax.set_xlabel("Client (4, 5: < 200 test images)")
     ax.set_ylabel("Balanced accuracy (%)")
     ax.set_ylim(20, 92)
     ax.set_yticks(range(20, 81, 10))
@@ -592,7 +591,7 @@ def fig7():
     h, l = ax.get_legend_handles_labels()
     ax.legend(h, ["Model A", "Model B", "(○ in federation → held out)"], loc="upper right", ncol=1, handlelength=1.0,
               borderaxespad=0.1, fontsize=6.0)
-    panel(ax, "b", "Unseen centers (seeds 0–2)", x=-0.12)
+    panel(ax, "b", "Unseen clients (seeds 0–2)", x=-0.12)
 
     ax = fig.add_subplot(gs[2])
     xs = np.arange(2)
@@ -645,11 +644,11 @@ def fig_framework():
                     arrowprops=dict(arrowstyle="-|>", color=INK2, lw=1.1, mutation_scale=9), zorder=5)
 
     # 1 six centers
-    stage(0.3, 15.8, "1", "Six centers")
+    stage(0.3, 15.8, "1", "Six clients")
     for c, (img, n) in enumerate(per_center):
         yy = H - 11.0 - c * 5.7
         thumb(ax, lesion_img(img), 1.5, yy, 4.8, r=0.6)
-        ax.text(7.2, yy + 3.2, f"Center {c}", fontsize=5.9, weight="bold", va="center")
+        ax.text(7.2, yy + 3.2, f"Client {c}", fontsize=5.9, weight="bold", va="center")
         ax.text(7.2, yy + 1.3, f"{n:,} images", fontsize=5.3, color=INK2, va="center")
     flow(16.3, 18.0)
 
@@ -670,7 +669,7 @@ def fig_framework():
         else:
             for j in range(3):
                 thumb(ax, S[j], 27.3 + j * 2.35, yy + 2.8, 2.2, ec=LESION, lw=0.7, r=0.3)
-    ax.text(27.0, BOT + 0.9, "5 random re-splits each", ha="center", fontsize=5.3, color=MUTED, va="bottom")
+    ax.text(27.0, BOT + 0.9, "3–5 random re-splits each", ha="center", fontsize=5.3, color=MUTED, va="bottom")
     flow(36.0, 37.7)
 
     # 3 federated training: server and six clients
@@ -685,7 +684,7 @@ def fig_framework():
                     arrowprops=dict(arrowstyle="<|-|>", color=AXIS, lw=0.7, mutation_scale=4), zorder=1)
         rbox(ax, x - 1.6, cy, 3.2, 3.2, fc="white", ec=INK2, lw=0.8, r=0.6, z=3)
         ax.text(x, cy + 1.6, f"{c}", ha="center", va="center", fontsize=5.8, weight="bold", zorder=4)
-    ax.text(sx, cy - 0.7, "clients = centers (data never leave)", ha="center", va="top", fontsize=5.0, color=MUTED)
+    ax.text(sx, cy - 0.7, "clients = acquisition sources (images stay local)", ha="center", va="top", fontsize=5.0, color=MUTED)
     ax.text(sx, cy + 5.8, "updates ↑   model ↓", ha="center", fontsize=5.0, color=MUTED, va="center", zorder=4,
             bbox=dict(fc=SOFT, ec="none", pad=0.5))
     ax.text(39.2, H - 24.6, "Encoders", fontsize=6.1, weight="bold", va="top")
@@ -700,8 +699,8 @@ def fig_framework():
 
     # 4 evaluation: four question tiles with small glyphs
     stage(65.6, 34.0, "4", "Reliability evaluation")
-    tiles = [("RQ2", "Leakage inflation", "full minus new-lesion BA"), ("RQ1", "Calibration", "ECE per center"),
-             ("RQ1 · RQ4", "Conformal coverage", "EB-ShrinkFCP (proposed)"), ("RQ3", "Personalization", "H3b; per-center change")]
+    tiles = [("RQ2", "Leakage inflation", "full minus new-lesion BA"), ("RQ1", "Calibration", "ECE per client"),
+             ("RQ1 · RQ4", "Conformal coverage", "EB-ShrinkFCP (proposed)"), ("RQ3", "Personalization", "H3b; per-client change")]
     tw, th = 15.7, 15.4
     for k, (rq, t, sub) in enumerate(tiles):
         x0 = 66.6 + (k % 2) * (tw + 0.8)
@@ -755,11 +754,11 @@ def fig_framework():
     # bottom ribbon: stress tests and pre-registration
     rbox(ax, 0.3, 0.4, 99.4, 7.0, fc="white", ec=AXIS, lw=0.6, r=1.2)
     ax.text(1.6, 3.9, "Stress tests", fontsize=6.0, weight="bold", va="center")
-    ax.text(11.4, 3.9, "leave-one-center-out models  ·  PAD-UFES-20 smartphone images (domain shift)",
+    ax.text(11.4, 3.9, "leave-one-client-out models  ·  PAD-UFES-20 smartphone images (domain shift)",
             fontsize=5.5, color=INK2, va="center")
     ax.plot([57.6, 57.6], [1.8, 6.0], color=AXIS, lw=0.6)
-    ax.text(59.0, 3.9, "Pre-registered", fontsize=6.0, weight="bold", va="center")
-    ax.text(68.6, 3.9, "protocol v0.11 → tagged code → runs → pre-specified tests",
+    ax.text(59.0, 3.9, "Fixed protocol", fontsize=6.0, weight="bold", va="center")
+    ax.text(68.6, 3.9, "versions v0.1–v0.12 → tagged code → runs → pre-specified tests",
             fontsize=5.4, color=INK2, va="center")
     save(fig, "Fig2_framework")
 
