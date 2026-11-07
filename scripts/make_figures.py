@@ -81,7 +81,7 @@ def panel(ax, letter, title=None, x=-0.02):
 # is not on disk (e.g. on a machine without the data), a neutral synthetic placeholder is drawn instead, so
 # the layout can still be checked; the paper version is made on the machine with the data.
 IMG_DIR = os.path.join("data", "fedisic", "ISIC_2019_Training_Input_preprocessed")
-SPLIT_FOR_SCHEMATIC = os.path.join("splits", "e1", "resplit_image_seed0_val.csv")
+SPLIT_FOR_SCHEMATIC = os.path.join("splits", "split_official.csv")   # Fig. 1a shows a lesion leaked in the official split
 SIBLING_LESION = os.environ.get("FIG_LESION", "BCN_0000034")      # one lesion with three images (melanoma)
 OTHER_LESIONS = ["BCN_0000002", "BCN_0000008"]                      # two other lesions for the training set
 _PLACEHOLDER_WARNED = []
@@ -148,7 +148,9 @@ def rbox(ax, x, y, w, h, fc="white", ec=AXIS, lw=0.7, r=1.2, z=1, ls="-"):
 
 def schematic_images():
     sp = pd.read_csv(SPLIT_FOR_SCHEMATIC)
-    sib = sp[sp.lesion_id == SIBLING_LESION].image.tolist()[:3]
+    g = sp[sp.lesion_id == SIBLING_LESION]
+    sib = (g[g.fold == "train"].image.tolist() + g[g.fold == "test"].image.tolist())[:3]   # images 1-2 train, 3 test
+    print(f"  Fig. 1a lesion {SIBLING_LESION}: " + ", ".join(f"{i + 1}={n}" for i, n in enumerate(sib)))
     others = [sp[sp.lesion_id == l].image.tolist()[:2] for l in OTHER_LESIONS]
     per_center = []
     for c in range(6):
@@ -224,7 +226,7 @@ def fig1():
     for yi, l, n, r in zip(y, leaked, new, leak):
         bx.text(l + n + 40, yi, f"{100 * r:.0f}%" if r >= 0.01 else f"{100 * r:.1f}%", va="center", fontsize=6.3)
     bx.set_yticks(y)
-    bx.set_yticklabels([f"Center {c}" for c in range(6)])
+    bx.set_yticklabels([f"Client {c}" for c in range(6)])
     bx.set_xlabel("Image-level test images (mean of 5 splits)")
     bx.set_xlim(0, max(leaked + new) * 1.2)
     xgrid(bx)
