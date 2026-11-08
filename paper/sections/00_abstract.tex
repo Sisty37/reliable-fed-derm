@@ -1,26 +1,23 @@
 \abstract[Abstract]{\textbf{Background:} Fed-ISIC2019 is a widely used benchmark for federated skin
-lesion classification. Its split assigns images rather than lesions to training and test sets, so images
-of one lesion can appear on both sides, and the reliability of probabilities and prediction sets at
-individual sites is rarely reported.
-\textbf{Methods:} We audited the benchmark's six acquisition-source clients (23,247 dermoscopy images)
-with image-level and lesion-grouped splits (three to five seeds per experiment), three encoder
-configurations (fine-tuned and frozen EfficientNet-B0, frozen PanDerm) and up to eight federated,
-personalized, centralized and local methods. We measured the apparent accuracy gain on leaked test images,
-ran a randomized sibling-exposure experiment on fixed test images, and evaluated method rankings,
-calibration and federated conformal coverage per client, on held-out clients and on smartphone images
-(PAD-UFES-20). We also evaluated EB-ShrinkFCP, an empirical-Bayes rule for per-client conformal
-thresholds. Confirmatory tests followed a version-controlled protocol fixed before the corresponding runs.
-\textbf{Results:} In the official split, 0.1--93\% of each client's test images had a sibling image in
-training. For FedAvg, balanced accuracy on the full image-level test set exceeded a standardized
-new-lesion estimate by 8.1 points (95\% CI 4.7--11.2), and by up to 16.2 points for centralized
-training. In a randomized crossover on fixed test images, having a sibling image in training raised balanced accuracy by 9.1 points (5.5--12.3) for FedAvg and by up to 28.8 points for local training. With frozen foundation-model features, method rankings were unrelated across split
-types (Kendall's $\tau_b=0.05$). Calibration varied more between clients than between methods, and an apparent ECE gap between leaked and new lesions disappeared after matching sample size and composition. A global conformal threshold left some clients at 0.72--0.83
-mean coverage (target 0.90). EB-ShrinkFCP kept mean client coverage near 0.90 and met its pre-specified
-criterion for one of two encoders (worst-client 10th-percentile coverage +2.3 points, 0.8--3.9), so the
-joint criterion was not met; a fixed shrinkage rule failed. On smartphone images, transferred coverage
-fell to 0.60--0.67.
+lesion classification. Its split assigns images rather than lesions to training and test sets, so views of
+one lesion appear on both sides, and reliability at individual sites is rarely reported.
+\textbf{Methods:} We audited its six acquisition-source clients (23,247 dermoscopy images) with
+image-level and lesion-grouped splits, three encoder configurations and up to eight federated,
+personalized, centralized and local methods. We estimated the apparent accuracy gain on leaked images, ran
+a randomized sibling-exposure experiment on fixed test images, and evaluated rankings, calibration and
+conformal coverage per client, including held-out clients and smartphone images. Confirmatory tests
+were pre-specified.
+\textbf{Results:} In the official split, 0.1--93\% of each client's test images had a sibling in
+training. For FedAvg, balanced accuracy on the full test set exceeded a standardized new-lesion estimate by
+8.1 points (95\% CI 4.7--11.2), and in the randomized experiment a sibling in training raised it by
+9.1 points (5.5--12.3). With frozen foundation-model features, method rankings were unrelated across split
+types (Kendall's $\tau_b=0.05$). Calibration varied more between clients than between methods. A global
+conformal threshold left some clients at 0.72--0.83 mean coverage (target 0.90); EB-ShrinkFCP, an
+empirical-Bayes rule for per-client thresholds, kept mean client coverage near 0.90 but met its
+pre-specified criterion for only one of two encoders. On smartphone images, transferred coverage fell to
+0.60--0.67.
 \textbf{Conclusions:} Federated dermatology benchmarks should use lesion-grouped splits and report
-calibration and conformal coverage per client, with the coverage target stated. Splits, code, predictions
-and the protocol history are released.}
+calibration and conformal coverage per client. Splits, code, predictions and protocol history are
+released.}
 
 \keywords{federated learning, data leakage, skin lesion classification, calibration, conformal prediction, benchmarking}

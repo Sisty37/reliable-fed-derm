@@ -3,80 +3,14 @@
 \label{sec:intro}
 
 Deep learning classifiers for dermoscopy images can match dermatologists on curated test sets
-\cite{esteva2017dermatologist}, but their performance can drop on
-data that differ from the training distribution \cite{daneshjou2022disparities}, and robust models need
-large and diverse training data that are held by separate institutions. Privacy regulation and
-institutional policy often prevent pooling such data, which has made federated learning (FL), in which
-sites train a shared model without exchanging images, a central approach for multi-institutional medical
-imaging \cite{rieke2020future,sheller2020federated,dayan2021exam}. Claims about FL
-for clinical use, however, rest on benchmarks, and a benchmark is informative only if its evaluation
-reflects the situation of a new lesion at a participating or a new site.
-
-For skin lesions, Fed-ISIC2019, the dermoscopy benchmark of the FLamby suite \cite{flamby2022}, is
-widely used. Its six clients correspond to acquisition sources of the ISIC 2019 challenge data
-\cite{codella2018isic,tschandl2018ham,combalia2019bcn} and differ in size, class mix and imaging
-device. Federated and personalized methods are compared on its fixed split, and the reported differences
-between them are often a few points of balanced accuracy \cite{flamby2022,tavakoli2024fendafl};
-in a targeted search we found no Fed-ISIC2019 evaluation that grouped images by lesion
-(Supplementary~S13).
-
-The benchmark split assigns individual images rather than lesions to the training and test sets. Many
-lesions in the underlying collections were photographed several times, for example at follow-up visits or
-with different magnifications. An image-level split therefore places correlated views of one lesion on
-both sides (Figure~\ref{fig:leakage}a), so the test set partly measures recognition of lesions seen in
-training rather than diagnosis of new ones. Such leakage is a known cause of over-optimistic results in
-machine learning \cite{kapoor2023leakage,varoquaux2022failures}. In dermatology, duplicates and
-problematic partitions have been documented in centralized datasets
-\cite{cassidy2022isic,groger2023reliable,abhishek2025dermamnist}, and subject-level splitting has
-inflated accuracy in histopathology and brain MRI \cite{bussola2021tiles,yagis2021leakage}. We found no
-study that quantifies lesion-level leakage per client in Fed-ISIC2019 or examines its consequences for
-federated method comparisons, calibration and conformal coverage. Because clients differ in size and
-acquisition protocol, leakage need not be uniform: in the official Fed-ISIC2019 split, 93\% of one
-client's test images have a sibling image in training, compared with 0.1\% in another. Leakage may
-therefore distort not only absolute accuracy but also comparisons between methods that fit client-level
-data to different degrees, such as local and personalized models.
-
-A second gap concerns reliability at the level of the individual site. FL studies usually report a
-single accuracy over the pooled test set, whereas a clinician needs calibrated probabilities
-\cite{guo2017calibration} and, ideally, prediction sets whose error rate is controlled at their own
-site. Conformal prediction provides sets with distribution-free marginal coverage under exchangeability
-\cite{vovk2005algorithmic,angelopoulos2023gentle}, and federated variants target coverage on the
-mixture of clients, under label shift, or for personalized and group-defined targets
-\cite{lu2023fcp,humbert2023oneshot,plassier2023labelshift,min2025pfcp,wen2026gcfcp}. A
-threshold computed from pooled scores can under-cover individual clients while meeting its mixture
-target, and a threshold computed from a small client's own data controls coverage on average but varies
-strongly between calibration samples. How these effects play out on the Fed-ISIC2019 clients, how they
-interact with leakage and with the repeated images of one lesion, and how they change on unseen clients
-or images from another device has, to our knowledge, not been reported.
-
-In this study we audit federated skin lesion classification on Fed-ISIC2019 with image-level and
-lesion-grouped splits. We train up to eight federated, personalized, centralized and local methods with
-three encoder configurations (a fully fine-tuned convolutional network, the same network frozen, and a
-frozen dermatology foundation model) and evaluate accuracy, method rankings, calibration and conformal
-coverage overall and per client, on held-out clients and on smartphone images. Confirmatory analyses
-followed a version-controlled protocol fixed before the corresponding runs, and we report the tests that
-failed alongside those that succeeded. Our contributions are:
-\begin{enumerate}
-  \item A per-client audit of lesion-level leakage in Fed-ISIC2019, of the apparent accuracy gain it
-    produces, and of its consequences for method rankings, calibration and conformal coverage, together
-    with a randomized sibling-exposure experiment that estimates the effect of leakage on fixed test
-    images.
-  \item Evidence that leakage inflates accuracy also with frozen encoders, including a dermatology
-    foundation model, and randomized and capacity-matched experiments in which the size of the effect
-    differed between training regimes and classifier heads; these are consistent with, but do not
-    isolate, an influence of how strongly a classifier fits its training lesions rather than of
-    personalization as such.
-  \item A per-client analysis of federated conformal calibration that separates mixture from per-client
-    coverage and accounts for repeated images of one lesion, and EB-ShrinkFCP, an empirical-Bayes
-    shrinkage rule for per-client thresholds that met its pre-specified criterion for one of two encoders.
-  \item Lesion-grouped splits, code, predictions and the complete protocol history, released to support
-    leakage-free federated benchmarking.
-\end{enumerate}
-
-The remainder of the paper is organized as follows. Section~\ref{sec:related} reviews related work,
-Section~\ref{sec:methods} describes the data, models and analyses, Section~\ref{sec:results} reports the
-results by research question, Section~\ref{sec:discussion} discusses their implications and limitations,
-and Section~\ref{sec:conclusion} concludes.
+\cite{esteva2017dermatologist}, but their performance often drops on data unlike their training data
+\cite{daneshjou2022disparities}. Robust models need large and diverse data held by separate institutions,
+and because privacy rules often prevent pooling them, federated learning (FL), in which sites train a shared
+model without exchanging images, has become a central approach for multi-institutional medical imaging
+\cite{rieke2020future,sheller2020federated,dayan2021exam}. Claims about FL rest on benchmarks, which are
+informative only if the test set reflects a new lesion at a participating or a new site; and because sites
+differ in size, label mix and acquisition, a pooled score can hide large differences between them
+\cite{kairouz2021advances,tan2023pfl}.
 
 \begin{figure*}[!t]
   \centering
@@ -90,3 +24,54 @@ and Section~\ref{sec:conclusion} concludes.
   Table~\ref{tab:dataset}). Images: ISIC 2019 (CC-BY-NC 4.0).}
   \label{fig:leakage}
 \end{figure*}
+
+For skin lesions, the most widely used federated benchmark is Fed-ISIC2019 from the FLamby suite
+\cite{flamby2022}. Its six clients are acquisition sources of the ISIC 2019 data
+\cite{codella2018isic,tschandl2018ham,combalia2019bcn}, three of them from one institution, and they differ
+in size, class mix and device. Methods are compared on its fixed split, often by a few points of balanced
+accuracy \cite{flamby2022,tavakoli2024fendafl}, yet this split assigns images rather than lesions to
+training and test sets. Many lesions were photographed several times, so correlated views of one lesion
+fall on both sides (Figure~\ref{fig:leakage}a), and the test set partly measures recognition of lesions
+seen in training. Such leakage is a known source of over-optimism in machine learning and medical imaging
+\cite{kapoor2023leakage,varoquaux2022failures,roberts2021pitfalls}, and duplicates or image-level splits
+have been documented in dermatology and other imaging datasets
+\cite{cassidy2022isic,groger2023reliable,abhishek2025dermamnist,bussola2021tiles,yagis2021leakage}. In a
+targeted search we found no Fed-ISIC2019 evaluation that grouped images by lesion (Supplementary~S13).
+
+In a federated benchmark, leakage raises questions a pooled correction does not answer. It need not be
+uniform: in the official split, 93\% of one client's test images have a sibling image in training,
+compared with 0.1\% in another, so leakage may distort not only accuracy but also comparisons between
+methods that fit client data to different degrees, such as local and personalized models. Its size can
+also be defined in two ways. The accuracy gap between leaked and new-lesion test images is easy to measure
+but compares different images; the effect of exposure itself requires an experiment that adds or
+withholds the siblings of the same test images. We report both.
+
+A second gap concerns reliability at the individual site. A clinician needs calibrated probabilities
+\cite{guo2017calibration} and, ideally, prediction sets whose error rate is controlled at their own site.
+Conformal prediction gives distribution-free marginal coverage under exchangeability
+\cite{vovk2005algorithmic,angelopoulos2023gentle}, and federated variants target the mixture of clients,
+label shift, or personalized and group-defined targets
+\cite{lu2023fcp,humbert2023oneshot,plassier2023labelshift,min2025pfcp,wen2026gcfcp}. Yet a pooled
+threshold can meet its mixture target while under-covering individual clients, a threshold from a small
+client's own data varies strongly between calibration samples, and repeated images of one lesion are not
+exchangeable, so the unit of the coverage statement must be stated
+\cite{lee2023hierarchical,dunn2022hierarchical}. How these issues play out on Fed-ISIC2019 has not been reported.
+
+We therefore audit federated skin lesion classification on Fed-ISIC2019 with image-level and
+lesion-grouped splits, up to eight federated, personalized, centralized and local methods and three
+encoder configurations (a fine-tuned convolutional network, the same network frozen, and a frozen
+dermatology foundation model). We evaluate accuracy, rankings, calibration and conformal coverage per
+client, on held-out clients and on smartphone images, under a version-controlled protocol, and report
+failed tests alongside successful ones. Our contributions are:
+\begin{enumerate}
+  \item A per-client audit of lesion-level leakage in Fed-ISIC2019 and of its consequences for accuracy,
+    rankings, calibration and coverage, with a randomized sibling-exposure experiment on fixed test images.
+  \item Evidence that leakage inflates accuracy also with frozen encoders, and randomized and
+    capacity-matched experiments in which its effect differed between training regimes and heads,
+    consistent with, but not isolating, an influence of fitting strength rather than personalization.
+  \item A per-client analysis of federated conformal coverage that accounts for repeated images, and
+    EB-ShrinkFCP, an empirical-Bayes rule for per-client thresholds that met its pre-specified criterion
+    for one of two encoders.
+  \item Lesion-grouped splits, code, predictions and the protocol history, released for leakage-free
+    federated benchmarking.
+\end{enumerate}
