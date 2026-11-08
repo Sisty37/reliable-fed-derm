@@ -60,7 +60,7 @@ def table1():
     lo = off["all"]["leaked_same_client"] + off["all"]["leaked_other_client_only"]
     tot = (f"All & & {len(sp):,} & {sp.lesion_id.nunique():,}$^a$ & {len(sp) / sp.lesion_id.nunique():.2f} & "
            f"{100 * lo:.1f} & {100 * np.average(pc['leakage_rate'], weights=[off[c]['test_images'] for c in range(6)]):.1f} & "
-           f"{sum(pc['new_lesion_images']):.0f} \\\\")
+           f"{sum(pc['new_lesion_images']):,.0f} \\\\")
     body = r"""\begin{table}[!t]
 \centering
 \caption{Fed-ISIC2019 clients (``centers'' in FLamby), defined by acquisition source; clients 1, 2 and 5
@@ -184,7 +184,7 @@ def table3():
 \caption{Balanced accuracy on image-level (Img) and lesion-grouped (Les) test sets (E2/E7, mean of five
 seeds). Pooled: one balanced accuracy over all test images; mean of clients: average of the six per-client
 values. Best value per column in bold; differences of a few points are within seed-to-seed variation
-(Supplementary~S10). Model B has no FedBN (no BatchNorm in a linear head); its FedPer is the FedPer-style
+(Supplementary~S9). Model B has no FedBN (no BatchNorm in a linear head); its FedPer is the FedPer-style
 two-layer head, whereas its other heads are linear. Kendall's $\tau_b$ compares the rankings of the
 seven methods common to both split types.}
 \label{tab:ba}

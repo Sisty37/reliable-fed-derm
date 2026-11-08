@@ -26,7 +26,7 @@ report the results behind each test and the secondary analyses.
 \label{sec:res-extent}
 
 Leakage was concentrated in a few clients (Table~\ref{tab:dataset}). In the official FLamby split, 65.9\%
-of the test images had a sibling image of the same lesion in training: 92.7\% in client~0, 72.4\% in
+of the test images had a sibling image of the same lesion in training: 92.7\% in client~0, 72.5\% in
 client~2, 55.7\% in client~5, 49.3\% in client~3, 3.0\% in client~4 and 0.1\% in client~1. In our
 image-level re-splits the corresponding rates were 83.0\%, 68.0\%, 50.2\%, 43.5\%, 2.7\% and 0.2\%
 (59.5\% overall; Figure~\ref{fig:leakage}b). Almost all leakage occurred within a client; leakage through
@@ -53,7 +53,7 @@ The randomized sibling-exposure experiment (E8) showed that having a sibling ima
 accuracy on the same test images (Supplementary~S10). For the pre-specified model~A FedAvg, BA of the fixed
 target images was 9.1 points higher when their siblings were in training than when they were not (95\% CI
 5.5--12.3; test met), close to the observational apparent inflation of 8.1 points; NLL fell by 0.10 and
-the Brier score by 3.6 points. The effect grew with how closely the model fits its training lesions: for
+the Brier score by 3.6 points. The effect differed between training regimes: for
 model~A it was 13.3 points (10.1--16.7) for FedPer, 18.6 (15.2--22.2) for pooled and 28.8 (25.3--32.7) for
 local-only training, that is 4.2 (0.5--8.1), 9.5 (5.3--13.6) and 19.8 (15.9--24.0) points more than for
 FedAvg on the same images. With frozen encoders, the FedAvg effect was similar (A-frozen 8.6 points,
@@ -153,7 +153,7 @@ ranged from $-2.2$ to 10.0 points for model~A (FedAvg $-1.9$) and from $-1.9$ to
 (Supplementary~S3). The slope is also partly built into the measure, because inflation within a class
 scales with the leaked share.
 
-An exploratory nearest-neighbor analysis of the frozen embeddings showed why even linear heads can benefit
+An exploratory nearest-neighbor analysis of the frozen embeddings suggests how even linear heads can benefit
 from leakage (Figure~\ref{fig:mechanism}c; Supplementary Figure~S1). Leaked test images were closer to the
 training set than new-lesion images (mean cosine similarity of the centered embeddings to the nearest
 training image 0.81 vs 0.75 for A-frozen; 0.85 vs 0.79 for model~B), and for 54\% (A-frozen) and 58\%

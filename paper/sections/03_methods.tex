@@ -145,7 +145,8 @@ We compared up to eight training methods. \emph{FedAvg} \cite{mcmahan2017fedavg}
 rate 1.0) learn one global model. Three personalized methods adapt it to each client:
 \emph{FedBN} \cite{li2021fedbn} keeps the batch-normalization weights and biases local (model~A only, as
 linear heads have none); \emph{FedAvg-FT} fine-tunes the final FedAvg model for three local SGD steps per
-client, a pre-specified light personalization that was not tuned; and \emph{FedPer}
+client, a pre-specified light personalization that was not tuned (1 to 100 steps in a post hoc control,
+Supplementary~S17); and \emph{FedPer}
 \cite{arivazhagan2019fedper} keeps the classifier local and averages the remaining parameters (for
 model~A the final linear layer is local). For models with a frozen encoder, a client-specific linear head
 would be identical to local training, so FedPer used a two-layer head (768--256--8, ReLU) with a

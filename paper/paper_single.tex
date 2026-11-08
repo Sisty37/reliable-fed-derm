@@ -68,7 +68,7 @@ released.}
 
 \renewcommand\thefootnote{}
 \footnotetext{\textbf{Abbreviations:} BA, balanced accuracy; CI, confidence interval; ECE, expected calibration error;
-FL, federated learning; LAC, least ambiguous set-valued classifier; LOCO, leave-one-center-out; q10, 10th percentile
+FL, federated learning; LAC, least ambiguous set-valued classifier; LOCO, leave-one-client-out; q10, 10th percentile
 of coverage over calibration draws.}
 \renewcommand\thefootnote{\fnsymbol{footnote}}
 \setcounter{footnote}{1}
@@ -320,7 +320,7 @@ Client & Source & Images & Lesions & Img./lesion & Official & Re-splits & New te
 4 & MSK & 819 & 801 & 1.02 & 3.0 & 2.7 & 160 \\
 5 & HAM vienna\_dias & 439 & 278 & 1.58 & 55.7 & 50.2 & 44 \\
 \midrule
-All & & 23,247 & 11,847$^a$ & 1.96 & 65.9 & 59.5 & 1883 \\
+All & & 23,247 & 11,847$^a$ & 1.96 & 65.9 & 59.5 & 1,883 \\
 \bottomrule
 \multicolumn{8}{@{}p{0.95\linewidth}@{}}{\footnotesize $^a$Nine lesions have images in clients 1 and 2, so the
 per-client lesion counts sum to 11,856.}
@@ -403,7 +403,8 @@ We compared up to eight training methods. \emph{FedAvg} \cite{mcmahan2017fedavg}
 rate 1.0) learn one global model. Three personalized methods adapt it to each client:
 \emph{FedBN} \cite{li2021fedbn} keeps the batch-normalization weights and biases local (model~A only, as
 linear heads have none); \emph{FedAvg-FT} fine-tunes the final FedAvg model for three local SGD steps per
-client, a pre-specified light personalization that was not tuned; and \emph{FedPer}
+client, a pre-specified light personalization that was not tuned (1 to 100 steps in a post hoc control,
+Supplementary~S17); and \emph{FedPer}
 \cite{arivazhagan2019fedper} keeps the classifier local and averages the remaining parameters (for
 model~A the final linear layer is local). For models with a frozen encoder, a client-specific linear head
 would be identical to local training, so FedPer used a two-layer head (768--256--8, ReLU) with a
@@ -732,7 +733,7 @@ E8 (RQ2) & Exposure effect $\ge 2$, CI $>0$, FedAvg & A & +9.1 [+5.5, +12.3] & \
 \label{sec:res-extent}
 
 Leakage was concentrated in a few clients (Table~\ref{tab:dataset}). In the official FLamby split, 65.9\%
-of the test images had a sibling image of the same lesion in training: 92.7\% in client~0, 72.4\% in
+of the test images had a sibling image of the same lesion in training: 92.7\% in client~0, 72.5\% in
 client~2, 55.7\% in client~5, 49.3\% in client~3, 3.0\% in client~4 and 0.1\% in client~1. In our
 image-level re-splits the corresponding rates were 83.0\%, 68.0\%, 50.2\%, 43.5\%, 2.7\% and 0.2\%
 (59.5\% overall; Figure~\ref{fig:leakage}b). Almost all leakage occurred within a client; leakage through
@@ -759,7 +760,7 @@ The randomized sibling-exposure experiment (E8) showed that having a sibling ima
 accuracy on the same test images (Supplementary~S10). For the pre-specified model~A FedAvg, BA of the fixed
 target images was 9.1 points higher when their siblings were in training than when they were not (95\% CI
 5.5--12.3; test met), close to the observational apparent inflation of 8.1 points; NLL fell by 0.10 and
-the Brier score by 3.6 points. The effect grew with how closely the model fits its training lesions: for
+the Brier score by 3.6 points. The effect differed between training regimes: for
 model~A it was 13.3 points (10.1--16.7) for FedPer, 18.6 (15.2--22.2) for pooled and 28.8 (25.3--32.7) for
 local-only training, that is 4.2 (0.5--8.1), 9.5 (5.3--13.6) and 19.8 (15.9--24.0) points more than for
 FedAvg on the same images. With frozen encoders, the FedAvg effect was similar (A-frozen 8.6 points,
@@ -827,7 +828,7 @@ for model~A on pooled BA (0.555, 6.0 points above FedAvg at 0.495; seed range of
 \caption{Balanced accuracy on image-level (Img) and lesion-grouped (Les) test sets (E2/E7, mean of five
 seeds). Pooled: one balanced accuracy over all test images; mean of clients: average of the six per-client
 values. Best value per column in bold; differences of a few points are within seed-to-seed variation
-(Supplementary~S10). Model B has no FedBN (no BatchNorm in a linear head); its FedPer is the FedPer-style
+(Supplementary~S9). Model B has no FedBN (no BatchNorm in a linear head); its FedPer is the FedPer-style
 two-layer head, whereas its other heads are linear. Kendall's $\tau_b$ compares the rankings of the
 seven methods common to both split types.}
 \label{tab:ba}
@@ -891,7 +892,7 @@ ranged from $-2.2$ to 10.0 points for model~A (FedAvg $-1.9$) and from $-1.9$ to
 (Supplementary~S3). The slope is also partly built into the measure, because inflation within a class
 scales with the leaked share.
 
-An exploratory nearest-neighbor analysis of the frozen embeddings showed why even linear heads can benefit
+An exploratory nearest-neighbor analysis of the frozen embeddings suggests how even linear heads can benefit
 from leakage (Figure~\ref{fig:mechanism}c; Supplementary Figure~S1). Leaked test images were closer to the
 training set than new-lesion images (mean cosine similarity of the centered embeddings to the nearest
 training image 0.81 vs 0.75 for A-frozen; 0.85 vs 0.79 for model~B), and for 54\% (A-frozen) and 58\%
@@ -1155,8 +1156,7 @@ we regard this as an interpretation, not as a tested causal mechanism. The two a
 comparisons they control. In E8, the exposure effect on the same randomized target images ordered the
 methods in the same way as the observational contrast (local-only $>$ pooled $>$ FedPer $>$ FedAvg for
 model~A; the two-layer head far above the linear heads for model~B), and in E9 a FedAvg model with the
-FedPer-style two-layer head inflated as much as the FedPer-style head itself. Head capacity, not the
-client-specific layer, therefore explains the behaviour of the FedPer-style head. For the fine-tuned
+FedPer-style two-layer head inflated as much as the FedPer-style head itself. Head capacity, not the client-specific layer, therefore accounts for the behaviour of the FedPer-style head. For the fine-tuned
 network, the methods still differ in optimizer and training budget, so fitting capacity remains the most
 consistent explanation rather than an isolated cause.
 
