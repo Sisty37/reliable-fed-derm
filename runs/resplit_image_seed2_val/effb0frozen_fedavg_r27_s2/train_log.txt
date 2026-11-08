@@ -1,0 +1,4 @@
+2026-11-08 11:52 | effb0frozen_fedavg_r27_s2 | split splits\e1\resplit_image_seed2_val.csv | updates 6400 | git 0451c68
+  fedavg: 27 rounds x 6400 updates, pooled training loss by round 6.7988 6.0593 5.9714 5.7444 5.7230 5.6645 5.6414 5.6545 5.5402 5.5857 5.6061 5.6402 5.5270 5.4720 5.5352 5.5609 5.4989 5.5561 5.4431 5.5046 5.3946 5.4844 5.4368 5.5460 5.5214 5.5467 5.4322
+balanced accuracy  pooled 0.5076 | mean of centers 0.4301 | per center 0.495 0.565 0.599 0.335 0.392 0.195
+saved to runs\resplit_image_seed2_val\effb0frozen_fedavg_r27_s2 (2028 s)

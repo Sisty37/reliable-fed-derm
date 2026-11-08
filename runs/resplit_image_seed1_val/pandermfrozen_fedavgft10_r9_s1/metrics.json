@@ -1,0 +1,22 @@
+{
+  "bacc_center_0": 0.5998987159494422,
+  "bacc_center_1": 0.8104428152492668,
+  "bacc_center_2": 0.6791465917687178,
+  "bacc_center_3": 0.5415139395153932,
+  "bacc_center_4": 0.4314614639709388,
+  "bacc_center_5": 0.48699633699633704,
+  "bacc_pooled": 0.6166585814814884,
+  "bacc_mean_of_centers": 0.5915766439083493,
+  "encoder": "panderm",
+  "method": "fedavgft",
+  "head": "linear",
+  "seed": 1,
+  "split": "splits\\e1\\resplit_image_seed1_val.csv",
+  "rounds": 9,
+  "updates": 0,
+  "ft_steps": 10,
+  "epochs": null,
+  "train_loss_by_round": [],
+  "git": "0451c68",
+  "seconds": 2.5
+}

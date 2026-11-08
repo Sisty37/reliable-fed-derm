@@ -1,0 +1,4 @@
+2026-11-08 13:05 | pandermfrozen_local_e60_s2 | split splits\e1\resplit_image_seed2_val.csv | updates 0 | git 0451c68
+  local-only: 60 epochs per center
+balanced accuracy  pooled 0.6670 | mean of centers 0.6805 | per center 0.595 0.840 0.744 0.632 0.713 0.559
+saved to runs\resplit_image_seed2_val\pandermfrozen_local_e60_s2 (40 s)

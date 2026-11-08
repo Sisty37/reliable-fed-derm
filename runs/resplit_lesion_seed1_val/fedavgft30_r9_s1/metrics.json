@@ -1,0 +1,19 @@
+{
+  "bacc_center_0": 0.46381440895089776,
+  "bacc_center_1": 0.7715591397849463,
+  "bacc_center_2": 0.6084286139155639,
+  "bacc_center_3": 0.38728374403143573,
+  "bacc_center_4": 0.6503517128489479,
+  "bacc_center_5": 0.323992673992674,
+  "bacc_pooled": 0.562622736535314,
+  "bacc_mean_of_centers": 0.5342383822540776,
+  "method": "fedavgft",
+  "seed": 1,
+  "split": "splits\\e1\\resplit_lesion_seed1_val.csv",
+  "rounds": 9,
+  "ft_steps": 30,
+  "source_run": "runs\\resplit_lesion_seed1_val\\fedavg_r9_s1",
+  "eval_model": "own center's fine-tuned model",
+  "git": "0451c68",
+  "minutes": 4.2
+}

@@ -1,0 +1,4 @@
+2026-11-08 14:44 | pandermfrozen_local_e60_s2 | split splits\e1\resplit_lesion_seed2_val.csv | updates 0 | git 0451c68
+  local-only: 60 epochs per center
+balanced accuracy  pooled 0.5469 | mean of centers 0.5835 | per center 0.431 0.812 0.549 0.453 0.680 0.576
+saved to runs\resplit_lesion_seed2_val\pandermfrozen_local_e60_s2 (47 s)

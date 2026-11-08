@@ -1,0 +1,4 @@
+2026-11-08 09:23 | effb0frozen_local_e20_s1 | split splits\e1\resplit_image_seed1_val.csv | updates 0 | git 0451c68
+  local-only: 20 epochs per center
+balanced accuracy  pooled 0.5770 | mean of centers 0.5139 | per center 0.536 0.558 0.533 0.474 0.599 0.384
+saved to runs\resplit_image_seed1_val\effb0frozen_local_e20_s1 (21 s)

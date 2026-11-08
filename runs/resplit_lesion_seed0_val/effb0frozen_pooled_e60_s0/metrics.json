@@ -1,0 +1,24 @@
+{
+  "bacc_center_0": 0.4555286564079298,
+  "bacc_center_1": 0.7278709677419355,
+  "bacc_center_2": 0.5986863582204394,
+  "bacc_center_3": 0.3936288993398333,
+  "bacc_center_4": 0.5029518318070323,
+  "bacc_center_5": 0.4338827838827839,
+  "bacc_pooled": 0.5205771516855533,
+  "bacc_mean_of_centers": 0.5187582495666591,
+  "encoder": "effb0",
+  "method": "pooled",
+  "head": "linear",
+  "seed": 0,
+  "split": "splits\\e1\\resplit_lesion_seed0_val.csv",
+  "rounds": 9,
+  "updates": 0,
+  "ft_steps": null,
+  "epochs": 60,
+  "train_loss_by_round": [
+    4.157492733001709
+  ],
+  "git": "0451c68",
+  "seconds": 41.4
+}

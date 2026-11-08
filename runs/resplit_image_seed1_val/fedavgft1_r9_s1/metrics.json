@@ -1,0 +1,19 @@
+{
+  "bacc_center_0": 0.6148745513068961,
+  "bacc_center_1": 0.8087204301075268,
+  "bacc_center_2": 0.4891595853181652,
+  "bacc_center_3": 0.3542822377738437,
+  "bacc_center_4": 0.21582535773448752,
+  "bacc_center_5": 0.5064102564102564,
+  "bacc_pooled": 0.550324071161034,
+  "bacc_mean_of_centers": 0.49821206977519594,
+  "method": "fedavgft",
+  "seed": 1,
+  "split": "splits\\e1\\resplit_image_seed1_val.csv",
+  "rounds": 9,
+  "ft_steps": 1,
+  "source_run": "runs\\resplit_image_seed1_val\\fedavg_r9_s1",
+  "eval_model": "own center's fine-tuned model",
+  "git": "0451c68",
+  "minutes": 3.8
+}

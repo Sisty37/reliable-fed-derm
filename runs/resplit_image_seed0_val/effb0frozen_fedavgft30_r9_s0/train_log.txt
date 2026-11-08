@@ -1,0 +1,4 @@
+2026-11-08 05:37 | effb0frozen_fedavgft30_r9_s0 | split splits\e1\resplit_image_seed0_val.csv | updates 0 | git 0451c68
+  FedAvg-FT: 30 local steps per client from runs\resplit_image_seed0_val\effb0frozen_fedavg_r9_s0\model.pt
+balanced accuracy  pooled 0.5686 | mean of centers 0.5297 | per center 0.523 0.669 0.484 0.529 0.525 0.448
+saved to runs\resplit_image_seed0_val\effb0frozen_fedavgft30_r9_s0 (3 s)

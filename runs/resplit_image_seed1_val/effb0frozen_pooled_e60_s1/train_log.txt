@@ -1,0 +1,4 @@
+2026-11-08 09:22 | effb0frozen_pooled_e60_s1 | split splits\e1\resplit_image_seed1_val.csv | updates 0 | git 0451c68
+  pooled: 60 epochs, final training loss 4.3251
+balanced accuracy  pooled 0.5776 | mean of centers 0.5821 | per center 0.554 0.687 0.488 0.365 0.551 0.847
+saved to runs\resplit_image_seed1_val\effb0frozen_pooled_e60_s1 (54 s)

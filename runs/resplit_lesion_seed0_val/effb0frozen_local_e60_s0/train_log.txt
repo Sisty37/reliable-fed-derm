@@ -1,0 +1,4 @@
+2026-11-08 07:53 | effb0frozen_local_e60_s0 | split splits\e1\resplit_lesion_seed0_val.csv | updates 0 | git 0451c68
+  local-only: 60 epochs per center
+balanced accuracy  pooled 0.4944 | mean of centers 0.4714 | per center 0.419 0.754 0.387 0.385 0.604 0.281
+saved to runs\resplit_lesion_seed0_val\effb0frozen_local_e60_s0 (42 s)
