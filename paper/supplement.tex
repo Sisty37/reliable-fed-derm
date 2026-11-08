@@ -1,6 +1,7 @@
 \documentclass[10pt]{article}
 \usepackage[margin=2cm]{geometry}
 \usepackage{booktabs,graphicx,amsmath,amssymb}
+\usepackage[section]{placeins}
 \usepackage[T1]{fontenc}
 \usepackage{url}
 \usepackage{mathptmx}
@@ -1109,7 +1110,7 @@ B & Local-only, 60 epochs & +5.9 [+3.7, +9.1] & $-$1.3 [$-$3.3, +1.1] & 0.638 & 
 \section*{Figure S1}
 \begin{figure}[!htbp]
 \centering
-\IfFileExists{../figures/FigS1_proximity_examples.pdf}{\includegraphics[width=\textwidth]{FigS1_proximity_examples}}{\fbox{FigS1\_proximity\_examples.pdf}}
+\includegraphics[width=\textwidth]{FigS1_proximity_examples}
 \caption{Exploratory nearest-neighbor examples (randomly drawn leaked test images, seed 20261106, not selected): each
 test image with its nearest training image in the frozen embedding space.}
 \end{figure}
