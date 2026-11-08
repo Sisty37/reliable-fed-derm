@@ -3,19 +3,19 @@ lesion classification. Its split assigns images rather than lesions to training 
 one lesion appear on both sides, and reliability at individual sites is rarely reported.
 \textbf{Methods:} We audited its six acquisition-source clients (23,247 dermoscopy images) with
 image-level and lesion-grouped splits, three encoder configurations and up to eight federated,
-personalized, centralized and local methods. We estimated the apparent accuracy gain on leaked images, ran
-a randomized sibling-exposure experiment on fixed test images, and evaluated rankings, calibration and
-conformal coverage per client, including held-out clients and smartphone images. Confirmatory tests
-were pre-specified.
+personalized, centralized and local methods. We estimated apparent test-set inflation relative to a
+standardized new-lesion subset, ran a randomized sibling-exposure experiment on fixed test images, and
+evaluated rankings, calibration and conformal coverage per client. Tests were specified before their
+experiments; later amendments followed earlier results.
 \textbf{Results:} In the official split, 0.1--93\% of each client's test images had a sibling in
-training. For FedAvg, balanced accuracy on the full test set exceeded a standardized new-lesion estimate by
-8.1 points (95\% CI 4.7--11.2), and in the randomized experiment a sibling in training raised it by
-9.1 points (5.5--12.3). With frozen foundation-model features, method rankings were unrelated across split
-types (Kendall's $\tau_b=0.05$). Calibration varied more between clients than between methods. A global
-conformal threshold left some clients at 0.72--0.83 mean coverage (target 0.90); EB-ShrinkFCP, an
-empirical-Bayes rule for per-client thresholds, kept mean client coverage near 0.90 but met its
-pre-specified criterion for only one of two encoders. On smartphone images, transferred coverage fell to
-0.60--0.67.
+training. For FedAvg (fine-tuned EfficientNet-B0), balanced accuracy on the full test set exceeded the
+standardized new-lesion estimate by 8.1 points (95\% CI 4.7--11.2), and sibling exposure increased
+target-image balanced accuracy by 9.1 points (5.5--12.3). With frozen foundation-model features, method
+rankings were unrelated across split types (Kendall's $\tau_b=0.05$). Calibration varied more between
+clients than between methods. A global conformal threshold left some clients at 0.72--0.83 mean coverage
+(target 0.90); EB-ShrinkFCP, an empirical-Bayes rule for per-client thresholds, kept mean client coverage
+near 0.90, but its lower-tail advantage varied by encoder and analysis. On smartphone images, transferred
+coverage fell to 0.60--0.67.
 \textbf{Conclusions:} Federated dermatology benchmarks should use lesion-grouped splits and report
 calibration and conformal coverage per client. Splits, code, predictions and protocol history are
 released.}

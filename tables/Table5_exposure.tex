@@ -1,0 +1,20 @@
+\begin{table}[!t]
+\centering
+\caption{Randomized sibling exposure (E8): balanced accuracy of the fixed target images with their siblings in
+training minus without (points, seeds 0--2), with 95\% lesion-bootstrap intervals that condition on the fitted
+models and realized allocations; seed-level effects; and the non-target sanity difference between arms.
+All methods in Supplementary~S10.}
+\label{tab:exposure}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+Encoder & Method & Effect [95\% CI] & Seeds 0, 1, 2 & Non-target \\
+\midrule
+A (fine-tuned) & FedAvg & +9.1 [+5.5, +12.3] & +7.3, +8.2, +11.7 & +3.6, +1.1, +0.6 \\
+A-frozen & FedAvg & +8.6 [+6.2, +11.2] & +9.4, +8.1, +8.2 & +0.1, $-$3.3, +2.9 \\
+B (PanDerm) & FedAvg & +8.0 [+5.7, +10.5] & +5.4, +7.1, +11.6 & +3.7, +1.3, +1.1 \\
+A (fine-tuned) & Local-only & +28.8 [+25.3, +32.7] & +30.7, +27.9, +28.0 & $-$0.4, +1.3, $-$1.7 \\
+B (PanDerm) & FedPer-style head & +21.1 [+17.5, +24.5] & +20.3, +22.5, +20.4 & +0.3, $-$4.3, $-$2.3 \\
+\bottomrule
+\end{tabular}
+\end{table}

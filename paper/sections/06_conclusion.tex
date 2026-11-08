@@ -10,9 +10,7 @@ images to training raised balanced accuracy by 9.1 points for FedAvg, with effec
 points across training regimes. Leakage also changed which methods appeared best, mainly among classifiers
 that differed in head architecture or training regime. At the level of individual clients, a shared conformal threshold under-covered some
 sites; an empirical-Bayes shrinkage of per-client thresholds kept mean client coverage near the target and
-improved the worst-client tail for one of two encoders, while a fixed shrinkage rule failed its
-pre-specified test. On unseen clients and smartphone images, reliability dropped further, and local
-recalibration restored coverage only with large prediction sets. We recommend that federated medical
+showed an encoder-dependent empirical lower-tail advantage, while a fixed shrinkage rule failed its pre-specified test. Reliability dropped on unseen clients and further on smartphone images, where local recalibration with labelled target data restored marginal coverage only with prediction sets of four to five of six classes. We recommend that federated medical
 imaging benchmarks with repeated imaging use lesion- or patient-grouped splits and report calibration and
 coverage per client, and we release the corrected splits, code, predictions and protocol history to
 support this.

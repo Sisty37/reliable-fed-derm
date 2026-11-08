@@ -518,12 +518,13 @@ def fig6():
         ax.set_xticks(range(6))
         ax.set_xticklabels([str(c) for c in range(6)])
         ax.set_xlim(-0.5, 5.5)
-        ax.set_xlabel("Held-out-client model, evaluated on client")
-        t = d["tests"]["eb"]
-        ax.text(0.02, 0.03, f"Pre-specified test (vs client-wise, worst-client q10):\n"
-                f"{100 * t['gain']:+.1f} pts [{100 * t['ci95'][0]:+.1f}, {100 * t['ci95'][1]:+.1f}], "
-                f"{'criterion met' if t['success'] else 'criterion not met'}",
-                transform=ax.transAxes, fontsize=6.2, color=INK, weight="bold" if t["success"] else "normal")
+        ax.set_xlabel("Evaluation client (mean over all 18 LOCO models)")
+        cs = load("Conformal_sensitivity.json")[("A" if letter == "a" else "B") + "/E6_loco"]
+        g = cs["mc_1000"]["eb"]["worst_center_q10"] - cs["mc_1000"]["clientwise"]["worst_center_q10"]
+        lo, hi = cs["boot_identity_500x100"]["clientwise"]
+        ax.text(0.02, 0.03, f"EB-ShrinkFCP vs client-wise, worst-client q10 (1,000 draws): {100 * g:+.1f} pts\n"
+                f"corrected bootstrap [{100 * lo:.1f}, {100 * hi:.1f}] (coverage not validated)",
+                transform=ax.transAxes, fontsize=6.0, color=INK)
         panel(ax, letter, title + " (leave-one-client-out, LAC, α = 0.1)", x=0.0)
     axs[0].set_ylabel("Coverage: mean (marker), 10th percentile (tick)")
     axs[0].set_ylim(0.6, 1.0)

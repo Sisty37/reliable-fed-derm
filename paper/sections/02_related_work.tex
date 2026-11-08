@@ -68,7 +68,7 @@ quantile with a guarantee on the mixture of clients under partial exchangeabilit
 \cite{humbert2023oneshot}, Plassier et al.\ addressed label shift between clients
 \cite{plassier2023labelshift}, Min et al.\ personalized conformal sets through localization
 \cite{min2025pfcp}, and Wen et al.\ targeted group-conditional coverage \cite{wen2026gcfcp}. A method can
-meet its mixture target while under-covering a particular client. Per-client thresholds avoid that bias
+meet its mixture target while under-covering a particular client; it is not disproved by failing a per-client objective it was not designed for, but it is insufficient for site-level use. Per-client thresholds avoid that bias
 but are noisy for small clients. Shrinking noisy estimates toward a common mean is a classical idea,
 from normal-means empirical Bayes \cite{efron1975stein} to random-effects meta-analysis
 \cite{dersimonian1986meta}. EB-ShrinkFCP applies it to per-client conformal quantiles with only two

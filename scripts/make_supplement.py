@@ -172,7 +172,11 @@ def s6():
            "All on LAC, $\\alpha=0.1$. q10 from 1,000 draws; range of q10 over five independent sets of 100 draws; "
            "one image per lesion in both halves; global and FCP thresholds from exact order statistics; "
            "calibration-only q10 with five fixed evaluation halves per model and 100 lesion-bootstrap calibration sets; "
-           "label-shift-weighted (LSW) comparator.\n"]
+           "label-shift-weighted (LSW) comparator. LSW: for each client, the weighted quantile of the pooled calibration "
+           "scores with weights $\\hat\\pi_c(y)/\\hat\\pi(y)$ from calibration class counts (classes absent from the pooled "
+           "calibration set get weight 0), a test-point weight bounded by $\\max_y \\hat\\pi_c(y)/\\hat\\pi(y)$, and the quantile "
+           "read at the upper edge of 1,000-bin histograms; it adapts weighted split conformal prediction under label shift "
+           "and is not an exact implementation of a published federated method.\n"]
     if d is None:
         return out[0] + "Pending.\n"
     rows = []
@@ -403,7 +407,7 @@ def s15():
             for k, v in d.items() if "_boot_over_spacing_variance_median_by_client" in v]
     out.append(table("Lesion-bootstrap variance of each client's threshold divided by the variance used by EB-ShrinkFCP "
                      "(median over draws; clients 0--5). Values below 1 mean that the pre-specified approximation is "
-                     "conservative, which increases shrinkage.", "tab:s15v", "llp{7cm}", "Model & Exp. & Ratio by client", rows,
+                     "overestimated by the approximation (this does not by itself guarantee conservative sets).", "tab:s15v", "llp{7cm}", "Model & Exp. & Ratio by client", rows,
                      size="\\scriptsize"))
     return "".join(out)
 
@@ -503,6 +507,61 @@ def s17():
     return "".join(out)
 
 
+def s18fu():
+    d = load("Followup_analyses.json")
+    out = ["\\section*{S18. Additional analyses for the follow-up review (post hoc)}\n"]
+    if d is None:
+        return out[0] + "Pending.\n"
+    R = {"global": "Global", "fcp": "FCP", "clientwise": "Client-wise", "eb": "EB-ShrinkFCP"}
+    rows = []
+    for m in ("A", "B"):
+        L = d["loco_heldout"][m]["heldout_only_by_client"]
+        for r in ("global", "clientwise", "eb"):
+            rows.append(f"{m} & {R[r]} & " + " & ".join(f"{a:.3f} / {b:.3f}" for a, b in zip(L[r]["mean_cov"], L[r]["q10"])))
+        rows.append("\\midrule")
+    out.append(table("LOCO models, held-out-only view: client $c$ evaluated only with the three models trained without $c$ "
+                     "(1,000 draws per model; mean coverage / q10). Held-out-client labels enter temperature scaling and "
+                     "conformal calibration (target-assisted calibration).", "tab:s18a", "ll" + "r" * 6,
+                     "Model & Rule & 0 & 1 & 2 & 3 & 4 & 5", rows[:-1], size="\\scriptsize", wide=True))
+    rows = [f"{m} & {R[r]} & {d['loco_heldout'][m]['mean_of_model_worst_q10'][r]:.3f} & {d['loco_heldout'][m]['worst_of_model_averaged_q10'][r]:.3f}"
+            for m in ("A", "B") for r in ("global", "fcp", "clientwise", "eb")]
+    out.append(table("Two aggregations of the all-client LOCO view (1,000 draws per model): mean over models of each model's "
+                     "worst-client q10 (used in the paper) and worst client of the model-averaged q10.", "tab:s18b", "llrr",
+                     "Model & Rule & Mean of per-model worst & Worst of mean", rows, size="\\scriptsize"))
+    rows = [f"{k} & {100 * v['inflation']:.1f} & {100 * v['inflation_common_support']:.1f} & {v['cells_without_new_mean']:.1f} & "
+            f"{100 * v['images_outside_support_share']:.1f}" for k, v in d["eq1_support"].items()]
+    out.append(table("Eq.~(1) support (E1, seeds 0--2): apparent inflation as reported, and with the full-test term restricted "
+                     "to the client--class cells that contain new-lesion images (common support); mean number of excluded cells "
+                     "and share of test images outside the common support.", "tab:s18c", "lrrrr",
+                     "Model, method & Inflation & Common support & Cells excluded & Images outside (\\%)", rows, size="\\scriptsize"))
+    rows = []
+    for m in ("A", "B"):
+        B = d["budget_caps"][m]
+        for cap, v in B["caps"].items():
+            rows.append(f"{m} & {cap} & " + ", ".join(f"{x:.0f}" for x in v["realized_calibration_lesions_by_client"]) + " & "
+                        + ", ".join(f"{x:.2f}" for x in v["worst_client_share"]["clientwise"]) + " & "
+                        + ", ".join(f"{x:.2f}" for x in v["worst_client_share"]["eb"]))
+        rows.append("\\midrule")
+    out.append(table("Calibration-budget caps on the LOCO models: realized calibration lesions per client (clients 0--5; all "
+                     "available lesions below the cap) and the share of the 18 models in which each client determined the "
+                     "worst-client q10 (300 draws per model).", "tab:s18d", "lrp{3.6cm}p{3.6cm}p{3.6cm}",
+                     "Model & Cap & Realized lesions & Worst client, client-wise & Worst client, EB-ShrinkFCP", rows[:-1],
+                     size="\\scriptsize", wide=True))
+    e8 = d["e8_seeds"]
+    nm = {"fedavg_r9": "A FedAvg", "effb0frozen_fedavg_r9": "A-frozen FedAvg", "pandermfrozen_fedavg_r9": "B FedAvg",
+          "local_e20": "A local-only", "pandermfrozen_fedper_r9": "B FedPer-style"}
+    rows = [f"{nm[k]} & " + " & ".join(f"{100 * v[s]['ba_effect']:+.1f}" for s in ("0", "1", "2")) + " & "
+            + " & ".join(f"{100 * v[s]['sanity_nontarget']:+.1f}" for s in ("0", "1", "2"))
+            for k, v in e8.items() if k in nm]
+    sib = e8["siblings_per_target"]
+    out.append(table("E8 seed-level exposure effects on target-image BA and the non-target sanity difference (arm 1 minus arm 2), "
+                     "points. Targets per seed: " + ", ".join(str(e8["fedavg_r9"][s]["n_targets"]) for s in ("0", "1", "2"))
+                     + "; siblings per target: median " + ", ".join(f"{x['median']:.0f}" for x in sib) + ", mean "
+                     + ", ".join(f"{x['mean']:.1f}" for x in sib) + ", maximum " + ", ".join(str(x["max"]) for x in sib) + ".",
+                     "tab:s18e", "lrrrrrr", "Model & Effect s0 & s1 & s2 & Sanity s0 & s1 & s2", rows, size="\\scriptsize"))
+    return "".join(out)
+
+
 def s9():
     rows = [("v0.1--v0.3", "26--27 Oct", "none", "Research questions, splits, models, metrics"),
             ("v0.4--v0.6", "27--28 Oct", "none", "Gate 1 and 2, primary outcome, H3b, $\\tau$ noise floor, A-frozen control (reviews 1--2)"),
@@ -512,21 +571,35 @@ def s9():
             ("v0.11", "3 Nov", "E0--E5 (RQ4 failed)", "EB-ShrinkFCP and test 5b on LOCO models (before any LOCO model)"),
             ("e7, PAD, NN tags", "5--6 Nov", "E0--E6", "pre-run tags; PAD interpretation rule; NN analysis exploratory"),
             ("v0.12", "7 Nov", "E0--E7, PAD, NN; external review", "E8, E9 and their tests; post hoc sensitivity analyses"),
-            ("8 Nov (no new version)", "8 Nov", "all results, incl. E8, E9", "post hoc only: S12--S17")]
+            ("8 Nov (no new version)", "8 Nov", "all results, incl. E8, E9", "post hoc only: S12--S17"),
+            ("9 Nov (no new version)", "9 Nov", "all results; follow-up review", "conformal bootstrap superseded for inference; S18")]
     out = ["\\section*{S8. Protocol chronology and deviations}\n",
-           table("Protocol versions and pre-run tags (git, pushed to GitHub), with the results available when each was "
-                 "written.", "tab:s9", "llp{3.6cm}p{6.2cm}", "Version / tag & Date (2026) & Results available & Content",
+           table("Protocol versions and pre-run tags, with the results available when each was written.", "tab:s9", "llp{3.6cm}p{6.2cm}", "Version / tag & Date (2026) & Results available & Content",
                  [f"{a} & {b} & {c} & {d}" for a, b, c, d in rows], size="\\scriptsize", wide=True)]
     dev = ["FLamby's published FedAvg value recorded after E0 (not used in Gate 1)",
            "PyTorch 2.5.1 instead of 2.4.1",
            "Frozen-encoder embeddings centered with the federated training mean (31 Oct, after the first convergence check, "
            "before any test result)",
            "No five-member deep ensemble (seeds use different splits)",
-           "Personalized FCP not implemented (threshold rule not verifiable, no code)",
+           "Personalized FCP not implemented (the public code trains feature-based density-ratio and generative models per target client; not adapted to this setting)",
            "Optional E4 and the original E8 (model C) not run; identifiers E8/E9 reused in v0.12",
            "U not re-tuned for the two-layer FedPer-style head (fixed before E7)",
-           "Post hoc sensitivity analyses added after the external review (S6, S8; listed in v0.12)"]
+           "Post hoc sensitivity analyses added after the external reviews (S5, S7, S13--S18)"]
     out.append("Deviations: " + "; ".join(f"({i + 1}) {x}" for i, x in enumerate(dev)) + ".\n")
+    rows = [("v0.1, v0.2, v0.3", "tags v0.1--v0.3-protocol (5ca4821, 7a71c3e, 472196d)", "26--27 Oct", "design only"),
+            ("v0.4, v0.5, v0.6", "tags v0.4--v0.6-protocol (5d2ab21, b282eb1, 50a803b)", "27--28 Oct", "Gate 1, Gate 2 (E0, E1)"),
+            ("v0.7", "tag v0.7-protocol (90c028d)", "28 Oct", "RQ4 (E5)"),
+            ("v0.8, v0.9", "no separate commit; content contained in v0.10", "29--30 Oct", "H3b, RQ4 metric and guards"),
+            ("v0.10", "tag v0.10-protocol (907f3b5)", "30 Oct", "E0--E3, E5, E7 rules"),
+            ("v0.11", "tag v0.11-protocol (794441b)", "3 Nov", "5b (E6 LOCO models)"),
+            ("v0.12", "no protocol tag; pre-run tag e8-prerun (5e5628a)", "7 Nov", "E8, E9"),
+            ("pre-run tags", "e0b-, e1-, e1-frozen-, e2-, e2-modelB-, e5-preregistered; e7-, e6-padufes-, nn-prerun", "30 Oct--6 Nov",
+             "the experiment named in the tag")]
+    out.append(table("Mapping of protocol versions to git commits or tags and to the experiments they govern. Dates are commit "
+                     "dates, which record when content was committed, not when it was pushed; run logs in the repository give "
+                     "the start times of the runs.", "tab:s9map", "p{2.2cm}p{5.6cm}lp{4.2cm}",
+                     "Version & Commit or tag & Date (2026) & Governs", [f"{a} & {b} & {c} & {d}" for a, b, c, d in rows],
+                     size="\\scriptsize", wide=True))
     return "".join(out)
 
 
@@ -575,7 +648,7 @@ def main():
 \maketitle
 All tables are generated by \texttt{scripts/make\_supplement.py} from the result files in the code repository
 (\url{https://github.com/Sisty37/reliable-fed-derm}).
-""" + s1() + s2() + s3() + s5_s7().split("\\section*{S6.")[0] + s6() + "\\section*{S6." + s5_s7().split("\\section*{S6.")[1] + s8() + s9() + s10() + s11() + s12() + s13() + s14() + s15() + s16() + s17nn() + s17() + r"""
+""" + s1() + s2() + s3() + s5_s7().split("\\section*{S6.")[0] + s6() + "\\section*{S6." + s5_s7().split("\\section*{S6.")[1] + s8() + s9() + s10() + s11() + s12() + s13() + s14() + s15() + s16() + s17nn() + s17() + s18fu() + r"""
 \section*{Figure S1}
 \begin{figure}[!htbp]
 \centering

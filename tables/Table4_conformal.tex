@@ -1,10 +1,12 @@
 \begin{table}[!t]
 \centering
 \caption{Federated conformal calibration on the 18 LOCO models per encoder (LAC, $\alpha=0.1$, 100
-lesion-wise calibration/evaluation draws). q10: worst client's 10th percentile of coverage over draws,
-averaged over models (primary); min cov.: lowest client mean coverage; $|C|$: mean set size (equal weight
+lesion-wise calibration/evaluation draws; held-out-client labels enter temperature scaling and conformal
+calibration). q10: for each model, the 10th percentile of coverage over draws in its worst client, averaged
+over the 18 models (primary; the worst client of the model-averaged q10 is given in Supplementary~S18);
+min cov.: lowest client mean coverage; $|C|$: mean set size (equal weight
 per client). Best in bold. $^m$Targets coverage on the mixture of clients, not per client.
-$^\dagger$Proposed. $^p$Post hoc comparator (1,000 draws).}
+$^\dagger$Proposed (exploratory). $^p$Post hoc comparator (1,000 draws).}
 \label{tab:conformal}
 \setlength{\tabcolsep}{2.6pt}
 \begin{tabular}{@{}lcccccc@{}}

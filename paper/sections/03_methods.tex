@@ -27,7 +27,7 @@ both split types; E3, calibration; E5, federated conformal prediction on in-fede
 leave-one-client-out (LOCO) models and a smartphone-image stress test; E7, personalized models and the
 final test of H3b; E8, a randomized sibling-exposure experiment on fixed test images; and E9,
 capacity-matched classifier heads for model~B. The optional experiment E4 was not run. Seeds differed
-between experiments (Supplementary~S9 gives the full run matrix): three for E0, E1, E6 and E8, five for E2, E7
+between experiments (Supplementary~S9 gives the full run matrix): three for E0, E1, E8 and the LOCO models of E6, five for E2, E7, the PAD-UFES-20 analysis of E6
 and E9. Confirmatory tests followed the protocol version that was fixed before the corresponding runs
 (Section~\ref{sec:prereg}); all other analyses are labelled secondary, post hoc or exploratory.
 
@@ -90,7 +90,7 @@ report the leakage of the benchmark as distributed.
 \emph{Image-level} re-splits: 20\% of each client's images form the test set, stratified by class,
 irrespective of lesion.
 \emph{Lesion-grouped} re-splits: 20\% of each client's lesions, with all their images, form the test set,
-under class quotas; the nine lesions with images in two clients were always kept in training. Because the
+under class quotas; the nine lesions with images in two clients were always kept in training, with all their images in either client, because lesion identifiers are global. Because the
 two split types draw 20\% of images and 20\% of lesions respectively, their training sets differ by less
 than 1\% in images (about 16,700--16,800) but not in lesions (about 9,350 versus 8,500), and their test
 sets differ in composition (Supplementary~S1). From E1 onwards, 10\% of each client's training lesions
@@ -149,7 +149,7 @@ client, a pre-specified light personalization that was not tuned (1 to 100 steps
 Supplementary~S17); and \emph{FedPer}
 \cite{arivazhagan2019fedper} keeps the classifier local and averages the remaining parameters (for
 model~A the final linear layer is local). For models with a frozen encoder, a client-specific linear head
-would be identical to local training, so FedPer used a two-layer head (768--256--8, ReLU) with a
+would be identical to local training, so FedPer for model~B (it was not run for A-frozen) used a two-layer head (768--256--8, ReLU) with a
 federated hidden layer and a client-specific output layer. Because this head has more capacity than the
 linear heads of the other model~B methods, E9 trained FedAvg, pooled and local-only models with the same
 two-layer head. \emph{Pooled} training is the centralized reference, and \emph{local-only} trains one model
@@ -157,8 +157,7 @@ per client on its own data.
 
 Federated training followed FLamby: 9 rounds of 100 local updates (model~A; 6,400 images per client and
 round) or $U$ updates (frozen encoders), SGD with learning rate 0.01 and batch size 64, weighted focal loss
-\cite{lin2017focal} ($\gamma=2$) with FLamby's fixed class weights (taken unchanged from FLamby's code
-for all splits), and aggregation of all trainable parameters weighted by the number of training images.
+\cite{lin2017focal} ($\gamma=2$) with FLamby's fixed class weights (benchmark constants taken unchanged from FLamby's code for all splits, rather than weights re-estimated on each training split), and aggregation of all trainable parameters except those kept local by FedBN or FedPer, weighted by the number of training images.
 Batch-normalization running statistics are buffers, not parameters, and stay with each client in all
 methods; FedBN additionally keeps the batch-normalization weights and biases local. The global FedAvg,
 FedProx and SCAFFOLD model was evaluated as the copy held by the first participating client, including
@@ -181,8 +180,7 @@ its other images were its \emph{siblings}. Target lesions were randomized into t
 client and class and paired by number of siblings. In arm~1 the siblings of group~1 were added to the
 training set of their client and those of group~2 were removed; arm~2 did the reverse. All other images
 were identical in both arms, and the training sets differed by less than 0.2\% in size. Every target image
-is therefore predicted once with and once without its siblings in training, by models with the same
-recipe and seed. E8 trained FedAvg, FedPer, pooled and local-only models for models A and B, and FedAvg,
+is therefore predicted once with and once without its siblings in training, by models with the same recipe and seed. Because each arm adds the siblings of one group and removes those of the other, the contrast estimates the effect of sibling exposure under this complementary, approximately size-matched randomized allocation, not the effect of one target's siblings in isolation; its bootstrap intervals condition on the fitted models and on the realized allocations of seeds 0--2 (seed-level effects in Supplementary~S18). E8 trained FedAvg, FedPer, pooled and local-only models for models A and B, and FedAvg,
 pooled and local-only models for A-frozen. The design and its primary test were added to the protocol
 (version 0.12) after all other results were known and before any E8 model was trained.
 
@@ -205,8 +203,8 @@ model. Let $r_{c,k}$ be the recall of class $k$ among the new-lesion test images
 the number of all test images of class $k$ in client $c$. Then $\widetilde{\mathrm{BA}}_{\text{new}}$ is
 the mean over classes $k$ of $\sum_c N_{c,k} r_{c,k}/\sum_c N_{c,k}$, where the sums run over the clients
 with at least one new-lesion image of class $k$; classes with fewer than five new-lesion images in total
-are dropped from both terms. $\Delta_{\text{app}}$ is an observational contrast between two groups of test
-images. Within a class it equals the leaked share times the difference in recall between leaked and new
+are dropped from both terms. The full term uses all test images of a retained class, including client--class cells without new-lesion images (on average 3.7 cells and 0.3\% of the test images); restricting it to the same cells changed the inflation by at most 0.6 points (Supplementary~S18). $\Delta_{\text{app}}$ is an observational contrast between two groups of test
+images. Within a client--class cell, the full-minus-new difference equals the leaked share of the cell times the difference in recall between its leaked and new images, and on common support $\Delta_{\text{app}}$ is a weighted combination of these cell differences; it therefore depends on the recall of leaked and new
 images, so it can also reflect differences in difficulty or multiplicity between leaked and new lesions,
 and it grows mechanically with the leakage rate. We therefore report two further estimands: the
 \emph{retrained-split difference}, the BA of the image-level model on its own test set minus the BA of the
@@ -233,8 +231,7 @@ with six clients, one of them (client~0) with most of the leakage, this slope is
 \paragraph{Calibration} We report the top-label expected calibration error (ECE) with 15 equal-width
 bins \cite{naeini2015ece,guo2017calibration}, class-wise ECE \cite{kull2019beyond}, the negative
 log-likelihood (NLL) and the Brier score \cite{brier1950}, overall and per client. Probabilities were
-temperature-scaled \cite{guo2017calibration}: each client fitted a temperature on its validation lesions
-by minimizing the NLL, and the global temperature was their mean weighted by validation images, a
+temperature-scaled \cite{guo2017calibration}: each client fitted a temperature on its validation lesions by minimizing the NLL (for LOCO models this includes the validation lesions of the held-out client), and the global temperature was their mean weighted by validation images, a
 heuristic that needs no exchange of logits; the NLL-optimal temperature on the pooled validation set is
 reported as a sensitivity analysis. All methods, including personalized ones, used the global temperature
 of their own predictions. Because binned ECE is biased upwards in small samples, contrasts between the
@@ -265,10 +262,9 @@ size were measured on the evaluation half. These pools were used to evaluate sev
 held out from training but not an untouched final test set. Split conformal prediction guarantees
 marginal coverage when calibration and test units are exchangeable
 \cite{vovk2005algorithmic,angelopoulos2023gentle}. Here the units are images, and images of one lesion are
-correlated; random assignment of whole lesions makes the lesions, but not the individual images,
-exchangeable \cite{lee2023hierarchical,dunn2022hierarchical}. We therefore treat image-level coverage as an
+correlated; we partitioned by lesion to prevent overlap of correlated views between calibration and evaluation; exchangeability across sampled lesions remains an assumption, and image-level exchangeability cannot be assumed \cite{lee2023hierarchical,dunn2022hierarchical}. We therefore treat image-level coverage as an
 empirical quantity, and as a sensitivity analysis we kept one random image per lesion in both halves, so
-that calibration and evaluation units are independent lesions and the target is a random image of a new
+that each lesion contributes one sampled image, which also shifts the weighting from images to lesions (independence across lesions is not established, because patient identifiers are unavailable), and the target is a random image of a new
 lesion.
 
 \paragraph{Thresholds} Let client $c$ have $m_c$ calibration images in $n_c$ lesions, and let $q_c$ be
@@ -288,9 +284,7 @@ threshold (LSW) for each client, the weighted quantile of the pooled calibration
 $\hat\pi_c(y)/\hat\pi(y)$ from calibration class frequencies and a conservative weight for the test point
 \cite{podkopaev2021labelshift,plassier2023labelshift}, computed from per-class score histograms. Global,
 sample-weighted and FCP thresholds target coverage on the mixture of clients, not per client
-\cite{lu2023fcp}; client-wise thresholds target each client. Personalized FCP with localization
-\cite{min2025pfcp}, listed in the protocol as a comparator, was not implemented because its threshold
-rule could not be verified from the available description and no code was found.
+\cite{lu2023fcp}; client-wise thresholds target each client. Personalized FCP with localization (PFCP) \cite{min2025pfcp}, listed in the protocol as a comparator, was not implemented. Its authors' code is public, but it trains neural density-ratio and generative models on input features for each target client and assumes independent samples; adapting it to our lesion-clustered setting, with scores from a fine-tuned network for model~A, would have required design choices that we could not validate. We therefore did not compare with it and treat EB-ShrinkFCP as an exploratory component of the audit.
 
 \paragraph{EB-ShrinkFCP} ShrinkFCP assumes that small clients differ from the global threshold only by
 sampling noise. When a client's score distribution is genuinely shifted, shrinking toward a shared
@@ -351,7 +345,7 @@ isolated threshold variability by fixing the evaluation half and redrawing only 
 \paragraph{LOCO conformal evaluation} For test~5b, each of the 18 LOCO models per encoder produced scores on
 the lesion-grouped test sets of all six clients, including the client held out of its training; for every
 model, thresholds were then calibrated and evaluated as above. The held-out client is therefore unseen in
-training but calibrated with its own labelled lesions; this is not target-label-free external validation.
+classifier training, but its validation labels enter temperature scaling and its labelled lesions enter conformal calibration; this is target-assisted calibration, not zero-label transfer. Supplementary~S18 also reports a held-out-only view in which each client is evaluated only with the models trained without it.
 
 \paragraph{Smartphone stress test} On PAD-UFES-20, conformal thresholds were either (i) transferred,
 computed from all Fed-ISIC2019 lesion-grouped test scores after the six-class restriction and the same
@@ -364,9 +358,7 @@ target data.
 
 The protocol specified research questions, splits, models, metrics and success criteria before the
 corresponding experiments \cite{nosek2018preregistration}. It was not deposited in an external registry;
-instead, each version and each pre-run state of the code was committed and tagged in a git repository that
-was pushed to GitHub before the runs it governs, and the full history is released. Supplementary~S8 lists every
-version with its date, the results available when it was written and what it changed. Versions 0.1--0.10
+instead, most versions and pre-run states of the code were committed and tagged in a git repository (versions 0.8 and 0.9 were not separate commits and are contained in version 0.10, and version 0.12 is marked by the pre-run tag of E8). Commit dates record when content was committed, not when it was pushed; Supplementary~S8 maps each version to its commit or tag and to the experiments it governs. The full history is released, and Supplementary~S8 also lists every version with its date, the results available when it was written and what it changed. Versions 0.1--0.10
 (26--30 October 2026) were written, and revised after five methodological reviews, before any experiment
 was run. Version 0.11 (3 November) was written after E0--E5 and before any LOCO model was trained, and
 version 0.12 (7 November) after all other results and an external review of the manuscript, and before
@@ -403,9 +395,7 @@ contrasts), with the trained models fixed and seeds averaged inside each replica
 test-sample uncertainty, not retraining variability, which is shown by the seed-level results in
 Supplementary~S9. For the conformal gains, each replicate resampled the test lesions and redrew 20
 calibration draws shared by all methods, so that gains are paired. In the pre-specified analysis, copies of
-a resampled lesion were treated as distinct lesions and could therefore fall into both halves; a corrected
-bootstrap that keeps the copies of a lesion together, with 20 and with 100 draws per replicate, is
-reported in Supplementary~S5. PAD-UFES-20 intervals resample patients. All deviations from the protocol recorded during the study are
+a resampled lesion were treated as distinct lesions and could therefore fall into both halves. This bootstrap is defective; its outcomes are reported as the historical record of the pre-specified tests and are superseded for inference. For inference we use a corrected bootstrap that keeps the copies of a lesion together and pairs the draws across methods (500 replicates of 100 draws), with point estimates from 1,000 draws; the coverage of these intervals as confidence procedures was not validated (Supplementary~S5). Each seed's test lesions were resampled separately, so a lesion that appears in several seed-specific test sets was not resampled jointly, and all intervals describe an average over the seed-specific test sets, conditional on the trained models. PAD-UFES-20 intervals resample patients. All deviations from the protocol recorded during the study are
 listed in Supplementary~S8; none changed a pre-specified test criterion.
 
 \subsection{Implementation}

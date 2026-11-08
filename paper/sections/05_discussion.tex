@@ -15,9 +15,7 @@ it reordered methods on per-client accuracy and for a foundation-model encoder, 
 head moved from first to seventh place. The size of the apparent inflation was associated with how closely
 a model can fit its training lesions rather than with personalization as such (RQ3). Calibration and
 conformal coverage varied more between clients than between methods, and a single global conformal
-threshold left some clients well below the target coverage (RQ1). A pre-specified fixed shrinkage rule
-failed; an empirical-Bayes variant kept every client's mean coverage near the target and improved the
-worst-client tail for one of two encoders (RQ4). Accuracy, calibration and transferred coverage were worse
+threshold left some clients well below the target coverage, and every marginal rule covered rare classes such as dermatofibroma in only 0.50--0.59 of cases (RQ1). A pre-specified fixed shrinkage rule failed; an empirical-Bayes variant kept every client's mean coverage near the target and showed an encoder-dependent empirical lower-tail advantage (RQ4). Accuracy, calibration and transferred coverage were worse
 on unseen clients and much worse on smartphone images.
 
 \subsection{Why leakage inflates apparent accuracy}
@@ -39,7 +37,7 @@ we regard this as an interpretation, not as a tested causal mechanism. The two a
 comparisons they control. In E8, the exposure effect on the same randomized target images ordered the
 methods in the same way as the observational contrast (local-only $>$ pooled $>$ FedPer $>$ FedAvg for
 model~A; the two-layer head far above the linear heads for model~B), and in E9 a FedAvg model with the
-FedPer-style two-layer head inflated as much as the FedPer-style head itself. Head capacity, not the client-specific layer, therefore accounts for the behaviour of the FedPer-style head. For the fine-tuned
+FedPer-style two-layer head inflated as much as the FedPer-style head itself. The capacity-matched controls therefore indicate that classifier architecture contributes substantially to the split-dependent ranking changes; architecture, optimization and personalization are not completely isolated by this comparison. For the fine-tuned
 network, the methods still differ in optimizer and training budget, so fitting capacity remains the most
 consistent explanation rather than an isolated cause.
 
@@ -84,19 +82,14 @@ evaluation and the one-image-per-lesion analysis address this empirically, while
 methods offer formal guarantees for grouped data \cite{dunn2022hierarchical,lee2023hierarchical}.
 
 EB-ShrinkFCP addresses the noise of client-wise thresholds without returning to a single shared threshold.
-Its weight $w_c=\tau^2/(\tau^2+\sigma_c^2)$ estimates from the data how much the clients differ, so it
-borrows strength only when they agree; the fixed weight of ShrinkFCP borrowed regardless and imported the
+Its weight $w_c=\tau^2/(\tau^2+\sigma_c^2)$ estimates from the data how much the clients differ, so the amount of shrinkage depends on the estimated between-client heterogeneity relative to each client's sampling uncertainty; the fixed weight of ShrinkFCP borrowed regardless and imported the
 global threshold's bias into the shifted clients. The attainable gain is limited by evaluation noise: with
 about 44 evaluation images per draw in the smallest client, even a rule with exactly nominal conditional
 coverage has a 10th percentile of observed coverage well below 0.90, although trivial rules such as
 returning all classes would reach full coverage at the cost of useless sets. The evidence on RQ4 is
 therefore mixed. Across the tested models and clients, EB-ShrinkFCP kept mean client coverage close to the
-target; it met its pre-specified criterion on held-out models for model~A, with an interval that excludes
-zero but also includes gains below 2 points; no clear improvement was detected for model~B, so the joint criterion
-was not met; and, like the other marginal rules, it left rare classes such as dermatofibroma well below the
-target, which only class-conditional thresholds corrected, at the cost of larger sets. The post hoc analyses point the same way but do not strengthen the claim: the gain is visible in the
-variability of thresholds, but with one image per lesion its interval includes zero, and its size is
-comparable to the Monte Carlo variability of a 100-draw q10. The rule exchanges two
+target; the pre-specified analysis declared its test met for model~A, but that analysis used a defective bootstrap, and with corrected inference the lower-tail advantage was about 3 points for model~A and under 1 point for model~B, with intervals whose coverage was not validated; the joint criterion was not met; and, like the other marginal rules, it left rare classes such as dermatofibroma well below the
+target, which only class-conditional thresholds corrected, at the cost of larger sets. The post hoc analyses do not strengthen the claim: the advantage persisted with a fixed evaluation half, but with one image per lesion its interval includes zero, and its size is comparable to the Monte Carlo variability of a 100-draw q10. The rule exchanges two
 aggregate statistics per client, a quantile and a variance, rather than images or score lists; we did not
 analyze its formal privacy properties. Related work on federated conformal prediction has addressed label
 shift \cite{plassier2023labelshift}, one-shot aggregation \cite{humbert2023oneshot}, personalization
@@ -108,7 +101,7 @@ absence of any guarantee under distribution shift \cite{tibshirani2019covariate,
 recalibration restored marginal coverage only by returning four to five of six classes, and coverage for
 actinic keratosis and squamous cell carcinoma stayed below the target. Post hoc class-conditional
 recalibration brought both classes to 0.90 and reduced the mean set size from 4.9 to 3.9 classes for
-model~A and from 4.3 to 4.0 for model~B (Supplementary~S13), still too large to be clinically useful.
+model~A and from 4.3 to 4.0 for model~B (Supplementary~S13), which provides limited diagnostic specificity; clinical utility was not evaluated.
 Recalibration can make a model's
 uncertainty honest, but it cannot make an unsuitable model useful, and marginal coverage can hide
 class-conditional failures \cite{lu2022fair}.
@@ -121,13 +114,12 @@ calibration and coverage per client, not only pooled, together with the uncertai
 estimates; (iii) fit temperature and conformal thresholds on data grouped in the same way as the test data;
 (iv) state which coverage target a conformal rule serves (mixture, client or class) and compare locally
 calibrated and pooled thresholds for that target before adopting a shrinkage rule; (v) evaluate on held-out
-clients and, before deployment in a new imaging modality, recalibrate locally and report set sizes and
-per-class coverage; and (vi) fix primary analyses in advance and report negative results, in line with
+clients and, in a new imaging modality, treat local recalibration as one evaluated step, followed by assessment of set size and per-class coverage, not as sufficient validation for deployment; and (vi) fix primary analyses in advance and report negative results, in line with
 general reporting guidance for clinical prediction models \cite{collins2024tripodai}.
 
 \subsection{Value of a fixed protocol and negative results}
 
-Of the seven pre-specified tests, four were met in full (Gates 1 and 2, the PAD-UFES-20 transfer rule and E8), two were met for one of two encoders (H3b and 5b), and one failed (RQ4). Without a protocol, the failure of ShrinkFCP could have been
+Of the seven pre-specified tests, the pre-specified analyses reported four as met in full (Gates 1 and 2, the PAD-UFES-20 transfer rule and E8), two as met for one of two encoders (H3b and 5b) and one as failed (RQ4); the conformal outcomes rest on the defective bootstrap and are superseded for inference by the corrected analysis. Gate 2 is the only primary test, and such a count is not a measure of overall validity. Without a protocol, the failure of ShrinkFCP could have been
 followed by adjusting its constant until it succeeded on the same models. Instead, the failure motivated a
 new rule that was specified before the held-out models existed and tested on them, and the post hoc results
 are labelled as such. The protocol also prevented a selective reading of H3b: the hypothesis was supported
@@ -153,10 +145,9 @@ controls with three seeds showed that their inflation depends on that budget, an
 run for the fine-tuned pooled and local-only models of model~A. The benchmark clients and test pools were reused
 across method development and evaluation. Overlap between PanDerm's pretraining data and the evaluation
 images could not be ruled out. Our FedAvg reproduction was 4.2 points below one published value, though
-above FLamby's own results. EB-ShrinkFCP met its criterion for one of two encoders, it does not carry a
+above FLamby's own results. The original conformal bootstrap was defective and the corrected intervals were not validated as confidence procedures; EB-ShrinkFCP's lower-tail advantage was encoder-dependent, it does not carry a
 finite-sample per-client guarantee, and its variance approximation for clustered images is heuristic; in
-our simulation and lesion bootstrap it overstated the variance, which makes the rule shrink more than
-necessary, and the simulation covered only one family of score distributions.
+our simulation and lesion bootstrap it overestimated the quantile sampling variance, although replacing it changed the results little, and the simulation covered only one family of score distributions.
 Finally, the mechanism analysis is exploratory.
 
 \subsection{Future work}

@@ -35,8 +35,7 @@ fall on both sides (Figure~\ref{fig:leakage}a), and the test set partly measures
 seen in training. Such leakage is a known source of over-optimism in machine learning and medical imaging
 \cite{kapoor2023leakage,varoquaux2022failures,roberts2021pitfalls}, and duplicates or image-level splits
 have been documented in dermatology and other imaging datasets
-\cite{cassidy2022isic,groger2023reliable,abhishek2025dermamnist,bussola2021tiles,yagis2021leakage}. In a
-targeted search we found no Fed-ISIC2019 evaluation that grouped images by lesion (Supplementary~S12).
+\cite{cassidy2022isic,groger2023reliable,abhishek2025dermamnist,bussola2021tiles,yagis2021leakage}. None of the seven Fed-ISIC2019 evaluations found in a targeted, non-systematic search grouped images by lesion (Supplementary~S12).
 
 In a federated benchmark, leakage raises questions a pooled correction does not answer. It need not be
 uniform: in the official split, 93\% of one client's test images have a sibling image in training,
@@ -53,8 +52,7 @@ Conformal prediction gives distribution-free marginal coverage under exchangeabi
 label shift, or personalized and group-defined targets
 \cite{lu2023fcp,humbert2023oneshot,plassier2023labelshift,min2025pfcp,wen2026gcfcp}. Yet a pooled
 threshold can meet its mixture target while under-covering individual clients, a threshold from a small
-client's own data varies strongly between calibration samples, and repeated images of one lesion are not
-exchangeable, so the unit of the coverage statement must be stated
+client's own data varies strongly between calibration samples, and repeated images of one lesion create a clustered sampling structure for which ordinary image-level exchangeability cannot be assumed
 \cite{lee2023hierarchical,dunn2022hierarchical}. How these issues play out on Fed-ISIC2019 has not been reported.
 
 We therefore audit federated skin lesion classification on Fed-ISIC2019 with image-level and
@@ -70,8 +68,8 @@ failed tests alongside successful ones. Our contributions are:
     capacity-matched experiments in which its effect differed between training regimes and heads,
     consistent with, but not isolating, an influence of fitting strength rather than personalization.
   \item A per-client analysis of federated conformal coverage that accounts for repeated images, and
-    EB-ShrinkFCP, an empirical-Bayes rule for per-client thresholds that met its pre-specified criterion
-    for one of two encoders.
+    EB-ShrinkFCP, an exploratory empirical-Bayes rule for per-client thresholds whose lower-tail
+    advantage was encoder-dependent.
   \item Lesion-grouped splits, code, predictions and the protocol history, released for leakage-free
     federated benchmarking.
 \end{enumerate}

@@ -85,6 +85,47 @@ per-client lesion counts sum to 11,856.}
     write("Table1_dataset.tex", body)
 
 
+def cs_text(model):
+    """Corrected EB-ShrinkFCP gain over client-wise on the LOCO models: 1,000-draw point estimate and
+    identity-preserving bootstrap interval (500 x 100 draws), from results/Conformal_sensitivity.json."""
+    d = load("Conformal_sensitivity.json")[f"{model}/E6_loco"]
+    g = d["mc_1000"]["eb"]["worst_center_q10"] - d["mc_1000"]["clientwise"]["worst_center_q10"]
+    lo, hi = d["boot_identity_500x100"]["clientwise"]
+    return f"{100 * g:+.1f} [{100 * lo:.1f}, {100 * hi:.1f}]".replace("-", "$-$")
+
+
+# ---------------------------------------------------------------- Table V: randomized sibling exposure (E8)
+def table5():
+    e8, fu = load("E8_sibling_exposure.json"), load("Followup_analyses.json")["e8_seeds"]
+    nm = [("fedavg_r9", "A (fine-tuned)", "FedAvg"), ("effb0frozen_fedavg_r9", "A-frozen", "FedAvg"),
+          ("pandermfrozen_fedavg_r9", "B (PanDerm)", "FedAvg"), ("local_e20", "A (fine-tuned)", "Local-only"),
+          ("pandermfrozen_fedper_r9", "B (PanDerm)", "FedPer-style head")]
+    rows = []
+    for run, enc, meth in nm:
+        f = e8["families"][run]
+        seeds = ", ".join(f"{100 * fu[run][s]['ba_effect']:+.1f}" for s in ("0", "1", "2")).replace("-", "$-$")
+        san = ", ".join(f"{100 * fu[run][s]['sanity_nontarget']:+.1f}" for s in ("0", "1", "2")).replace("-", "$-$")
+        rows.append(f"{enc} & {meth} & {pts(f['effect']['ba'], f['ci']['ba'])} & {seeds} & {san} \\\\")
+    body = r"""\begin{table}[!t]
+\centering
+\caption{Randomized sibling exposure (E8): balanced accuracy of the fixed target images with their siblings in
+training minus without (points, seeds 0--2), with 95\% lesion-bootstrap intervals that condition on the fitted
+models and realized allocations; seed-level effects; and the non-target sanity difference between arms.
+All methods in Supplementary~S10.}
+\label{tab:exposure}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+Encoder & Method & Effect [95\% CI] & Seeds 0, 1, 2 & Non-target \\
+\midrule
+""" + "\n".join(rows) + r"""
+\bottomrule
+\end{tabular}
+\end{table}
+"""
+    write("Table5_exposure.tex", body)
+
+
 def pad_transfer(pad, key):
     """Transferred LAC coverage at alpha 0.1 on PAD-UFES-20 with its patient-bootstrap interval."""
     t = pad.get(key, {}).get("lac_a0.1", {}).get("transfer")
@@ -116,12 +157,13 @@ def table2():
          verdict(gA["inflation"] >= 0.02 and gA["ci95"][0] > 0)),
         ("H3b (RQ3)", "Personalized minus FedAvg inflation, clients 0, 2, 3", "A", hAv, verdict(hAok)),
         ("", "", "B", hBv, verdict(hBok)),
-        ("RQ4", "ShrinkFCP, in-federation models: q10 gain $\\ge 2$ + guards", "A", pts(e5A["shrink"]["gain"], e5A["shrink"]["ci95"]),
-         verdict(e5A["shrink"]["success"])),
-        ("", "", "B", pts(e5B["shrink"]["gain"], e5B["shrink"]["ci95"]), verdict(e5B["shrink"]["success"])),
-        ("5b (RQ4)", "EB-ShrinkFCP on LOCO models, same rule", "A", pts(e6A["eb"]["gain"], e6A["eb"]["ci95"]),
-         verdict(e6A["eb"]["success"])),
-        ("", "", "B", pts(e6B["eb"]["gain"], e6B["eb"]["ci95"]), verdict(e6B["eb"]["success"])),
+        ("RQ4", "ShrinkFCP, in-federation models: q10 gain $\\ge 2$ + guards", "A",
+         pts(e5A["shrink"]["gain"], e5A["shrink"]["ci95"]) + "$^\\dagger$", verdict(e5A["shrink"]["success"])),
+        ("", "", "B", pts(e5B["shrink"]["gain"], e5B["shrink"]["ci95"]) + "$^\\dagger$", verdict(e5B["shrink"]["success"])),
+        ("5b (RQ4)", "EB-ShrinkFCP on LOCO models, same rule", "A", pts(e6A["eb"]["gain"], e6A["eb"]["ci95"]) + "$^\\dagger$",
+         ("met" if e6A["eb"]["success"] else "not met") + "$^\\dagger$"),
+        ("", "", "B", pts(e6B["eb"]["gain"], e6B["eb"]["ci95"]) + "$^\\dagger$",
+         ("met" if e6B["eb"]["success"] else "not met") + "$^\\dagger$"),
     ]
     pad = load("E6_padufes.json") if os.path.exists(os.path.join(R, "E6_padufes.json")) else None
     if pad is not None:
@@ -143,7 +185,11 @@ def table2():
 PAD-UFES-20). RQ4 and 5b require the gain for \emph{each} of models A and B; the reference is client-wise
 calibration. Gate 1 compares with the FedAvg baseline reported in the FENDA-FL study
 \cite{tavakoli2024fendafl}; meeting it is a replication tolerance. Gate 2 is the single primary outcome;
-the other tests are secondary and not adjusted for multiplicity.}
+the other tests are secondary and not adjusted for multiplicity. $^\dagger$Outcome of the pre-specified
+analysis, whose conformal bootstrap let copies of a resampled lesion fall into both halves; it is kept as the
+historical record and superseded for inference. Corrected analysis (identity-preserving bootstrap, 500 replicates
+of 100 draws; point estimate from 1,000 draws): model A """ + cs_text("A") + r""", model B """ + cs_text("B") + r"""
+coverage points; the coverage of these intervals was not validated (Section~\ref{sec:res-conformal}).}
 \label{tab:scorecard}
 \begin{tabular}{@{}llccl@{}}
 \toprule
@@ -185,8 +231,8 @@ def table3():
 seeds). Pooled: one balanced accuracy over all test images; mean of clients: average of the six per-client
 values. Best value per column in bold; differences of a few points are within seed-to-seed variation
 (Supplementary~S9). Model B has no FedBN (no BatchNorm in a linear head); its FedPer is the FedPer-style
-two-layer head, whereas its other heads are linear. Kendall's $\tau_b$ compares the rankings of the
-seven methods common to both split types.}
+two-layer head, whereas its other heads are linear. Kendall's $\tau_b$ compares the rankings of all
+methods of each model (eight for model A, seven for model B).}
 \label{tab:ba}
 \setlength{\tabcolsep}{4.5pt}
 \begin{tabular}{@{}lcccccccc@{}}
@@ -237,10 +283,12 @@ def table4():
     body = r"""\begin{table}[!t]
 \centering
 \caption{Federated conformal calibration on the 18 LOCO models per encoder (LAC, $\alpha=0.1$, 100
-lesion-wise calibration/evaluation draws). q10: worst client's 10th percentile of coverage over draws,
-averaged over models (primary); min cov.: lowest client mean coverage; $|C|$: mean set size (equal weight
+lesion-wise calibration/evaluation draws; held-out-client labels enter temperature scaling and conformal
+calibration). q10: for each model, the 10th percentile of coverage over draws in its worst client, averaged
+over the 18 models (primary; the worst client of the model-averaged q10 is given in Supplementary~S18);
+min cov.: lowest client mean coverage; $|C|$: mean set size (equal weight
 per client). Best in bold. $^m$Targets coverage on the mixture of clients, not per client.
-$^\dagger$Proposed. $^p$Post hoc comparator (1,000 draws).}
+$^\dagger$Proposed (exploratory). $^p$Post hoc comparator (1,000 draws).}
 \label{tab:conformal}
 \setlength{\tabcolsep}{2.6pt}
 \begin{tabular}{@{}lcccccc@{}}
@@ -279,4 +327,5 @@ if __name__ == "__main__":
     table2()
     table3()
     table4()
+    table5()
     preview()

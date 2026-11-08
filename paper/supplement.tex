@@ -466,7 +466,7 @@ B & EB-ShrinkFCP & 0.900/3.05 & 0.915/1.24 & 0.909/1.93 & 0.902/2.82 & 0.898/3.7
 \end{tabular}
 \end{table*}
 \section*{S5. Sensitivity analyses of the conformal results (post hoc)}
-All on LAC, $\alpha=0.1$. q10 from 1,000 draws; range of q10 over five independent sets of 100 draws; one image per lesion in both halves; global and FCP thresholds from exact order statistics; calibration-only q10 with five fixed evaluation halves per model and 100 lesion-bootstrap calibration sets; label-shift-weighted (LSW) comparator.
+All on LAC, $\alpha=0.1$. q10 from 1,000 draws; range of q10 over five independent sets of 100 draws; one image per lesion in both halves; global and FCP thresholds from exact order statistics; calibration-only q10 with five fixed evaluation halves per model and 100 lesion-bootstrap calibration sets; label-shift-weighted (LSW) comparator. LSW: for each client, the weighted quantile of the pooled calibration scores with weights $\hat\pi_c(y)/\hat\pi(y)$ from calibration class counts (classes absent from the pooled calibration set get weight 0), a test-point weight bounded by $\max_y \hat\pi_c(y)/\hat\pi(y)$, and the quantile read at the upper edge of 1,000-bin histograms; it adapts weighted split conformal prediction under label shift and is not an exact implementation of a published federated method.
 \begin{table*}[!htbp]
 \centering
 \scriptsize
@@ -673,7 +673,7 @@ B Pooled & lesion & pooled NLL-optimal & 0.808 & 3.02 & 1.148 \\
 \begin{table*}[!htbp]
 \centering
 \scriptsize
-\caption{Protocol versions and pre-run tags (git, pushed to GitHub), with the results available when each was written.}
+\caption{Protocol versions and pre-run tags, with the results available when each was written.}
 \label{tab:s9}
 \begin{tabular}{@{}llp{3.6cm}p{6.2cm}@{}}
 \toprule
@@ -688,10 +688,31 @@ v0.11 & 3 Nov & E0--E5 (RQ4 failed) & EB-ShrinkFCP and test 5b on LOCO models (b
 e7, PAD, NN tags & 5--6 Nov & E0--E6 & pre-run tags; PAD interpretation rule; NN analysis exploratory \\
 v0.12 & 7 Nov & E0--E7, PAD, NN; external review & E8, E9 and their tests; post hoc sensitivity analyses \\
 8 Nov (no new version) & 8 Nov & all results, incl. E8, E9 & post hoc only: S12--S17 \\
+9 Nov (no new version) & 9 Nov & all results; follow-up review & conformal bootstrap superseded for inference; S18 \\
 \bottomrule
 \end{tabular}
 \end{table*}
-Deviations: (1) FLamby's published FedAvg value recorded after E0 (not used in Gate 1); (2) PyTorch 2.5.1 instead of 2.4.1; (3) Frozen-encoder embeddings centered with the federated training mean (31 Oct, after the first convergence check, before any test result); (4) No five-member deep ensemble (seeds use different splits); (5) Personalized FCP not implemented (threshold rule not verifiable, no code); (6) Optional E4 and the original E8 (model C) not run; identifiers E8/E9 reused in v0.12; (7) U not re-tuned for the two-layer FedPer-style head (fixed before E7); (8) Post hoc sensitivity analyses added after the external review (S6, S8; listed in v0.12).
+Deviations: (1) FLamby's published FedAvg value recorded after E0 (not used in Gate 1); (2) PyTorch 2.5.1 instead of 2.4.1; (3) Frozen-encoder embeddings centered with the federated training mean (31 Oct, after the first convergence check, before any test result); (4) No five-member deep ensemble (seeds use different splits); (5) Personalized FCP not implemented (the public code trains feature-based density-ratio and generative models per target client; not adapted to this setting); (6) Optional E4 and the original E8 (model C) not run; identifiers E8/E9 reused in v0.12; (7) U not re-tuned for the two-layer FedPer-style head (fixed before E7); (8) Post hoc sensitivity analyses added after the external reviews (S5, S7, S13--S18).
+\begin{table*}[!htbp]
+\centering
+\scriptsize
+\caption{Mapping of protocol versions to git commits or tags and to the experiments they govern. Dates are commit dates, which record when content was committed, not when it was pushed; run logs in the repository give the start times of the runs.}
+\label{tab:s9map}
+\begin{tabular}{@{}p{2.2cm}p{5.6cm}lp{4.2cm}@{}}
+\toprule
+Version & Commit or tag & Date (2026) & Governs \\
+\midrule
+v0.1, v0.2, v0.3 & tags v0.1--v0.3-protocol (5ca4821, 7a71c3e, 472196d) & 26--27 Oct & design only \\
+v0.4, v0.5, v0.6 & tags v0.4--v0.6-protocol (5d2ab21, b282eb1, 50a803b) & 27--28 Oct & Gate 1, Gate 2 (E0, E1) \\
+v0.7 & tag v0.7-protocol (90c028d) & 28 Oct & RQ4 (E5) \\
+v0.8, v0.9 & no separate commit; content contained in v0.10 & 29--30 Oct & H3b, RQ4 metric and guards \\
+v0.10 & tag v0.10-protocol (907f3b5) & 30 Oct & E0--E3, E5, E7 rules \\
+v0.11 & tag v0.11-protocol (794441b) & 3 Nov & 5b (E6 LOCO models) \\
+v0.12 & no protocol tag; pre-run tag e8-prerun (5e5628a) & 7 Nov & E8, E9 \\
+pre-run tags & e0b-, e1-, e1-frozen-, e2-, e2-modelB-, e5-preregistered; e7-, e6-padufes-, nn-prerun & 30 Oct--6 Nov & the experiment named in the tag \\
+\bottomrule
+\end{tabular}
+\end{table*}
 \section*{S9. Run matrix and seed-level results}
 \begin{table*}[!htbp]
 \centering
@@ -951,7 +972,7 @@ B & E5 & EB, lesion-bootstrap variance & 0.806 & 0.899 & 2.57 \\
 \begin{table}[!htbp]
 \centering
 \scriptsize
-\caption{Lesion-bootstrap variance of each client's threshold divided by the variance used by EB-ShrinkFCP (median over draws; clients 0--5). Values below 1 mean that the pre-specified approximation is conservative, which increases shrinkage.}
+\caption{Lesion-bootstrap variance of each client's threshold divided by the variance used by EB-ShrinkFCP (median over draws; clients 0--5). Values below 1 mean that the pre-specified approximation is overestimated by the approximation (this does not by itself guarantee conservative sets).}
 \label{tab:s15v}
 \begin{tabular}{@{}llp{7cm}@{}}
 \toprule
@@ -1103,6 +1124,100 @@ B & Pooled, 60 epochs & +6.3 [+3.6, +9.4] & $-$0.9 [$-$3.1, +1.1] & 0.630 & 0.57
 B & Local-only, 5 epochs & +3.5 [+1.3, +6.7] & $-$3.7 [$-$6.3, $-$0.8] & 0.525 & 0.519 \\
 B & Local-only, 20 epochs$^*$ & +5.7 [+3.5, +9.1] & $-$1.5 [$-$4.0, +1.5] & 0.602 & 0.560 \\
 B & Local-only, 60 epochs & +5.9 [+3.7, +9.1] & $-$1.3 [$-$3.3, +1.1] & 0.638 & 0.563 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\section*{S18. Additional analyses for the follow-up review (post hoc)}
+\begin{table*}[!htbp]
+\centering
+\scriptsize
+\caption{LOCO models, held-out-only view: client $c$ evaluated only with the three models trained without $c$ (1,000 draws per model; mean coverage / q10). Held-out-client labels enter temperature scaling and conformal calibration (target-assisted calibration).}
+\label{tab:s18a}
+\begin{tabular}{@{}llrrrrrr@{}}
+\toprule
+Model & Rule & 0 & 1 & 2 & 3 & 4 & 5 \\
+\midrule
+A & Global & 0.838 / 0.807 & 0.961 / 0.950 & 0.934 / 0.916 & 0.783 / 0.748 & 0.839 / 0.799 & 0.970 / 0.940 \\
+A & Client-wise & 0.899 / 0.872 & 0.901 / 0.874 & 0.900 / 0.858 & 0.901 / 0.858 & 0.903 / 0.841 & 0.908 / 0.813 \\
+A & EB-ShrinkFCP & 0.899 / 0.871 & 0.910 / 0.881 & 0.910 / 0.874 & 0.899 / 0.856 & 0.902 / 0.842 & 0.950 / 0.900 \\
+\midrule
+B & Global & 0.834 / 0.804 & 0.960 / 0.949 & 0.940 / 0.923 & 0.867 / 0.837 & 0.677 / 0.623 & 0.813 / 0.740 \\
+B & Client-wise & 0.899 / 0.872 & 0.901 / 0.873 & 0.901 / 0.864 & 0.901 / 0.855 & 0.903 / 0.838 & 0.906 / 0.802 \\
+B & EB-ShrinkFCP & 0.898 / 0.871 & 0.914 / 0.885 & 0.908 / 0.876 & 0.901 / 0.857 & 0.899 / 0.833 & 0.901 / 0.801 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+\begin{table}[!htbp]
+\centering
+\scriptsize
+\caption{Two aggregations of the all-client LOCO view (1,000 draws per model): mean over models of each model's worst-client q10 (used in the paper) and worst client of the model-averaged q10.}
+\label{tab:s18b}
+\begin{tabular}{@{}llrr@{}}
+\toprule
+Model & Rule & Mean of per-model worst & Worst of mean \\
+\midrule
+A & Global & 0.781 & 0.796 \\
+A & FCP & 0.784 & 0.799 \\
+A & Client-wise & 0.804 & 0.804 \\
+A & EB-ShrinkFCP & 0.837 & 0.841 \\
+B & Global & 0.682 & 0.702 \\
+B & FCP & 0.687 & 0.706 \\
+B & Client-wise & 0.799 & 0.799 \\
+B & EB-ShrinkFCP & 0.805 & 0.805 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\begin{table}[!htbp]
+\centering
+\scriptsize
+\caption{Eq.~(1) support (E1, seeds 0--2): apparent inflation as reported, and with the full-test term restricted to the client--class cells that contain new-lesion images (common support); mean number of excluded cells and share of test images outside the common support.}
+\label{tab:s18c}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Model, method & Inflation & Common support & Cells excluded & Images outside (\%) \\
+\midrule
+A FedAvg & 8.1 & 8.5 & 3.7 & 0.3 \\
+A-frozen FedAvg & 8.2 & 8.8 & 3.7 & 0.3 \\
+B FedAvg & 8.7 & 9.2 & 3.7 & 0.3 \\
+A pooled & 16.2 & 16.1 & 3.7 & 0.3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\begin{table*}[!htbp]
+\centering
+\scriptsize
+\caption{Calibration-budget caps on the LOCO models: realized calibration lesions per client (clients 0--5; all available lesions below the cap) and the share of the 18 models in which each client determined the worst-client q10 (300 draws per model).}
+\label{tab:s18d}
+\begin{tabular}{@{}lrp{3.6cm}p{3.6cm}p{3.6cm}@{}}
+\toprule
+Model & Cap & Realized lesions & Worst client, client-wise & Worst client, EB-ShrinkFCP \\
+\midrule
+A & 10 & 10, 10, 10, 10, 10, 10 & 0.39, 0.06, 0.28, 0.00, 0.17, 0.11 & 0.22, 0.17, 0.00, 0.06, 0.44, 0.11 \\
+A & 25 & 25, 25, 25, 25, 25, 25 & 0.06, 0.00, 0.06, 0.06, 0.00, 0.83 & 0.17, 0.00, 0.00, 0.78, 0.06, 0.00 \\
+A & 50 & 50, 50, 50, 50, 50, 28 & 0.00, 0.00, 0.06, 0.00, 0.00, 0.94 & 0.11, 0.00, 0.00, 0.56, 0.28, 0.06 \\
+A & 100 & 100, 100, 100, 100, 79, 28 & 0.00, 0.00, 0.00, 0.00, 0.00, 1.00 & 0.00, 0.00, 0.00, 0.39, 0.44, 0.17 \\
+\midrule
+B & 10 & 10, 10, 10, 10, 10, 10 & 0.44, 0.06, 0.00, 0.11, 0.06, 0.33 & 0.17, 0.11, 0.00, 0.17, 0.22, 0.33 \\
+B & 25 & 25, 25, 25, 25, 25, 25 & 0.00, 0.00, 0.00, 0.06, 0.00, 0.94 & 0.17, 0.00, 0.00, 0.00, 0.56, 0.28 \\
+B & 50 & 50, 50, 50, 50, 50, 28 & 0.00, 0.00, 0.00, 0.06, 0.00, 0.94 & 0.06, 0.00, 0.00, 0.00, 0.50, 0.44 \\
+B & 100 & 100, 100, 100, 100, 79, 28 & 0.00, 0.00, 0.00, 0.00, 0.00, 1.00 & 0.00, 0.00, 0.00, 0.00, 0.17, 0.83 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+\begin{table}[!htbp]
+\centering
+\scriptsize
+\caption{E8 seed-level exposure effects on target-image BA and the non-target sanity difference (arm 1 minus arm 2), points. Targets per seed: 1023, 1011, 1021; siblings per target: median 1, 1, 2, mean 2.2, 2.3, 2.2, maximum 26, 17, 23.}
+\label{tab:s18e}
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+Model & Effect s0 & s1 & s2 & Sanity s0 & s1 & s2 \\
+\midrule
+A FedAvg & +7.3 & +8.2 & +11.7 & +3.6 & +1.1 & +0.6 \\
+A-frozen FedAvg & +9.4 & +8.1 & +8.2 & +0.1 & -3.3 & +2.9 \\
+B FedAvg & +5.4 & +7.1 & +11.6 & +3.7 & +1.3 & +1.1 \\
+A local-only & +30.7 & +27.9 & +28.0 & -0.4 & +1.3 & -1.7 \\
+B FedPer-style & +20.3 & +22.5 & +20.4 & +0.3 & -4.3 & -2.3 \\
 \bottomrule
 \end{tabular}
 \end{table}

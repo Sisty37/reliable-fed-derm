@@ -5,7 +5,11 @@
 PAD-UFES-20). RQ4 and 5b require the gain for \emph{each} of models A and B; the reference is client-wise
 calibration. Gate 1 compares with the FedAvg baseline reported in the FENDA-FL study
 \cite{tavakoli2024fendafl}; meeting it is a replication tolerance. Gate 2 is the single primary outcome;
-the other tests are secondary and not adjusted for multiplicity.}
+the other tests are secondary and not adjusted for multiplicity. $^\dagger$Outcome of the pre-specified
+analysis, whose conformal bootstrap let copies of a resampled lesion fall into both halves; it is kept as the
+historical record and superseded for inference. Corrected analysis (identity-preserving bootstrap, 500 replicates
+of 100 draws; point estimate from 1,000 draws): model A +3.1 [3.4, 8.6], model B +0.8 [0.1, 3.1]
+coverage points; the coverage of these intervals was not validated (Section~\ref{sec:res-conformal}).}
 \label{tab:scorecard}
 \begin{tabular}{@{}llccl@{}}
 \toprule
@@ -15,10 +19,10 @@ Gate 1 & Pipeline: FedAvg BA, official split (3 seeds) & A & 0.615 vs 0.657 $\pm
 Gate 2 (RQ2) & Apparent inflation $\ge 2$, CI $>0$, FedAvg (primary) & A & +8.1 [+4.7, +11.2] & \textbf{met} \\
 H3b (RQ3) & Personalized minus FedAvg inflation, clients 0, 2, 3 & A & +3.2 [+2.0, +4.6] & \textbf{met} \\
  &  & B & +0.9 [$-$0.2, +2.1] & not met \\
-RQ4 & ShrinkFCP, in-federation models: q10 gain $\ge 2$ + guards & A & +2.5 [$-$2.8, +3.9] & not met \\
- &  & B & $-$7.3 [$-$14.0, $-$5.4] & not met \\
-5b (RQ4) & EB-ShrinkFCP on LOCO models, same rule & A & +2.3 [+0.8, +3.9] & \textbf{met} \\
- &  & B & +0.5 [$-$1.7, +0.9] & not met \\
+RQ4 & ShrinkFCP, in-federation models: q10 gain $\ge 2$ + guards & A & +2.5 [$-$2.8, +3.9]$^\dagger$ & not met \\
+ &  & B & $-$7.3 [$-$14.0, $-$5.4]$^\dagger$ & not met \\
+5b (RQ4) & EB-ShrinkFCP on LOCO models, same rule & A & +2.3 [+0.8, +3.9]$^\dagger$ & met$^\dagger$ \\
+ &  & B & +0.5 [$-$1.7, +0.9]$^\dagger$ & not met$^\dagger$ \\
 PAD (RQ1) & Transferred coverage fails ($<0.90$, CI excl.\ 0.90) & A & 0.596 [0.576, 0.614] & \textbf{met} \\
  &  & B & 0.669 [0.650, 0.687] & \textbf{met} \\
 E8 (RQ2) & Exposure effect $\ge 2$, CI $>0$, FedAvg & A & +9.1 [+5.5, +12.3] & \textbf{met} \\

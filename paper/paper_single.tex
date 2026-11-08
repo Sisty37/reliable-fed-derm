@@ -44,19 +44,19 @@ lesion classification. Its split assigns images rather than lesions to training 
 one lesion appear on both sides, and reliability at individual sites is rarely reported.
 \textbf{Methods:} We audited its six acquisition-source clients (23,247 dermoscopy images) with
 image-level and lesion-grouped splits, three encoder configurations and up to eight federated,
-personalized, centralized and local methods. We estimated the apparent accuracy gain on leaked images, ran
-a randomized sibling-exposure experiment on fixed test images, and evaluated rankings, calibration and
-conformal coverage per client, including held-out clients and smartphone images. Confirmatory tests
-were pre-specified.
+personalized, centralized and local methods. We estimated apparent test-set inflation relative to a
+standardized new-lesion subset, ran a randomized sibling-exposure experiment on fixed test images, and
+evaluated rankings, calibration and conformal coverage per client. Tests were specified before their
+experiments; later amendments followed earlier results.
 \textbf{Results:} In the official split, 0.1--93\% of each client's test images had a sibling in
-training. For FedAvg, balanced accuracy on the full test set exceeded a standardized new-lesion estimate by
-8.1 points (95\% CI 4.7--11.2), and in the randomized experiment a sibling in training raised it by
-9.1 points (5.5--12.3). With frozen foundation-model features, method rankings were unrelated across split
-types (Kendall's $\tau_b=0.05$). Calibration varied more between clients than between methods. A global
-conformal threshold left some clients at 0.72--0.83 mean coverage (target 0.90); EB-ShrinkFCP, an
-empirical-Bayes rule for per-client thresholds, kept mean client coverage near 0.90 but met its
-pre-specified criterion for only one of two encoders. On smartphone images, transferred coverage fell to
-0.60--0.67.
+training. For FedAvg (fine-tuned EfficientNet-B0), balanced accuracy on the full test set exceeded the
+standardized new-lesion estimate by 8.1 points (95\% CI 4.7--11.2), and sibling exposure increased
+target-image balanced accuracy by 9.1 points (5.5--12.3). With frozen foundation-model features, method
+rankings were unrelated across split types (Kendall's $\tau_b=0.05$). Calibration varied more between
+clients than between methods. A global conformal threshold left some clients at 0.72--0.83 mean coverage
+(target 0.90); EB-ShrinkFCP, an empirical-Bayes rule for per-client thresholds, kept mean client coverage
+near 0.90, but its lower-tail advantage varied by encoder and analysis. On smartphone images, transferred
+coverage fell to 0.60--0.67.
 \textbf{Conclusions:} Federated dermatology benchmarks should use lesion-grouped splits and report
 calibration and conformal coverage per client. Splits, code, predictions and protocol history are
 released.}
@@ -110,8 +110,7 @@ fall on both sides (Figure~\ref{fig:leakage}a), and the test set partly measures
 seen in training. Such leakage is a known source of over-optimism in machine learning and medical imaging
 \cite{kapoor2023leakage,varoquaux2022failures,roberts2021pitfalls}, and duplicates or image-level splits
 have been documented in dermatology and other imaging datasets
-\cite{cassidy2022isic,groger2023reliable,abhishek2025dermamnist,bussola2021tiles,yagis2021leakage}. In a
-targeted search we found no Fed-ISIC2019 evaluation that grouped images by lesion (Supplementary~S12).
+\cite{cassidy2022isic,groger2023reliable,abhishek2025dermamnist,bussola2021tiles,yagis2021leakage}. None of the seven Fed-ISIC2019 evaluations found in a targeted, non-systematic search grouped images by lesion (Supplementary~S12).
 
 In a federated benchmark, leakage raises questions a pooled correction does not answer. It need not be
 uniform: in the official split, 93\% of one client's test images have a sibling image in training,
@@ -128,8 +127,7 @@ Conformal prediction gives distribution-free marginal coverage under exchangeabi
 label shift, or personalized and group-defined targets
 \cite{lu2023fcp,humbert2023oneshot,plassier2023labelshift,min2025pfcp,wen2026gcfcp}. Yet a pooled
 threshold can meet its mixture target while under-covering individual clients, a threshold from a small
-client's own data varies strongly between calibration samples, and repeated images of one lesion are not
-exchangeable, so the unit of the coverage statement must be stated
+client's own data varies strongly between calibration samples, and repeated images of one lesion create a clustered sampling structure for which ordinary image-level exchangeability cannot be assumed
 \cite{lee2023hierarchical,dunn2022hierarchical}. How these issues play out on Fed-ISIC2019 has not been reported.
 
 We therefore audit federated skin lesion classification on Fed-ISIC2019 with image-level and
@@ -145,8 +143,8 @@ failed tests alongside successful ones. Our contributions are:
     capacity-matched experiments in which its effect differed between training regimes and heads,
     consistent with, but not isolating, an influence of fitting strength rather than personalization.
   \item A per-client analysis of federated conformal coverage that accounts for repeated images, and
-    EB-ShrinkFCP, an empirical-Bayes rule for per-client thresholds that met its pre-specified criterion
-    for one of two encoders.
+    EB-ShrinkFCP, an exploratory empirical-Bayes rule for per-client thresholds whose lower-tail
+    advantage was encoder-dependent.
   \item Lesion-grouped splits, code, predictions and the protocol history, released for leakage-free
     federated benchmarking.
 \end{enumerate}
@@ -221,7 +219,7 @@ quantile with a guarantee on the mixture of clients under partial exchangeabilit
 \cite{humbert2023oneshot}, Plassier et al.\ addressed label shift between clients
 \cite{plassier2023labelshift}, Min et al.\ personalized conformal sets through localization
 \cite{min2025pfcp}, and Wen et al.\ targeted group-conditional coverage \cite{wen2026gcfcp}. A method can
-meet its mixture target while under-covering a particular client. Per-client thresholds avoid that bias
+meet its mixture target while under-covering a particular client; it is not disproved by failing a per-client objective it was not designed for, but it is insufficient for site-level use. Per-client thresholds avoid that bias
 but are noisy for small clients. Shrinking noisy estimates toward a common mean is a classical idea,
 from normal-means empirical Bayes \cite{efron1975stein} to random-effects meta-analysis
 \cite{dersimonian1986meta}. EB-ShrinkFCP applies it to per-client conformal quantiles with only two
@@ -258,7 +256,7 @@ both split types; E3, calibration; E5, federated conformal prediction on in-fede
 leave-one-client-out (LOCO) models and a smartphone-image stress test; E7, personalized models and the
 final test of H3b; E8, a randomized sibling-exposure experiment on fixed test images; and E9,
 capacity-matched classifier heads for model~B. The optional experiment E4 was not run. Seeds differed
-between experiments (Supplementary~S9 gives the full run matrix): three for E0, E1, E6 and E8, five for E2, E7
+between experiments (Supplementary~S9 gives the full run matrix): three for E0, E1, E8 and the LOCO models of E6, five for E2, E7, the PAD-UFES-20 analysis of E6
 and E9. Confirmatory tests followed the protocol version that was fixed before the corresponding runs
 (Section~\ref{sec:prereg}); all other analyses are labelled secondary, post hoc or exploratory.
 
@@ -348,7 +346,7 @@ report the leakage of the benchmark as distributed.
 \emph{Image-level} re-splits: 20\% of each client's images form the test set, stratified by class,
 irrespective of lesion.
 \emph{Lesion-grouped} re-splits: 20\% of each client's lesions, with all their images, form the test set,
-under class quotas; the nine lesions with images in two clients were always kept in training. Because the
+under class quotas; the nine lesions with images in two clients were always kept in training, with all their images in either client, because lesion identifiers are global. Because the
 two split types draw 20\% of images and 20\% of lesions respectively, their training sets differ by less
 than 1\% in images (about 16,700--16,800) but not in lesions (about 9,350 versus 8,500), and their test
 sets differ in composition (Supplementary~S1). From E1 onwards, 10\% of each client's training lesions
@@ -407,7 +405,7 @@ client, a pre-specified light personalization that was not tuned (1 to 100 steps
 Supplementary~S17); and \emph{FedPer}
 \cite{arivazhagan2019fedper} keeps the classifier local and averages the remaining parameters (for
 model~A the final linear layer is local). For models with a frozen encoder, a client-specific linear head
-would be identical to local training, so FedPer used a two-layer head (768--256--8, ReLU) with a
+would be identical to local training, so FedPer for model~B (it was not run for A-frozen) used a two-layer head (768--256--8, ReLU) with a
 federated hidden layer and a client-specific output layer. Because this head has more capacity than the
 linear heads of the other model~B methods, E9 trained FedAvg, pooled and local-only models with the same
 two-layer head. \emph{Pooled} training is the centralized reference, and \emph{local-only} trains one model
@@ -415,8 +413,7 @@ per client on its own data.
 
 Federated training followed FLamby: 9 rounds of 100 local updates (model~A; 6,400 images per client and
 round) or $U$ updates (frozen encoders), SGD with learning rate 0.01 and batch size 64, weighted focal loss
-\cite{lin2017focal} ($\gamma=2$) with FLamby's fixed class weights (taken unchanged from FLamby's code
-for all splits), and aggregation of all trainable parameters weighted by the number of training images.
+\cite{lin2017focal} ($\gamma=2$) with FLamby's fixed class weights (benchmark constants taken unchanged from FLamby's code for all splits, rather than weights re-estimated on each training split), and aggregation of all trainable parameters except those kept local by FedBN or FedPer, weighted by the number of training images.
 Batch-normalization running statistics are buffers, not parameters, and stay with each client in all
 methods; FedBN additionally keeps the batch-normalization weights and biases local. The global FedAvg,
 FedProx and SCAFFOLD model was evaluated as the copy held by the first participating client, including
@@ -439,8 +436,7 @@ its other images were its \emph{siblings}. Target lesions were randomized into t
 client and class and paired by number of siblings. In arm~1 the siblings of group~1 were added to the
 training set of their client and those of group~2 were removed; arm~2 did the reverse. All other images
 were identical in both arms, and the training sets differed by less than 0.2\% in size. Every target image
-is therefore predicted once with and once without its siblings in training, by models with the same
-recipe and seed. E8 trained FedAvg, FedPer, pooled and local-only models for models A and B, and FedAvg,
+is therefore predicted once with and once without its siblings in training, by models with the same recipe and seed. Because each arm adds the siblings of one group and removes those of the other, the contrast estimates the effect of sibling exposure under this complementary, approximately size-matched randomized allocation, not the effect of one target's siblings in isolation; its bootstrap intervals condition on the fitted models and on the realized allocations of seeds 0--2 (seed-level effects in Supplementary~S18). E8 trained FedAvg, FedPer, pooled and local-only models for models A and B, and FedAvg,
 pooled and local-only models for A-frozen. The design and its primary test were added to the protocol
 (version 0.12) after all other results were known and before any E8 model was trained.
 
@@ -463,8 +459,8 @@ model. Let $r_{c,k}$ be the recall of class $k$ among the new-lesion test images
 the number of all test images of class $k$ in client $c$. Then $\widetilde{\mathrm{BA}}_{\text{new}}$ is
 the mean over classes $k$ of $\sum_c N_{c,k} r_{c,k}/\sum_c N_{c,k}$, where the sums run over the clients
 with at least one new-lesion image of class $k$; classes with fewer than five new-lesion images in total
-are dropped from both terms. $\Delta_{\text{app}}$ is an observational contrast between two groups of test
-images. Within a class it equals the leaked share times the difference in recall between leaked and new
+are dropped from both terms. The full term uses all test images of a retained class, including client--class cells without new-lesion images (on average 3.7 cells and 0.3\% of the test images); restricting it to the same cells changed the inflation by at most 0.6 points (Supplementary~S18). $\Delta_{\text{app}}$ is an observational contrast between two groups of test
+images. Within a client--class cell, the full-minus-new difference equals the leaked share of the cell times the difference in recall between its leaked and new images, and on common support $\Delta_{\text{app}}$ is a weighted combination of these cell differences; it therefore depends on the recall of leaked and new
 images, so it can also reflect differences in difficulty or multiplicity between leaked and new lesions,
 and it grows mechanically with the leakage rate. We therefore report two further estimands: the
 \emph{retrained-split difference}, the BA of the image-level model on its own test set minus the BA of the
@@ -491,8 +487,7 @@ with six clients, one of them (client~0) with most of the leakage, this slope is
 \paragraph{Calibration} We report the top-label expected calibration error (ECE) with 15 equal-width
 bins \cite{naeini2015ece,guo2017calibration}, class-wise ECE \cite{kull2019beyond}, the negative
 log-likelihood (NLL) and the Brier score \cite{brier1950}, overall and per client. Probabilities were
-temperature-scaled \cite{guo2017calibration}: each client fitted a temperature on its validation lesions
-by minimizing the NLL, and the global temperature was their mean weighted by validation images, a
+temperature-scaled \cite{guo2017calibration}: each client fitted a temperature on its validation lesions by minimizing the NLL (for LOCO models this includes the validation lesions of the held-out client), and the global temperature was their mean weighted by validation images, a
 heuristic that needs no exchange of logits; the NLL-optimal temperature on the pooled validation set is
 reported as a sensitivity analysis. All methods, including personalized ones, used the global temperature
 of their own predictions. Because binned ECE is biased upwards in small samples, contrasts between the
@@ -523,10 +518,9 @@ size were measured on the evaluation half. These pools were used to evaluate sev
 held out from training but not an untouched final test set. Split conformal prediction guarantees
 marginal coverage when calibration and test units are exchangeable
 \cite{vovk2005algorithmic,angelopoulos2023gentle}. Here the units are images, and images of one lesion are
-correlated; random assignment of whole lesions makes the lesions, but not the individual images,
-exchangeable \cite{lee2023hierarchical,dunn2022hierarchical}. We therefore treat image-level coverage as an
+correlated; we partitioned by lesion to prevent overlap of correlated views between calibration and evaluation; exchangeability across sampled lesions remains an assumption, and image-level exchangeability cannot be assumed \cite{lee2023hierarchical,dunn2022hierarchical}. We therefore treat image-level coverage as an
 empirical quantity, and as a sensitivity analysis we kept one random image per lesion in both halves, so
-that calibration and evaluation units are independent lesions and the target is a random image of a new
+that each lesion contributes one sampled image, which also shifts the weighting from images to lesions (independence across lesions is not established, because patient identifiers are unavailable), and the target is a random image of a new
 lesion.
 
 \paragraph{Thresholds} Let client $c$ have $m_c$ calibration images in $n_c$ lesions, and let $q_c$ be
@@ -546,9 +540,7 @@ threshold (LSW) for each client, the weighted quantile of the pooled calibration
 $\hat\pi_c(y)/\hat\pi(y)$ from calibration class frequencies and a conservative weight for the test point
 \cite{podkopaev2021labelshift,plassier2023labelshift}, computed from per-class score histograms. Global,
 sample-weighted and FCP thresholds target coverage on the mixture of clients, not per client
-\cite{lu2023fcp}; client-wise thresholds target each client. Personalized FCP with localization
-\cite{min2025pfcp}, listed in the protocol as a comparator, was not implemented because its threshold
-rule could not be verified from the available description and no code was found.
+\cite{lu2023fcp}; client-wise thresholds target each client. Personalized FCP with localization (PFCP) \cite{min2025pfcp}, listed in the protocol as a comparator, was not implemented. Its authors' code is public, but it trains neural density-ratio and generative models on input features for each target client and assumes independent samples; adapting it to our lesion-clustered setting, with scores from a fine-tuned network for model~A, would have required design choices that we could not validate. We therefore did not compare with it and treat EB-ShrinkFCP as an exploratory component of the audit.
 
 \paragraph{EB-ShrinkFCP} ShrinkFCP assumes that small clients differ from the global threshold only by
 sampling noise. When a client's score distribution is genuinely shifted, shrinking toward a shared
@@ -609,7 +601,7 @@ isolated threshold variability by fixing the evaluation half and redrawing only 
 \paragraph{LOCO conformal evaluation} For test~5b, each of the 18 LOCO models per encoder produced scores on
 the lesion-grouped test sets of all six clients, including the client held out of its training; for every
 model, thresholds were then calibrated and evaluated as above. The held-out client is therefore unseen in
-training but calibrated with its own labelled lesions; this is not target-label-free external validation.
+classifier training, but its validation labels enter temperature scaling and its labelled lesions enter conformal calibration; this is target-assisted calibration, not zero-label transfer. Supplementary~S18 also reports a held-out-only view in which each client is evaluated only with the models trained without it.
 
 \paragraph{Smartphone stress test} On PAD-UFES-20, conformal thresholds were either (i) transferred,
 computed from all Fed-ISIC2019 lesion-grouped test scores after the six-class restriction and the same
@@ -622,9 +614,7 @@ target data.
 
 The protocol specified research questions, splits, models, metrics and success criteria before the
 corresponding experiments \cite{nosek2018preregistration}. It was not deposited in an external registry;
-instead, each version and each pre-run state of the code was committed and tagged in a git repository that
-was pushed to GitHub before the runs it governs, and the full history is released. Supplementary~S8 lists every
-version with its date, the results available when it was written and what it changed. Versions 0.1--0.10
+instead, most versions and pre-run states of the code were committed and tagged in a git repository (versions 0.8 and 0.9 were not separate commits and are contained in version 0.10, and version 0.12 is marked by the pre-run tag of E8). Commit dates record when content was committed, not when it was pushed; Supplementary~S8 maps each version to its commit or tag and to the experiments it governs. The full history is released, and Supplementary~S8 also lists every version with its date, the results available when it was written and what it changed. Versions 0.1--0.10
 (26--30 October 2026) were written, and revised after five methodological reviews, before any experiment
 was run. Version 0.11 (3 November) was written after E0--E5 and before any LOCO model was trained, and
 version 0.12 (7 November) after all other results and an external review of the manuscript, and before
@@ -661,9 +651,7 @@ contrasts), with the trained models fixed and seeds averaged inside each replica
 test-sample uncertainty, not retraining variability, which is shown by the seed-level results in
 Supplementary~S9. For the conformal gains, each replicate resampled the test lesions and redrew 20
 calibration draws shared by all methods, so that gains are paired. In the pre-specified analysis, copies of
-a resampled lesion were treated as distinct lesions and could therefore fall into both halves; a corrected
-bootstrap that keeps the copies of a lesion together, with 20 and with 100 draws per replicate, is
-reported in Supplementary~S5. PAD-UFES-20 intervals resample patients. All deviations from the protocol recorded during the study are
+a resampled lesion were treated as distinct lesions and could therefore fall into both halves. This bootstrap is defective; its outcomes are reported as the historical record of the pre-specified tests and are superseded for inference. For inference we use a corrected bootstrap that keeps the copies of a lesion together and pairs the draws across methods (500 replicates of 100 draws), with point estimates from 1,000 draws; the coverage of these intervals as confidence procedures was not validated (Supplementary~S5). Each seed's test lesions were resampled separately, so a lesion that appears in several seed-specific test sets was not resampled jointly, and all intervals describe an average over the seed-specific test sets, conditional on the trained models. PAD-UFES-20 intervals resample patients. All deviations from the protocol recorded during the study are
 listed in Supplementary~S8; none changed a pre-specified test criterion.
 
 \subsection{Implementation}
@@ -696,7 +684,7 @@ Table~\ref{tab:scorecard} lists all pre-specified tests in the order in which th
 apparent inflation of the primary FedAvg model met Gate~2. H3b was supported for model~A and not for
 model~B. The original shrinkage rule (ShrinkFCP) did not meet the RQ4 criterion for either encoder, and
 the empirical-Bayes rule (EB-ShrinkFCP) met the same criterion on held-out models for model~A but not for
-model~B; because RQ4 and test~5b require success for both encoders, neither is met overall. Transferred
+model~B; because RQ4 and test~5b require success for both encoders, neither is met overall. These conformal outcomes come from the pre-specified analysis, whose bootstrap was later found defective; Section~\ref{sec:res-conformal} gives the corrected inference. Transferred
 conformal thresholds failed on PAD-UFES-20 as defined in advance. The randomized sibling-exposure experiment (E8) met its pre-specified test. The following subsections
 report the results behind each test and the secondary analyses.
 
@@ -707,7 +695,11 @@ report the results behind each test and the secondary analyses.
 PAD-UFES-20). RQ4 and 5b require the gain for \emph{each} of models A and B; the reference is client-wise
 calibration. Gate 1 compares with the FedAvg baseline reported in the FENDA-FL study
 \cite{tavakoli2024fendafl}; meeting it is a replication tolerance. Gate 2 is the single primary outcome;
-the other tests are secondary and not adjusted for multiplicity.}
+the other tests are secondary and not adjusted for multiplicity. $^\dagger$Outcome of the pre-specified
+analysis, whose conformal bootstrap let copies of a resampled lesion fall into both halves; it is kept as the
+historical record and superseded for inference. Corrected analysis (identity-preserving bootstrap, 500 replicates
+of 100 draws; point estimate from 1,000 draws): model A +3.1 [3.4, 8.6], model B +0.8 [0.1, 3.1]
+coverage points; the coverage of these intervals was not validated (Section~\ref{sec:res-conformal}).}
 \label{tab:scorecard}
 \begin{tabular}{@{}llccl@{}}
 \toprule
@@ -717,10 +709,10 @@ Gate 1 & Pipeline: FedAvg BA, official split (3 seeds) & A & 0.615 vs 0.657 $\pm
 Gate 2 (RQ2) & Apparent inflation $\ge 2$, CI $>0$, FedAvg (primary) & A & +8.1 [+4.7, +11.2] & \textbf{met} \\
 H3b (RQ3) & Personalized minus FedAvg inflation, clients 0, 2, 3 & A & +3.2 [+2.0, +4.6] & \textbf{met} \\
  &  & B & +0.9 [$-$0.2, +2.1] & not met \\
-RQ4 & ShrinkFCP, in-federation models: q10 gain $\ge 2$ + guards & A & +2.5 [$-$2.8, +3.9] & not met \\
- &  & B & $-$7.3 [$-$14.0, $-$5.4] & not met \\
-5b (RQ4) & EB-ShrinkFCP on LOCO models, same rule & A & +2.3 [+0.8, +3.9] & \textbf{met} \\
- &  & B & +0.5 [$-$1.7, +0.9] & not met \\
+RQ4 & ShrinkFCP, in-federation models: q10 gain $\ge 2$ + guards & A & +2.5 [$-$2.8, +3.9]$^\dagger$ & not met \\
+ &  & B & $-$7.3 [$-$14.0, $-$5.4]$^\dagger$ & not met \\
+5b (RQ4) & EB-ShrinkFCP on LOCO models, same rule & A & +2.3 [+0.8, +3.9]$^\dagger$ & met$^\dagger$ \\
+ &  & B & +0.5 [$-$1.7, +0.9]$^\dagger$ & not met$^\dagger$ \\
 PAD (RQ1) & Transferred coverage fails ($<0.90$, CI excl.\ 0.90) & A & 0.596 [0.576, 0.614] & \textbf{met} \\
  &  & B & 0.669 [0.650, 0.687] & \textbf{met} \\
 E8 (RQ2) & Exposure effect $\ge 2$, CI $>0$, FedAvg & A & +9.1 [+5.5, +12.3] & \textbf{met} \\
@@ -770,10 +762,7 @@ model~B showed less than FedAvg (4.5 and 6.2 points). Most of the effect occurre
 lesions have the most siblings (model~A FedAvg 14.2 points, 9.1--19.2; clients 2 and 3: 1.2 and $-1.5$
 points with intervals including zero). Melanoma recall of the target images rose by 1.9 (FedAvg) to 16.7
 points (local-only). On the non-target test images, which are identical in both arms, BA differed between
-the arms by $-2.1$ to $+4.1$ points, which reflects retraining variability; because every target lesion is
-exposed in one arm and unexposed in the other, this variability largely cancels in the exposure effect, but
-differences between methods of a few points should be read with it in mind. The estimates apply to lesions
-with several images.
+the arms by $-2.1$ to $+4.1$ points, which can reflect the changed training composition as well as retraining variability; this check does not show that such background effects cancel in the exposure contrast, so differences between methods of a few points should be read with it in mind. The model~A FedAvg effect was 7.3, 8.2 and 11.7 points in seeds 0, 1 and 2 (Table~\ref{tab:exposure}; Supplementary~S18), and the intervals condition on the fitted models and the realized allocations. The estimates apply to lesions with several images (median one to two siblings per target).
 
 \begin{figure}[!t]
   \centering
@@ -783,6 +772,28 @@ with several images.
   95\% lesion-bootstrap CI; E1, three seeds). Filled markers: the pre-specified primary FedAvg models.}
   \label{fig:inflation}
 \end{figure}
+
+\begin{table}[!t]
+\centering
+\caption{Randomized sibling exposure (E8): balanced accuracy of the fixed target images with their siblings in
+training minus without (points, seeds 0--2), with 95\% lesion-bootstrap intervals that condition on the fitted
+models and realized allocations; seed-level effects; and the non-target sanity difference between arms.
+All methods in Supplementary~S10.}
+\label{tab:exposure}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+Encoder & Method & Effect [95\% CI] & Seeds 0, 1, 2 & Non-target \\
+\midrule
+A (fine-tuned) & FedAvg & +9.1 [+5.5, +12.3] & +7.3, +8.2, +11.7 & +3.6, +1.1, +0.6 \\
+A-frozen & FedAvg & +8.6 [+6.2, +11.2] & +9.4, +8.1, +8.2 & +0.1, $-$3.3, +2.9 \\
+B (PanDerm) & FedAvg & +8.0 [+5.7, +10.5] & +5.4, +7.1, +11.6 & +3.7, +1.3, +1.1 \\
+A (fine-tuned) & Local-only & +28.8 [+25.3, +32.7] & +30.7, +27.9, +28.0 & $-$0.4, +1.3, $-$1.7 \\
+B (PanDerm) & FedPer-style head & +21.1 [+17.5, +24.5] & +20.3, +22.5, +20.4 & +0.3, $-$4.3, $-$2.3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 
 \subsection{Method rankings and accuracy (RQ2, RQ3)}
 \label{sec:res-rankings}
@@ -798,7 +809,7 @@ single-seed 0.10 vs noise floor 0.74). The FedPer-style two-layer head ranked fi
 (BA 0.656) and seventh on lesion-grouped splits (0.502). Several of the differences that determine these
 ranks are small relative to seed-to-seed variation (Supplementary~S9); for example, model~B FedPer was
 2.1 points below FedAvg on lesion-grouped splits (seed range $-5.9$ to $+0.1$). The capacity-matched heads of E9 (Supplementary~S11) indicate that the behaviour of the
-FedPer-style head comes from its two-layer architecture rather than from personalization: a FedAvg model
+FedPer-style head depends substantially on its two-layer architecture: a FedAvg model
 with the same two-layer head showed an apparent inflation of 10.4 points in clients 0, 2 and 3 (FedPer-style
 head 10.6, linear FedAvg 6.1) and fell from sixth place on image-level to last place on lesion-grouped
 splits (pooled BA 0.606 to 0.466), and the two-layer pooled and local-only heads inflated more than their
@@ -816,7 +827,7 @@ for model~A on pooled BA (0.555, 6.0 points above FedAvg at 0.495; seed range of
 \begin{figure*}[!t]
   \centering
   \includegraphics[width=\textwidth]{Fig4_rankings}
-  \caption{Method rankings on image-level (left) and lesion-grouped (right) test sets, by mean pooled BA
+  \caption{Method rankings on image-level (left) and lesion-grouped (right) test sets, by mean BA (pooled in panels a and c, mean of clients in panel b)
   over five seeds (top = best). Highlighted methods change rank most. Text below each panel: Kendall's
   $\tau_b$ between the two rankings (95\% CI), and the agreement of single-seed rankings across split types
   compared with the seed-to-seed noise floor.}
@@ -829,8 +840,8 @@ for model~A on pooled BA (0.555, 6.0 points above FedAvg at 0.495; seed range of
 seeds). Pooled: one balanced accuracy over all test images; mean of clients: average of the six per-client
 values. Best value per column in bold; differences of a few points are within seed-to-seed variation
 (Supplementary~S9). Model B has no FedBN (no BatchNorm in a linear head); its FedPer is the FedPer-style
-two-layer head, whereas its other heads are linear. Kendall's $\tau_b$ compares the rankings of the
-seven methods common to both split types.}
+two-layer head, whereas its other heads are linear. Kendall's $\tau_b$ compares the rankings of all
+methods of each model (eight for model A, seven for model B).}
 \label{tab:ba}
 \setlength{\tabcolsep}{4.5pt}
 \begin{tabular}{@{}lcccccccc@{}}
@@ -946,7 +957,7 @@ it on image-level test sets for the models that fit their training images most c
 (Figure~\ref{fig:calibration}c): model~A pooled from 0.024 to 0.074, model~A local-only from 0.031 to 0.087,
 and the model~B FedPer-style head from 0.066 to 0.085. For the same three models on lesion-grouped test
 sets, scaling reduced ECE from 0.052 to 0.018, from 0.094 to 0.019 and from 0.141 to 0.022. These full test
-sets have several thousand images, so the comparison is not affected by the small-sample bias. Replacing
+sets have several thousand images, so the comparison is less susceptible to the unequal-sample-size bias than the original subset comparison. Replacing
 the averaged temperature by the NLL-optimal temperature on the pooled validation set changed ECE by at
 most 0.8 points (Supplementary~S7). Monte Carlo dropout through the single dropout layer did not
 improve on the softmax output in this configuration (raw ECE 0.068 vs 0.065 on image-level and 0.047 vs
@@ -972,47 +983,52 @@ setting; it is not a general robustness guarantee.
 \label{sec:res-conformal}
 
 A single global threshold under-covered some clients, as expected for a rule that targets the mixture of
-clients, and the pre-specified ShrinkFCP did not fix this (Figure~\ref{fig:conformal};
+clients rather than each client, and the pre-specified ShrinkFCP did not fix this (Figure~\ref{fig:conformal};
 Table~\ref{tab:conformal}). On the in-federation lesion-grouped FedAvg models (LAC, $\alpha=0.1$), the
 global threshold left the worst client at a mean coverage of 0.819 (model~A, client~3) and 0.717 (model~B,
 client~4), with worst-client q10 of 0.786 and 0.670; FCP behaved like the global threshold. Client-wise
 thresholds gave every client a mean coverage of about 0.90 (worst-client q10 0.794 and 0.795), and the
-remaining shortfall in the tail came from the small client~5. ShrinkFCP raised the worst-client q10 of
-model~A by 2.5 points over client-wise calibration ($-2.8$ to 3.9) but lowered it by 7.3 points ($-14.0$ to
-$-5.4$) for model~B, and for both encoders it violated the mean-coverage guard (lowest client 0.856 and
-0.771): RQ4 was not met. The interval for model~A is not centered on the point estimate, because the
-bootstrap recomputes q10 from 20 rather than 100 draws per replicate; this is examined below.
+remaining shortfall in the tail came from the small client~5. ShrinkFCP changed the worst-client q10 by
+$+2.5$ points (model~A) and $-7.3$ points (model~B) relative to client-wise calibration and, for both
+encoders, violated the mean-coverage guard (lowest client 0.856 and 0.771), so RQ4 was not met whatever the
+interval.
 
-On the 18 LOCO models per encoder, the pre-specified test of EB-ShrinkFCP was met for model~A, with a
-worst-client q10 of 0.837 against 0.814 for client-wise calibration (gain 2.3 points, 0.8--3.9), set sizes
-within 4\% of the reference and every client's mean coverage at least 0.89. The interval supports a gain
-above zero, not a gain above 2 points. For model~B the gain was 0.5 points ($-1.7$ to 0.9) and the test was
-not met. In all four settings (in-federation and LOCO models, both encoders), EB-ShrinkFCP kept every
-client's mean coverage between 0.897 and 0.901, whereas ShrinkFCP dropped the worst client to 0.77--0.86.
-On the in-federation models, the post hoc gain of EB-ShrinkFCP over client-wise calibration was 4.8 points
-(0.2--6.1) for model~A and 0.1 points for model~B. Per-client set sizes and results for APS scores and for
-$\alpha=0.05$ and $0.2$ are given in Supplementary~S4.
+The conformal intervals of the pre-specified analysis come from a defective bootstrap that let copies of a
+resampled lesion fall into both halves (Section~\ref{sec:prereg}); we report its outcomes as the historical
+record (Table~\ref{tab:scorecard}) and use a corrected analysis for inference. On the 18 LOCO models per
+encoder, the pre-specified analysis declared test 5b met for model~A (worst-client q10 0.837 against 0.814
+for client-wise calibration, gain 2.3 points, original interval 0.8--3.9; set sizes within 4\% of the
+reference; every client's mean coverage at least 0.89) and not met for model~B (0.5 points, original
+interval $-1.7$ to 0.9). With 1,000 draws per model, the gain of EB-ShrinkFCP over client-wise calibration
+was 3.1 points for model~A (worst-client q10 0.837 vs 0.805) and 0.8 points for model~B (0.805 vs 0.797).
+The corrected bootstrap, which keeps the copies of a resampled lesion together and pairs the draws across
+methods, gave 3.4 to 8.6 points for model~A and 0.1 to 3.1 points for model~B (500 replicates of 100 draws;
+2.6 to 8.1 and $-0.3$ to 3.2 with 20 draws). The model~A interval does not contain the point estimate,
+because q10 computed from resampled clustered data is biased downwards, more so for the noisier client-wise
+thresholds, and the coverage of these intervals as confidence procedures was not validated. When each lesion
+contributed one sampled image to both halves, which also shifts the weighting from images to lesions, the
+gain was 3.2 points for model~A ($-0.4$ to 3.6) and 0.4 points for model~B ($-0.3$ to 1.6). EB-ShrinkFCP
+therefore showed an encoder-dependent empirical lower-tail advantage whose size and interval depend on the
+evaluation and inference construction. In all four settings (in-federation and LOCO models, both
+encoders), it kept every client's mean coverage between 0.897 and 0.901, whereas ShrinkFCP dropped the worst
+client to 0.77--0.86. Per-client set sizes and results for APS scores and for $\alpha=0.05$ and $0.2$ are
+given in Supplementary~S4.
 
-Post hoc sensitivity analyses qualify these results (Supplementary~S5). First, q10 estimated from 100 draws
-is noisy: for client-wise thresholds on the LOCO models of model~A it ranged from 0.797 to 0.813 across
-five independent sets of 100 draws, a spread comparable to the pre-specified gain; with 1,000 draws, the
-worst-client q10 was 0.837 for EB-ShrinkFCP and 0.805 for client-wise thresholds (model~A) and 0.805 and
-0.797 (model~B). Second, a corrected bootstrap that keeps the resampled copies of a lesion in the same half
-gave intervals for the model~A gain over client-wise thresholds of 2.6 to 8.1 points (20 draws per
-replicate) and 3.4 to 8.7 (100 draws), and for model~B $-0.3$ to 3.2 and 0.1 to 3.1; these intervals are
-not centered on the point estimates, because q10 from resampled clustered data is biased downwards, more
-so for the noisier client-wise thresholds. Third, when only one random image per lesion was kept in both
-halves, so that calibration and evaluation units are independent lesions, client-wise and EB-ShrinkFCP
-thresholds both kept every client's mean coverage at 0.90, and the EB gain in worst-client q10 over
-client-wise thresholds was 3.3 points for model~A with an interval that included zero ($-0.4$ to 3.6) and
-0.4 points for model~B ($-0.3$ to 1.6); global and FCP thresholds under-covered further (lowest client
-0.81 and 0.73). Fourth, when the evaluation half was fixed and only the calibration lesions were redrawn,
-EB-ShrinkFCP raised the worst-client q10 over client-wise thresholds by 3.4 points (model~A) and 0.9 points
-(model~B), indicating that the gain comes from less variable thresholds rather than from evaluation noise.
-Fifth, exact order statistics changed the global and FCP thresholds' q10 by at most 0.003. Finally, the
-label-shift-weighted comparator did not repair the per-client shortfall of the global threshold (lowest
-client mean coverage 0.85 for model~A and 0.72 for model~B), indicating that the clients differ by more than
-their class priors.
+Further post hoc analyses qualify these results (Supplementary~S5 and S18). First, q10 estimated from 100
+draws is noisy: for client-wise thresholds on the LOCO models of model~A it ranged from 0.797 to 0.813 across
+five independent sets of 100 draws, a spread comparable to the pre-specified gain. Second, when the
+evaluation half was fixed and only the calibration lesions were redrawn, the advantage of EB-ShrinkFCP over
+client-wise thresholds persisted (3.4 points for model~A and 0.9 points for model~B). Third, exact order
+statistics changed the global and FCP thresholds' q10 by at most 0.003. Fourth, the label-shift-weighted
+comparator did not repair the per-client shortfall of the global threshold (lowest client mean coverage
+0.85 for model~A and 0.72 for model~B), suggesting that prior adjustment alone was insufficient in this
+implementation. Fifth, the worst-client q10 in Table~\ref{tab:conformal} is the mean over models of each
+model's worst client; the worst client of the model-averaged q10 gave similar values (0.841 and 0.804 for
+EB-ShrinkFCP and client-wise thresholds, model~A). Finally, when each client was evaluated only with the
+three models trained without it, client-wise and EB-ShrinkFCP thresholds kept the held-out client's mean
+coverage at 0.90--0.95, whereas the global threshold left held-out clients at 0.78 (model~A, client~3) and
+0.68 (model~B, client~4). Held-out-client labels entered both temperature scaling and conformal calibration,
+so these results describe target-assisted calibration, not zero-label transfer.
 
 All rules in Table~\ref{tab:conformal} target marginal coverage, and none of them provided coverage by
 diagnostic class (post hoc; Supplementary~S13). On the LOCO models, global, client-wise and EB-ShrinkFCP
@@ -1020,43 +1036,52 @@ thresholds all covered dermatofibroma in only 0.58--0.59 of cases for model~A an
 while their overall coverage was 0.90. Class-conditional (Mondrian) thresholds raised every class to
 0.87--0.90, at a mean set size of 3.5--3.6 classes instead of 2.6.
 
-A simulation with clustered synthetic scores, in which true coverage is known, reproduced these patterns
+A simulation with clustered synthetic scores, in which true coverage is known, showed similar patterns
 (post hoc; Supplementary~S15). Without client shift, EB-ShrinkFCP matched the global threshold (worst-client
 q10 of true coverage 0.89) and exceeded client-wise thresholds (0.83--0.85). With client shift, the global
 threshold under-covered the most shifted client (q10 0.62--0.81), whereas EB-ShrinkFCP kept every client's
 mean true coverage at 0.90 and had a worst-client q10 of 0.85--0.86, compared with 0.83--0.85 for
 client-wise thresholds. The variance used by EB-ShrinkFCP was 1.5 to 2.6 times the actual sampling variance
-of the client quantile, so the approximation is conservative and shrinks more than necessary; on the real
+of the client quantile, so it overestimated the quantile sampling variance in these settings; on the real
 data, a lesion-bootstrap variance was 0.58 to 1.03 times the approximation (median by client). Replacing
 the approximation by the bootstrap variance, dropping the images-per-lesion factor or changing the variance
 floor changed the worst-client q10 of EB-ShrinkFCP by at most 0.4 points, whereas a random-effects mean
-lowered it by 0.7 to 2.2 points (Supplementary~S14). On the real
-LOCO models, restricting each client's calibration set to 10, 25, 50 or 100 lesions showed no gain of
-EB-ShrinkFCP over client-wise thresholds at 10 lesions and gains of 1.4 to 2.9 points in worst-client q10
-from 25 lesions on, for both encoders; the global threshold left some client at a mean coverage of 0.75--0.82
-at every budget.
+lowered it by 0.7 to 2.2 points (Supplementary~S14). The simulation describes behaviour within one family
+of latent-score distributions; it does not establish a finite-sample guarantee and did not evaluate the
+coverage of the bootstrap intervals. On the real LOCO models, we capped each client's calibration set at 10,
+25, 50 or 100 lesions, using all available calibration lesions below the cap (the smallest client, client~5,
+has about 28, so it never exceeds that number; Supplementary~S18). EB-ShrinkFCP showed no gain over
+client-wise thresholds at the cap of 10 and gains of 1.4 to 2.9 points in worst-client q10 at the higher
+caps, for both encoders; for client-wise thresholds the worst client at these caps was almost always client~5,
+so the curves do not establish a minimum number of calibration lesions. The global threshold left some
+client at a mean coverage of 0.75--0.82 at every cap.
 
 On personalized models (FedBN, FedAvg-FT, FedPer and local-only; descriptive), a global threshold still
 left some client at a mean coverage of 0.76--0.87, while client-wise thresholds kept every client's mean
-coverage between 0.897 and 0.911 and EB-ShrinkFCP between 0.888 and 0.944 (Supplementary~S6).
+coverage between 0.897 and 0.911 and EB-ShrinkFCP between 0.888 and 0.944, one configuration falling just
+below the 0.89 guard used for the pre-specified tests (Supplementary~S6).
 
 \begin{figure*}[!t]
   \centering
   \includegraphics[width=\textwidth]{Fig7_conformal}
   \caption{Federated conformal coverage on LOCO models (LAC, $\alpha=0.1$; 18 models per encoder, 100
-  lesion-wise calibration draws each). For each rule and client, the marker is the mean coverage and the
-  tick the 10th percentile of coverage over draws (q10), not a confidence interval; dashed line: target
-  coverage 0.90. The text gives the pre-specified test of EB-ShrinkFCP against client-wise calibration.}
+  lesion-wise calibration draws each). For each rule and evaluation client, averaged over all 18 LOCO
+  models (each client is evaluated by the models that included it and by the three that excluded it), the
+  marker is the mean coverage and the tick the 10th percentile of coverage over draws (q10), not a confidence
+  interval; dashed line: target coverage 0.90. The held-out-only view is given in Supplementary~S18, and the
+  corrected inference for EB-ShrinkFCP in the text.}
   \label{fig:conformal}
 \end{figure*}
 
 \begin{table}[!t]
 \centering
 \caption{Federated conformal calibration on the 18 LOCO models per encoder (LAC, $\alpha=0.1$, 100
-lesion-wise calibration/evaluation draws). q10: worst client's 10th percentile of coverage over draws,
-averaged over models (primary); min cov.: lowest client mean coverage; $|C|$: mean set size (equal weight
+lesion-wise calibration/evaluation draws; held-out-client labels enter temperature scaling and conformal
+calibration). q10: for each model, the 10th percentile of coverage over draws in its worst client, averaged
+over the 18 models (primary; the worst client of the model-averaged q10 is given in Supplementary~S18);
+min cov.: lowest client mean coverage; $|C|$: mean set size (equal weight
 per client). Best in bold. $^m$Targets coverage on the mixture of clients, not per client.
-$^\dagger$Proposed. $^p$Post hoc comparator (1,000 draws).}
+$^\dagger$Proposed (exploratory). $^p$Post hoc comparator (1,000 draws).}
 \label{tab:conformal}
 \setlength{\tabcolsep}{2.6pt}
 \begin{tabular}{@{}lcccccc@{}}
@@ -1095,7 +1120,7 @@ lesion-grouped test set (same six-class restriction) to 0.356 (95\% CI 0.333--0.
 Actinic keratosis, the second most frequent class, was rarely recognized (recall 0.08 and 0.19). Conformal
 thresholds transferred from Fed-ISIC2019 covered 0.596 (0.576--0.614) and 0.669 (0.650--0.687) of the
 PAD-UFES-20 images instead of 0.90, meeting the pre-specified failure rule; the interval conditions on the
-transferred threshold. Recalibrating on half of the PAD-UFES-20 patients restored marginal coverage to
+transferred threshold. Recalibrating with labelled target data from half of the PAD-UFES-20 patients restored marginal coverage to
 0.900 (10th percentile over draws 0.880 and 0.884), but the prediction sets then contained on average 4.9
 (model~A) and 4.3 (model~B) of the six classes, and coverage of actinic keratosis and squamous cell
 carcinoma remained between 0.80 and 0.84 (730 and 192 images; about half of each falls in the evaluation half of a draw). The shift combines modality, population, acquisition,
@@ -1108,7 +1133,7 @@ class prevalence and label definitions, so it is not attributable to the imaging
   Fed-ISIC2019 dermoscopy image and a PAD-UFES-20 smartphone photograph. (b) BA on each client's
   lesion-grouped test set when the client was in the federation (open marker) and when it was held out
   (arrow head); same test images, seeds 0--2. (c) Conformal coverage at $\alpha=0.1$ after the six-class
-  restriction: on the Fed-ISIC2019 calibration scores (nominal by construction, shown as reference), on
+  restriction: on the Fed-ISIC2019 scores used to compute the threshold (in-sample, about 0.90 by construction, not an independent test coverage), on
   PAD-UFES-20 with the transferred threshold (95\% patient-bootstrap CI, conditional on the threshold) and
   after recalibration on 50\% of the patients; $|C|$, mean prediction-set size. Images: ISIC 2019
   (CC-BY-NC 4.0) and PAD-UFES-20 (CC-BY 4.0).}
@@ -1132,9 +1157,7 @@ it reordered methods on per-client accuracy and for a foundation-model encoder, 
 head moved from first to seventh place. The size of the apparent inflation was associated with how closely
 a model can fit its training lesions rather than with personalization as such (RQ3). Calibration and
 conformal coverage varied more between clients than between methods, and a single global conformal
-threshold left some clients well below the target coverage (RQ1). A pre-specified fixed shrinkage rule
-failed; an empirical-Bayes variant kept every client's mean coverage near the target and improved the
-worst-client tail for one of two encoders (RQ4). Accuracy, calibration and transferred coverage were worse
+threshold left some clients well below the target coverage, and every marginal rule covered rare classes such as dermatofibroma in only 0.50--0.59 of cases (RQ1). A pre-specified fixed shrinkage rule failed; an empirical-Bayes variant kept every client's mean coverage near the target and showed an encoder-dependent empirical lower-tail advantage (RQ4). Accuracy, calibration and transferred coverage were worse
 on unseen clients and much worse on smartphone images.
 
 \subsection{Why leakage inflates apparent accuracy}
@@ -1156,7 +1179,7 @@ we regard this as an interpretation, not as a tested causal mechanism. The two a
 comparisons they control. In E8, the exposure effect on the same randomized target images ordered the
 methods in the same way as the observational contrast (local-only $>$ pooled $>$ FedPer $>$ FedAvg for
 model~A; the two-layer head far above the linear heads for model~B), and in E9 a FedAvg model with the
-FedPer-style two-layer head inflated as much as the FedPer-style head itself. Head capacity, not the client-specific layer, therefore accounts for the behaviour of the FedPer-style head. For the fine-tuned
+FedPer-style two-layer head inflated as much as the FedPer-style head itself. The capacity-matched controls therefore indicate that classifier architecture contributes substantially to the split-dependent ranking changes; architecture, optimization and personalization are not completely isolated by this comparison. For the fine-tuned
 network, the methods still differ in optimizer and training budget, so fitting capacity remains the most
 consistent explanation rather than an isolated cause.
 
@@ -1201,19 +1224,14 @@ evaluation and the one-image-per-lesion analysis address this empirically, while
 methods offer formal guarantees for grouped data \cite{dunn2022hierarchical,lee2023hierarchical}.
 
 EB-ShrinkFCP addresses the noise of client-wise thresholds without returning to a single shared threshold.
-Its weight $w_c=\tau^2/(\tau^2+\sigma_c^2)$ estimates from the data how much the clients differ, so it
-borrows strength only when they agree; the fixed weight of ShrinkFCP borrowed regardless and imported the
+Its weight $w_c=\tau^2/(\tau^2+\sigma_c^2)$ estimates from the data how much the clients differ, so the amount of shrinkage depends on the estimated between-client heterogeneity relative to each client's sampling uncertainty; the fixed weight of ShrinkFCP borrowed regardless and imported the
 global threshold's bias into the shifted clients. The attainable gain is limited by evaluation noise: with
 about 44 evaluation images per draw in the smallest client, even a rule with exactly nominal conditional
 coverage has a 10th percentile of observed coverage well below 0.90, although trivial rules such as
 returning all classes would reach full coverage at the cost of useless sets. The evidence on RQ4 is
 therefore mixed. Across the tested models and clients, EB-ShrinkFCP kept mean client coverage close to the
-target; it met its pre-specified criterion on held-out models for model~A, with an interval that excludes
-zero but also includes gains below 2 points; no clear improvement was detected for model~B, so the joint criterion
-was not met; and, like the other marginal rules, it left rare classes such as dermatofibroma well below the
-target, which only class-conditional thresholds corrected, at the cost of larger sets. The post hoc analyses point the same way but do not strengthen the claim: the gain is visible in the
-variability of thresholds, but with one image per lesion its interval includes zero, and its size is
-comparable to the Monte Carlo variability of a 100-draw q10. The rule exchanges two
+target; the pre-specified analysis declared its test met for model~A, but that analysis used a defective bootstrap, and with corrected inference the lower-tail advantage was about 3 points for model~A and under 1 point for model~B, with intervals whose coverage was not validated; the joint criterion was not met; and, like the other marginal rules, it left rare classes such as dermatofibroma well below the
+target, which only class-conditional thresholds corrected, at the cost of larger sets. The post hoc analyses do not strengthen the claim: the advantage persisted with a fixed evaluation half, but with one image per lesion its interval includes zero, and its size is comparable to the Monte Carlo variability of a 100-draw q10. The rule exchanges two
 aggregate statistics per client, a quantile and a variance, rather than images or score lists; we did not
 analyze its formal privacy properties. Related work on federated conformal prediction has addressed label
 shift \cite{plassier2023labelshift}, one-shot aggregation \cite{humbert2023oneshot}, personalization
@@ -1225,7 +1243,7 @@ absence of any guarantee under distribution shift \cite{tibshirani2019covariate,
 recalibration restored marginal coverage only by returning four to five of six classes, and coverage for
 actinic keratosis and squamous cell carcinoma stayed below the target. Post hoc class-conditional
 recalibration brought both classes to 0.90 and reduced the mean set size from 4.9 to 3.9 classes for
-model~A and from 4.3 to 4.0 for model~B (Supplementary~S13), still too large to be clinically useful.
+model~A and from 4.3 to 4.0 for model~B (Supplementary~S13), which provides limited diagnostic specificity; clinical utility was not evaluated.
 Recalibration can make a model's
 uncertainty honest, but it cannot make an unsuitable model useful, and marginal coverage can hide
 class-conditional failures \cite{lu2022fair}.
@@ -1238,13 +1256,12 @@ calibration and coverage per client, not only pooled, together with the uncertai
 estimates; (iii) fit temperature and conformal thresholds on data grouped in the same way as the test data;
 (iv) state which coverage target a conformal rule serves (mixture, client or class) and compare locally
 calibrated and pooled thresholds for that target before adopting a shrinkage rule; (v) evaluate on held-out
-clients and, before deployment in a new imaging modality, recalibrate locally and report set sizes and
-per-class coverage; and (vi) fix primary analyses in advance and report negative results, in line with
+clients and, in a new imaging modality, treat local recalibration as one evaluated step, followed by assessment of set size and per-class coverage, not as sufficient validation for deployment; and (vi) fix primary analyses in advance and report negative results, in line with
 general reporting guidance for clinical prediction models \cite{collins2024tripodai}.
 
 \subsection{Value of a fixed protocol and negative results}
 
-Of the seven pre-specified tests, four were met in full (Gates 1 and 2, the PAD-UFES-20 transfer rule and E8), two were met for one of two encoders (H3b and 5b), and one failed (RQ4). Without a protocol, the failure of ShrinkFCP could have been
+Of the seven pre-specified tests, the pre-specified analyses reported four as met in full (Gates 1 and 2, the PAD-UFES-20 transfer rule and E8), two as met for one of two encoders (H3b and 5b) and one as failed (RQ4); the conformal outcomes rest on the defective bootstrap and are superseded for inference by the corrected analysis. Gate 2 is the only primary test, and such a count is not a measure of overall validity. Without a protocol, the failure of ShrinkFCP could have been
 followed by adjusting its constant until it succeeded on the same models. Instead, the failure motivated a
 new rule that was specified before the held-out models existed and tested on them, and the post hoc results
 are labelled as such. The protocol also prevented a selective reading of H3b: the hypothesis was supported
@@ -1270,10 +1287,9 @@ controls with three seeds showed that their inflation depends on that budget, an
 run for the fine-tuned pooled and local-only models of model~A. The benchmark clients and test pools were reused
 across method development and evaluation. Overlap between PanDerm's pretraining data and the evaluation
 images could not be ruled out. Our FedAvg reproduction was 4.2 points below one published value, though
-above FLamby's own results. EB-ShrinkFCP met its criterion for one of two encoders, it does not carry a
+above FLamby's own results. The original conformal bootstrap was defective and the corrected intervals were not validated as confidence procedures; EB-ShrinkFCP's lower-tail advantage was encoder-dependent, it does not carry a
 finite-sample per-client guarantee, and its variance approximation for clustered images is heuristic; in
-our simulation and lesion bootstrap it overstated the variance, which makes the rule shrink more than
-necessary, and the simulation covered only one family of score distributions.
+our simulation and lesion bootstrap it overestimated the quantile sampling variance, although replacing it changed the results little, and the simulation covered only one family of score distributions.
 Finally, the mechanism analysis is exploratory.
 
 \subsection{Future work}
@@ -1296,9 +1312,7 @@ images to training raised balanced accuracy by 9.1 points for FedAvg, with effec
 points across training regimes. Leakage also changed which methods appeared best, mainly among classifiers
 that differed in head architecture or training regime. At the level of individual clients, a shared conformal threshold under-covered some
 sites; an empirical-Bayes shrinkage of per-client thresholds kept mean client coverage near the target and
-improved the worst-client tail for one of two encoders, while a fixed shrinkage rule failed its
-pre-specified test. On unseen clients and smartphone images, reliability dropped further, and local
-recalibration restored coverage only with large prediction sets. We recommend that federated medical
+showed an encoder-dependent empirical lower-tail advantage, while a fixed shrinkage rule failed its pre-specified test. Reliability dropped on unseen clients and further on smartphone images, where local recalibration with labelled target data restored marginal coverage only with prediction sets of four to five of six classes. We recommend that federated medical
 imaging benchmarks with repeated imaging use lesion- or patient-grouped splits and report calibration and
 coverage per client, and we release the corrected splits, code, predictions and protocol history to
 support this.
@@ -1323,7 +1337,7 @@ Fed-ISIC2019 is available through the FLamby benchmark (ISIC 2019, CC-BY-NC 4.0;
 terms) and PAD-UFES-20 from Mendeley Data (doi:10.17632/zr7vgbcyr2.1, CC-BY 4.0). The repository
 \url{https://github.com/Sisty37/reliable-fed-derm} contains the split files with SHA-256 checksums and the
 script that builds them from the public metadata, the code for training, analysis, tables and figures,
-the protocol versions with git tags marking each pre-run state, run logs, the predictions of every model and
+the protocol versions with the commits and tags listed in Supplementary~S8, run logs, the predictions of every model and
 all result files, a pinned dependency list (\texttt{requirements-lock.txt}) and the SHA-256 checksums of the
 encoder checkpoints and metadata files; frozen-encoder embeddings and PanDerm-derived heads are not redistributed because of the
 PanDerm licence. % TODO: archive the submitted version on Zenodo and add its DOI.
@@ -1383,7 +1397,7 @@ Ogier~du Terrail J, Ayed SS, Cyffers E, Grimberg F, He C, Loeb R, et~al.
 \newblock {FLamby}: Datasets and Benchmarks for Cross-Silo Federated Learning
   in Realistic Healthcare Settings.
 \newblock In: Advances in Neural Information Processing Systems 35 (NeurIPS
-  2022), Datasets and Benchmarks Track; 2022. .
+  2022), Datasets and Benchmarks Track; 2022.
 
 \bibitem{codella2018isic}
 Codella NCF, Gutman D, Celebi ME, Helba B, Marchetti MA, Dusza SW, et~al.
@@ -1409,7 +1423,7 @@ Tavakoli F, Emerson DB, Ayromlou S, Jewell J, Krishnan A, Zhang Y, et~al.
 \newblock A Comprehensive View of Personalized Federated Learning on
   Heterogeneous Clinical Datasets.
 \newblock In: Proceedings of the 9th Machine Learning for Healthcare
-  Conference. vol. 252 of PMLR; 2024. .
+  Conference. vol. 252 of PMLR; 2024.
 
 \bibitem{kapoor2023leakage}
 Kapoor S, Narayanan A.
@@ -1453,7 +1467,7 @@ Abhishek K, Jain A, Hamarneh G.
 Bussola N, Marcolini A, Maggio V, Jurman G, Furlanello C.
 \newblock {AI} Slipping on Tiles: Data Leakage in Digital Pathology.
 \newblock In: Pattern Recognition. ICPR International Workshops and Challenges.
-  vol. 12661 of Lecture Notes in Computer Science. Springer; 2021. .
+  vol. 12661 of Lecture Notes in Computer Science. Springer; 2021.
 
 \bibitem{yagis2021leakage}
 Yagis E, Atnafu SW, Garc{\'i}a Seco~de Herrera A, Marzi C, Scheda R, Giannelli
@@ -1502,13 +1516,14 @@ Plassier V, Makni M, Rubashevskii A, Moulines E, Panov M.
 Min Y, Zhang C, Peng L, Zou C.
 \newblock Personalized Federated Conformal Prediction with Localization.
 \newblock In: Advances in Neural Information Processing Systems 38 (NeurIPS
-  2025); 2025. .
+  2025); 2025.
 
 \bibitem{wen2026gcfcp}
 Wen H, Simeone O, Xing H.
 \newblock Efficient Federated Conformal Prediction with Group-Conditional
   Guarantee.
-\newblock In: Proceedings of Machine Learning Research. vol. 337; 2026. .
+\newblock In: Proceedings of the 42nd Conference on Uncertainty in Artificial
+  Intelligence. vol. 337 of PMLR; 2026. p. 7290--7313.
 
 \bibitem{lee2023hierarchical}
 Lee Y, Foygel~Barber R, Willett R.
@@ -1545,7 +1560,7 @@ Li X, Jiang M, Zhang X, Kamp M, Dou Q.
 \newblock {FedBN}: Federated Learning on Non-{IID} Features via Local Batch
   Normalization.
 \newblock In: International Conference on Learning Representations (ICLR);
-  2021. .
+  2021.
 
 \bibitem{arivazhagan2019fedper}
 Arivazhagan MG, Aggarwal V, Singh AK, Choudhary S.
@@ -1580,7 +1595,7 @@ Kull M, Perello-Nieto M, K{\"a}ngsepp M, Silva~Filho T, Song H, Flach P.
 \newblock Beyond Temperature Scaling: Obtaining Well-Calibrated Multi-Class
   Probabilities with {D}irichlet Calibration.
 \newblock In: Advances in Neural Information Processing Systems 32 (NeurIPS
-  2019); 2019. .
+  2019); 2019.
 
 \bibitem{brier1950}
 Brier GW.
@@ -1599,13 +1614,13 @@ Ovadia Y, Fertig E, Ren J, Nado Z, Sculley D, Nowozin S, et~al.
 \newblock Can You Trust Your Model's Uncertainty? {E}valuating Predictive
   Uncertainty Under Dataset Shift.
 \newblock In: Advances in Neural Information Processing Systems 32 (NeurIPS
-  2019); 2019. .
+  2019); 2019.
 
 \bibitem{minderer2021revisiting}
 Minderer M, Djolonga J, Romijnders R, Hubis F, Zhai X, Houlsby N, et~al.
 \newblock Revisiting the Calibration of Modern Neural Networks.
 \newblock In: Advances in Neural Information Processing Systems 34 (NeurIPS
-  2021); 2021. .
+  2021); 2021.
 
 \bibitem{mehrtash2020confidence}
 Mehrtash A, Wells WM, Tempany CM, Abolmaesumi P, Kapur T.
@@ -1629,7 +1644,7 @@ Romano Y, Sesia M, Cand{\`e}s E.
 Tibshirani RJ, Foygel~Barber R, Cand{\`e}s E, Ramdas A.
 \newblock Conformal Prediction Under Covariate Shift.
 \newblock In: Advances in Neural Information Processing Systems 32 (NeurIPS
-  2019); 2019. .
+  2019); 2019.
 
 \bibitem{podkopaev2021labelshift}
 Podkopaev A, Ramdas A.
@@ -1686,7 +1701,7 @@ Dosovitskiy A, Beyer L, Kolesnikov A, Weissenborn D, Zhai X, Unterthiner T,
 \newblock An Image is Worth 16x16 Words: Transformers for Image Recognition at
   Scale.
 \newblock In: International Conference on Learning Representations (ICLR);
-  2021. .
+  2021.
 
 \bibitem{lin2017focal}
 Lin TY, Goyal P, Girshick R, He K, Doll{\'a}r P.
@@ -1698,7 +1713,7 @@ Lin TY, Goyal P, Girshick R, He K, Doll{\'a}r P.
 Kingma DP, Ba J.
 \newblock Adam: A Method for Stochastic Optimization.
 \newblock In: International Conference on Learning Representations (ICLR);
-  2015. .
+  2015.
 
 \bibitem{nosek2018preregistration}
 Nosek BA, Ebersole CR, DeHaven AC, Mellor DT.
@@ -1729,7 +1744,7 @@ Collins GS, Moons KGM, Dhiman P, et~al.
 
 
 \bmsection*{Supporting information}
-Supplementary material S1--S17 and Figure S1 are provided as a separate file with this submission.
+Supplementary material S1--S18 and Figure S1 are provided as a separate file with this submission.
 
 
 \end{document}
