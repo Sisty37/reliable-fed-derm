@@ -149,8 +149,9 @@ groups of test images and can reflect differences in difficulty and multiplicity
 standardization; the randomized experiment E8 addresses this for lesions with several images, but not for single-image lesions, and its method comparisons still differ in optimizer and budget. Binned ECE is biased in small samples, which affected our original leaky-versus-new
 contrast. Three to five seeds limit the precision of ranking comparisons, and the bootstrap intervals
 reflect test-sample uncertainty given the trained models, not retraining variability. The pooled and
-local-only references use a different optimizer and budget from the federated methods, FedAvg-FT used a
-single pre-specified number of fine-tuning steps, and the benchmark clients and test pools were reused
+local-only references use a different optimizer and budget from the federated methods; post hoc budget
+controls with three seeds showed that their inflation depends on that budget, and no budget variants were
+run for the fine-tuned pooled and local-only models of model~A. The benchmark clients and test pools were reused
 across method development and evaluation. Overlap between PanDerm's pretraining data and the evaluation
 images could not be ruled out. Our FedAvg reproduction was 4.2 points below one published value, though
 above FLamby's own results. EB-ShrinkFCP met its criterion for one of two encoders, it does not carry a

@@ -686,7 +686,7 @@ e0 \ldots{} e5 tags & 30 Oct--3 Nov & E0, E0b, E1, E2, E5 & pre-run tags before 
 v0.11 & 3 Nov & E0--E5 (RQ4 failed) & EB-ShrinkFCP and test 5b on LOCO models (before any LOCO model) \\
 e7, PAD, NN tags & 5--6 Nov & E0--E6 & pre-run tags; PAD interpretation rule; NN analysis exploratory \\
 v0.12 & 7 Nov & E0--E7, PAD, NN; external review & E8, E9 and their tests; post hoc sensitivity analyses \\
-8 Nov (no new version) & 8 Nov & all results, incl. E8, E9 & post hoc only: S13--S17 \\
+8 Nov (no new version) & 8 Nov & all results, incl. E8, E9 & post hoc only: S13--S18 \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -1057,6 +1057,54 @@ B & +0.059 & +0.055 (0.002) & +0.002 & +0.001 (0.001) & +25.2 (1.9) & -0.9 (1.7)
 \bottomrule
 \end{tabular}
 \end{table*}
+\section*{S18. Training-budget controls (post hoc)}
+\begin{table}[!htbp]
+\centering
+\scriptsize
+\caption{Apparent inflation in clients 0, 2 and 3 (points, 95\% lesion-bootstrap intervals), its difference to FedAvg with 9 rounds, and pooled BA on image-level and lesion-grouped splits, seeds 0--2. $^*$protocol setting.}
+\label{tab:s17}
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+Model & Training & Inflation & $-$FedAvg & BA image & BA lesion \\
+\midrule
+A & FedAvg, 9 rounds$^*$ & +5.5 [+2.9, +8.2] & +0.0 [+0.0, +0.0] & 0.577 & 0.509 \\
+A & FedAvg-FT, 1 step & +6.2 [+3.6, +8.8] & +0.7 [$-$0.6, +1.8] & 0.559 & 0.480 \\
+A & FedAvg-FT, 3 steps$^*$ & +6.7 [+4.1, +9.3] & +1.2 [$-$0.6, +2.7] & 0.574 & 0.501 \\
+A & FedAvg-FT, 10 steps & +6.9 [+4.3, +9.9] & +1.5 [$-$0.7, +3.7] & 0.640 & 0.553 \\
+A & FedAvg-FT, 30 steps & +6.7 [+3.9, +9.6] & +1.2 [$-$1.0, +3.6] & 0.663 & 0.564 \\
+A & Pooled, 20 epochs$^*$ & +11.9 [+9.4, +14.4] & +6.4 [+3.7, +9.0] & 0.727 & 0.576 \\
+A & Local-only, 20 epochs$^*$ & +13.6 [+11.5, +16.2] & +8.1 [+5.5, +10.8] & 0.731 & 0.543 \\
+\midrule
+A-frozen & FedAvg, 9 rounds$^*$ & +6.6 [+3.9, +9.0] & +0.0 [+0.0, +0.0] & 0.505 & 0.430 \\
+A-frozen & FedAvg, 27 rounds & +6.8 [+4.3, +9.5] & +0.2 [$-$0.9, +1.7] & 0.503 & 0.430 \\
+A-frozen & FedAvg-FT, 1 step & +6.1 [+3.5, +8.7] & $-$0.5 [$-$1.3, +0.7] & 0.510 & 0.431 \\
+A-frozen & FedAvg-FT, 3 steps$^*$ & +6.7 [+4.1, +9.3] & +0.1 [$-$0.9, +1.4] & 0.522 & 0.442 \\
+A-frozen & FedAvg-FT, 10 steps & +5.6 [+3.1, +8.4] & $-$1.0 [$-$2.6, +0.8] & 0.545 & 0.459 \\
+A-frozen & FedAvg-FT, 30 steps & +6.6 [+4.1, +9.4] & +0.0 [$-$1.6, +2.2] & 0.568 & 0.482 \\
+A-frozen & FedAvg-FT, 100 steps & +6.4 [+4.0, +9.4] & $-$0.2 [$-$1.9, +1.9] & 0.578 & 0.488 \\
+A-frozen & Pooled, 5 epochs & +3.3 [+0.8, +6.3] & $-$3.2 [$-$5.7, $-$0.6] & 0.527 & 0.492 \\
+A-frozen & Pooled, 20 epochs$^*$ & +5.3 [+2.6, +8.2] & $-$1.3 [$-$4.1, +1.4] & 0.575 & 0.515 \\
+A-frozen & Pooled, 60 epochs & +5.9 [+3.1, +8.7] & $-$0.7 [$-$3.1, +1.8] & 0.573 & 0.502 \\
+A-frozen & Local-only, 5 epochs & +3.2 [+0.7, +5.9] & $-$3.4 [$-$5.9, $-$0.5] & 0.535 & 0.488 \\
+A-frozen & Local-only, 20 epochs$^*$ & +4.8 [+2.4, +7.5] & $-$1.7 [$-$4.0, +0.8] & 0.589 & 0.511 \\
+A-frozen & Local-only, 60 epochs & +7.7 [+5.4, +10.5] & +1.1 [$-$0.9, +3.6] & 0.609 & 0.499 \\
+\midrule
+B & FedAvg, 9 rounds$^*$ & +7.2 [+4.8, +10.2] & +0.0 [+0.0, +0.0] & 0.587 & 0.525 \\
+B & FedAvg, 27 rounds & +6.9 [+4.7, +9.9] & $-$0.3 [$-$1.6, +0.9] & 0.590 & 0.517 \\
+B & FedAvg-FT, 1 step & +7.0 [+4.7, +9.9] & $-$0.2 [$-$0.7, +0.3] & 0.593 & 0.526 \\
+B & FedAvg-FT, 3 steps$^*$ & +7.3 [+4.9, +10.3] & +0.1 [$-$0.6, +0.7] & 0.600 & 0.528 \\
+B & FedAvg-FT, 10 steps & +6.8 [+4.3, +9.8] & $-$0.4 [$-$1.4, +0.8] & 0.616 & 0.548 \\
+B & FedAvg-FT, 30 steps & +6.0 [+3.5, +9.1] & $-$1.2 [$-$2.5, +0.1] & 0.637 & 0.564 \\
+B & FedAvg-FT, 100 steps & +6.4 [+4.0, +9.5] & $-$0.8 [$-$2.4, +0.8] & 0.651 & 0.574 \\
+B & Pooled, 5 epochs & +3.8 [+1.1, +7.2] & $-$3.4 [$-$5.9, $-$0.8] & 0.546 & 0.529 \\
+B & Pooled, 20 epochs$^*$ & +4.8 [+2.2, +8.1] & $-$2.5 [$-$4.7, $-$0.2] & 0.596 & 0.558 \\
+B & Pooled, 60 epochs & +6.3 [+3.6, +9.4] & $-$0.9 [$-$3.1, +1.1] & 0.630 & 0.571 \\
+B & Local-only, 5 epochs & +3.5 [+1.3, +6.7] & $-$3.7 [$-$6.3, $-$0.8] & 0.525 & 0.519 \\
+B & Local-only, 20 epochs$^*$ & +5.7 [+3.5, +9.1] & $-$1.5 [$-$4.0, +1.5] & 0.602 & 0.560 \\
+B & Local-only, 60 epochs & +5.9 [+3.7, +9.1] & $-$1.3 [$-$3.3, +1.1] & 0.638 & 0.563 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section*{Figure S1}
 \begin{figure}[!htbp]

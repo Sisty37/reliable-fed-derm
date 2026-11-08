@@ -888,6 +888,18 @@ association with how strongly a model fits its training lesions, not a controlle
 randomized exposure effects of E8 (Section~\ref{sec:res-leakage}) and the capacity-matched heads of E9
 (Section~\ref{sec:res-rankings}) order the methods in the same way.
 
+Post hoc training-budget controls (seeds 0--2; Supplementary~S18) qualify this ordering. Varying the
+FedAvg-FT fine-tuning from 1 to 30 local steps (model~A) or 1 to 100 steps (frozen encoders) raised
+lesion-grouped BA (model~A 0.480 to 0.564, model~B 0.526 to 0.574) but left the inflation within 1.5 points
+of FedAvg, with every interval including zero, so the weak personalization of the pre-specified three-step
+setting does not explain its small inflation. For the frozen encoders, FedAvg with 27 instead of 9 rounds
+changed the inflation by at most 0.3 points, whereas pooled and local-only training inflated more with
+longer training (A-frozen 3.3 to 5.9 and 3.2 to 7.7 points from 5 to 60 epochs; model~B 3.8 to 6.3 and 3.5 to
+5.9). After 5 epochs they inflated 3.2 to 3.7 points less than FedAvg, with intervals excluding zero, and
+after 60 epochs their inflation was within 1.3 points of FedAvg. The lower inflation of the frozen-encoder
+pooled and local-only heads in the protocol setting therefore depends on their training budget, consistent
+with an influence of how strongly a model fits its training lesions.
+
 Per-client inflation was larger in clients with more leakage (Figure~\ref{fig:mechanism}a), but this
 dose--response is weak evidence. Weighted least-squares slopes ranged from 8.1 points per 100\% leakage
 (FedAvg) to 21.5 (local-only) for model~A and from 6.2 to 18.9 for model~B, but client~0 carried most of
@@ -1270,8 +1282,9 @@ groups of test images and can reflect differences in difficulty and multiplicity
 standardization; the randomized experiment E8 addresses this for lesions with several images, but not for single-image lesions, and its method comparisons still differ in optimizer and budget. Binned ECE is biased in small samples, which affected our original leaky-versus-new
 contrast. Three to five seeds limit the precision of ranking comparisons, and the bootstrap intervals
 reflect test-sample uncertainty given the trained models, not retraining variability. The pooled and
-local-only references use a different optimizer and budget from the federated methods, FedAvg-FT used a
-single pre-specified number of fine-tuning steps, and the benchmark clients and test pools were reused
+local-only references use a different optimizer and budget from the federated methods; post hoc budget
+controls with three seeds showed that their inflation depends on that budget, and no budget variants were
+run for the fine-tuned pooled and local-only models of model~A. The benchmark clients and test pools were reused
 across method development and evaluation. Overlap between PanDerm's pretraining data and the evaluation
 images could not be ruled out. Our FedAvg reproduction was 4.2 points below one published value, though
 above FLamby's own results. EB-ShrinkFCP met its criterion for one of two encoders, it does not carry a
@@ -1733,7 +1746,7 @@ Collins GS, Moons KGM, Dhiman P, et~al.
 
 
 \bmsection*{Supporting information}
-Supplementary material S1--S17 and Figure S1 are provided as a separate file with this submission.
+Supplementary material S1--S18 and Figure S1 are provided as a separate file with this submission.
 
 
 \end{document}

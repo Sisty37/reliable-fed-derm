@@ -135,7 +135,8 @@ def s5_s7():
             for key in ("lac_a0.1", "aps_a0.1", "lac_a0.05", "lac_a0.2", "aps_a0.05", "aps_a0.2"):
                 for m in ("global", "clientwise", "weighted", "fcp", "shrink", "eb"):
                     r = d[key][m]
-                    rows.append(f"{model} & {key.replace('_a', ', $\\alpha$=').upper().replace('$\\ALPHA$', '$\\alpha$')} & {CONF[m]} & "
+                    klab = key.replace('_a', ', $\\alpha$=').upper().replace('$\\ALPHA$', '$\\alpha$')
+                    rows.append(f"{model} & {klab} & {CONF[m]} & "
                                 f"{f3(r['worst_center_q10'])} & {f3(min(r['mean_coverage']))} & {r['set_size_equal_weight']:.2f}")
                 rows.append("\\midrule")
         out.append(table(f"Conformal results on {title}: worst-client q10, lowest client mean coverage and mean set size "
@@ -511,7 +512,7 @@ def s9():
             ("v0.11", "3 Nov", "E0--E5 (RQ4 failed)", "EB-ShrinkFCP and test 5b on LOCO models (before any LOCO model)"),
             ("e7, PAD, NN tags", "5--6 Nov", "E0--E6", "pre-run tags; PAD interpretation rule; NN analysis exploratory"),
             ("v0.12", "7 Nov", "E0--E7, PAD, NN; external review", "E8, E9 and their tests; post hoc sensitivity analyses"),
-            ("8 Nov (no new version)", "8 Nov", "all results, incl. E8, E9", "post hoc only: S13--S17")]
+            ("8 Nov (no new version)", "8 Nov", "all results, incl. E8, E9", "post hoc only: S13--S18")]
     out = ["\\section*{S9. Protocol chronology and deviations}\n",
            table("Protocol versions and pre-run tags (git, pushed to GitHub), with the results available when each was "
                  "written.", "tab:s9", "llp{3.6cm}p{6.2cm}", "Version / tag & Date (2026) & Results available & Content",
