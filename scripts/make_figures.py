@@ -737,8 +737,8 @@ def fig_framework():
                 xx = gx + 0.2 + j * 1.6
                 ax.add_patch(plt.Rectangle((xx, gy), 1.15, gh * pv / 0.5, fc=VIOLET if pv >= thr else AXIS, ec="none"))
                 ax.text(xx + 0.58, gy - 0.25, lab, ha="center", va="top", fontsize=3.6, color=INK2, rotation=90)
-            ax.plot([gx, gx + 12.9], [gy + gh * thr / 0.5] * 2, color=INK, lw=0.7, ls=(0, (2, 1.5)))
-            ax.text(gx + 13.0, gy + gh * thr / 0.5, r"$1{-}\hat{q}_c$", fontsize=5.2, va="center")
+            ax.plot([gx, gx + 12.7], [gy + gh * thr / 0.5] * 2, color=INK, lw=0.7, ls=(0, (2, 1.5)))
+            ax.text(gx + 12.7, gy + gh * thr / 0.5 + 0.25, r"$1{-}\hat{q}_c$", fontsize=5.0, ha="right", va="bottom")
 
         else:                                         # per-center dots: global vs personalized
             for c in range(6):
@@ -754,8 +754,11 @@ def fig_framework():
 
     # bottom ribbon: stress tests and pre-registration
     rbox(ax, 0.3, 0.4, 99.4, 7.0, fc="white", ec=AXIS, lw=0.6, r=1.2)
-    ax.text(1.6, 3.9, "Stress tests", fontsize=6.0, weight="bold", va="center")
-    ax.text(11.4, 3.9, "leave-one-client-out models  ·  PAD-UFES-20 smartphone images (domain shift)",
+    ax.text(1.6, 5.4, "Stress tests", fontsize=6.0, weight="bold", va="center")
+    ax.text(11.4, 5.4, "leave-one-client-out models  ·  PAD-UFES-20 smartphone images (domain shift)",
+            fontsize=5.5, color=INK2, va="center")
+    ax.text(1.6, 2.4, "Controls", fontsize=6.0, weight="bold", va="center")
+    ax.text(11.4, 2.4, "E8: randomized sibling exposure on fixed test images  ·  E9: capacity-matched heads",
             fontsize=5.5, color=INK2, va="center")
     ax.plot([57.6, 57.6], [1.8, 6.0], color=AXIS, lw=0.6)
     ax.text(59.0, 3.9, "Fixed protocol", fontsize=6.0, weight="bold", va="center")
