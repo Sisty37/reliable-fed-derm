@@ -233,7 +233,7 @@ B & FedPer & 18.9 & 4.1 & 4.1 to 25.2 \\
 \bottomrule
 \end{tabular}
 \end{table}
-\section*{S5. Federated conformal prediction: all rules, scores and levels}
+\section*{S4. Federated conformal prediction: all rules, scores and levels}
 \begin{table}[!htbp]
 \centering
 \scriptsize
@@ -464,48 +464,7 @@ B & EB-ShrinkFCP & 0.900/3.05 & 0.915/1.24 & 0.909/1.93 & 0.902/2.82 & 0.898/3.7
 \bottomrule
 \end{tabular}
 \end{table*}
-\section*{S7. Conformal prediction on personalized models (descriptive)}
-\begin{table}[!htbp]
-\centering
-\scriptsize
-\caption{Personalized lesion-grouped models (LAC, $\alpha=0.1$, five seeds).}
-\label{tab:s7}
-\begin{tabular}{@{}lllrrr@{}}
-\toprule
-Model & Method & Rule & Worst q10 & Min mean cov. & Size \\
-\midrule
-A & FedBN & Global & 0.795 & 0.837 & 2.66 \\
-A & FedBN & Client-wise & 0.808 & 0.899 & 2.65 \\
-A & FedBN & FCP & 0.798 & 0.839 & 2.68 \\
-A & FedBN & EB-ShrinkFCP & 0.837 & 0.888 & 2.67 \\
-A & FedAvg-FT & Global & 0.761 & 0.796 & 2.83 \\
-A & FedAvg-FT & Client-wise & 0.790 & 0.899 & 2.85 \\
-A & FedAvg-FT & FCP & 0.762 & 0.799 & 2.85 \\
-A & FedAvg-FT & EB-ShrinkFCP & 0.838 & 0.893 & 2.91 \\
-B & FedAvg-FT & Global & 0.711 & 0.760 & 2.37 \\
-B & FedAvg-FT & Client-wise & 0.800 & 0.898 & 2.46 \\
-B & FedAvg-FT & FCP & 0.716 & 0.764 & 2.39 \\
-B & FedAvg-FT & EB-ShrinkFCP & 0.804 & 0.898 & 2.47 \\
-A & FedPer & Global & 0.826 & 0.859 & 2.20 \\
-A & FedPer & Client-wise & 0.796 & 0.900 & 2.03 \\
-A & FedPer & FCP & 0.829 & 0.862 & 2.22 \\
-A & FedPer & EB-ShrinkFCP & 0.834 & 0.900 & 2.04 \\
-B & FedPer & Global & 0.791 & 0.822 & 1.93 \\
-B & FedPer & Client-wise & 0.815 & 0.900 & 1.92 \\
-B & FedPer & FCP & 0.794 & 0.825 & 1.95 \\
-B & FedPer & EB-ShrinkFCP & 0.837 & 0.899 & 1.93 \\
-A & Local-only & Global & 0.808 & 0.865 & 1.92 \\
-A & Local-only & Client-wise & 0.813 & 0.899 & 2.03 \\
-A & Local-only & FCP & 0.809 & 0.867 & 1.94 \\
-A & Local-only & EB-ShrinkFCP & 0.801 & 0.896 & 2.00 \\
-B & Local-only & Global & 0.831 & 0.869 & 2.91 \\
-B & Local-only & Client-wise & 0.817 & 0.897 & 2.59 \\
-B & Local-only & FCP & 0.834 & 0.871 & 2.94 \\
-B & Local-only & EB-ShrinkFCP & 0.857 & 0.898 & 2.67 \\
-\bottomrule
-\end{tabular}
-\end{table}
-\section*{S6. Sensitivity analyses of the conformal results (post hoc)}
+\section*{S5. Sensitivity analyses of the conformal results (post hoc)}
 All on LAC, $\alpha=0.1$. q10 from 1,000 draws; range of q10 over five independent sets of 100 draws; one image per lesion in both halves; global and FCP thresholds from exact order statistics; calibration-only q10 with five fixed evaluation halves per model and 100 lesion-bootstrap calibration sets; label-shift-weighted (LSW) comparator.
 \begin{table*}[!htbp]
 \centering
@@ -560,7 +519,48 @@ B & one image per lesion, 500 $\times$ 20 draws & [$-$0.2, +1.6] & [+13.4, +19.1
 \bottomrule
 \end{tabular}
 \end{table}
-\section*{S8. Sensitivity analyses of the calibration results (post hoc)}
+\section*{S6. Conformal prediction on personalized models (descriptive)}
+\begin{table}[!htbp]
+\centering
+\scriptsize
+\caption{Personalized lesion-grouped models (LAC, $\alpha=0.1$, five seeds).}
+\label{tab:s7}
+\begin{tabular}{@{}lllrrr@{}}
+\toprule
+Model & Method & Rule & Worst q10 & Min mean cov. & Size \\
+\midrule
+A & FedBN & Global & 0.795 & 0.837 & 2.66 \\
+A & FedBN & Client-wise & 0.808 & 0.899 & 2.65 \\
+A & FedBN & FCP & 0.798 & 0.839 & 2.68 \\
+A & FedBN & EB-ShrinkFCP & 0.837 & 0.888 & 2.67 \\
+A & FedAvg-FT & Global & 0.761 & 0.796 & 2.83 \\
+A & FedAvg-FT & Client-wise & 0.790 & 0.899 & 2.85 \\
+A & FedAvg-FT & FCP & 0.762 & 0.799 & 2.85 \\
+A & FedAvg-FT & EB-ShrinkFCP & 0.838 & 0.893 & 2.91 \\
+B & FedAvg-FT & Global & 0.711 & 0.760 & 2.37 \\
+B & FedAvg-FT & Client-wise & 0.800 & 0.898 & 2.46 \\
+B & FedAvg-FT & FCP & 0.716 & 0.764 & 2.39 \\
+B & FedAvg-FT & EB-ShrinkFCP & 0.804 & 0.898 & 2.47 \\
+A & FedPer & Global & 0.826 & 0.859 & 2.20 \\
+A & FedPer & Client-wise & 0.796 & 0.900 & 2.03 \\
+A & FedPer & FCP & 0.829 & 0.862 & 2.22 \\
+A & FedPer & EB-ShrinkFCP & 0.834 & 0.900 & 2.04 \\
+B & FedPer & Global & 0.791 & 0.822 & 1.93 \\
+B & FedPer & Client-wise & 0.815 & 0.900 & 1.92 \\
+B & FedPer & FCP & 0.794 & 0.825 & 1.95 \\
+B & FedPer & EB-ShrinkFCP & 0.837 & 0.899 & 1.93 \\
+A & Local-only & Global & 0.808 & 0.865 & 1.92 \\
+A & Local-only & Client-wise & 0.813 & 0.899 & 2.03 \\
+A & Local-only & FCP & 0.809 & 0.867 & 1.94 \\
+A & Local-only & EB-ShrinkFCP & 0.801 & 0.896 & 2.00 \\
+B & Local-only & Global & 0.831 & 0.869 & 2.91 \\
+B & Local-only & Client-wise & 0.817 & 0.897 & 2.59 \\
+B & Local-only & FCP & 0.834 & 0.871 & 2.94 \\
+B & Local-only & EB-ShrinkFCP & 0.857 & 0.898 & 2.67 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\section*{S7. Sensitivity analyses of the calibration results (post hoc)}
 \begin{table}[!htbp]
 \centering
 \scriptsize
@@ -668,7 +668,7 @@ B Pooled & lesion & pooled NLL-optimal & 0.808 & 3.02 & 1.148 \\
 \bottomrule
 \end{tabular}
 \end{table}
-\section*{S9. Protocol chronology and deviations}
+\section*{S8. Protocol chronology and deviations}
 \begin{table*}[!htbp]
 \centering
 \scriptsize
@@ -686,12 +686,12 @@ e0 \ldots{} e5 tags & 30 Oct--3 Nov & E0, E0b, E1, E2, E5 & pre-run tags before 
 v0.11 & 3 Nov & E0--E5 (RQ4 failed) & EB-ShrinkFCP and test 5b on LOCO models (before any LOCO model) \\
 e7, PAD, NN tags & 5--6 Nov & E0--E6 & pre-run tags; PAD interpretation rule; NN analysis exploratory \\
 v0.12 & 7 Nov & E0--E7, PAD, NN; external review & E8, E9 and their tests; post hoc sensitivity analyses \\
-8 Nov (no new version) & 8 Nov & all results, incl. E8, E9 & post hoc only: S13--S18 \\
+8 Nov (no new version) & 8 Nov & all results, incl. E8, E9 & post hoc only: S12--S17 \\
 \bottomrule
 \end{tabular}
 \end{table*}
 Deviations: (1) FLamby's published FedAvg value recorded after E0 (not used in Gate 1); (2) PyTorch 2.5.1 instead of 2.4.1; (3) Frozen-encoder embeddings centered with the federated training mean (31 Oct, after the first convergence check, before any test result); (4) No five-member deep ensemble (seeds use different splits); (5) Personalized FCP not implemented (threshold rule not verifiable, no code); (6) Optional E4 and the original E8 (model C) not run; identifiers E8/E9 reused in v0.12; (7) U not re-tuned for the two-layer FedPer-style head (fixed before E7); (8) Post hoc sensitivity analyses added after the external review (S6, S8; listed in v0.12).
-\section*{S10. Run matrix and seed-level results}
+\section*{S9. Run matrix and seed-level results}
 \begin{table*}[!htbp]
 \centering
 \footnotesize
@@ -755,7 +755,7 @@ A & lesion & SCAFFOLD & 0.537 & 0.521 & 0.552 & 0.503 & 0.532 & +3.4 (SD 2.1) \\
 \bottomrule
 \end{tabular}
 \end{table*}
-\section*{S11. Randomized sibling exposure (E8)}
+\section*{S10. Randomized sibling exposure (E8)}
 \begin{table*}[!htbp]
 \centering
 \scriptsize
@@ -799,7 +799,7 @@ pandermfrozen\_local\_e20 - pandermfrozen\_fedavg\_r9 & $-$1.8 [$-$4.7, +1.2] \\
 \bottomrule
 \end{tabular}
 \end{table}
-\section*{S12. Capacity-matched two-layer heads for model B (E9)}
+\section*{S11. Capacity-matched two-layer heads for model B (E9)}
 \begin{table}[!htbp]
 \centering
 \footnotesize
@@ -823,7 +823,7 @@ Local-only (2-layer) & 0.677 & 0.559 & 11.7 \\
 \end{tabular}
 \end{table}
 Kendall's $\tau_b$ between the two rankings with the two-layer heads included: 0.20.
-\section*{S13. Fed-ISIC2019 studies and their evaluation split}
+\section*{S12. Fed-ISIC2019 studies and their evaluation split}
 Studies found in a targeted search (not a systematic review). None reported a lesion-grouped split; all evaluated on the FLamby test set or stated that they followed FLamby's settings. Differences between the compared methods in these studies are often a few balanced-accuracy points, comparable to the apparent leakage effect measured here.
 \begin{table*}[!htbp]
 \centering
@@ -845,7 +845,7 @@ Tupper \& Gagn\'e 2025 (arXiv) [g] & same test set as FLamby; 80/20 stratified t
 \end{tabular}
 \end{table*}
 \noindent{\footnotesize [a] arXiv:2210.04620. [b] arXiv:2309.16825; PMLR 252. [c] arXiv:2309.14675; ICLR 2024. [d] NeurIPS 2024, ``Revisiting ensembling in one-shot federated learning''. [e] arXiv:2410.02006. [f] arXiv:2505.07525. [g] arXiv:2510.12741.}
-\section*{S14. Coverage by diagnostic class (post hoc)}
+\section*{S13. Coverage by diagnostic class (post hoc)}
 LAC, $\alpha=0.1$, FedAvg models, 200 lesion-wise 50/50 draws per model; coverage by true class on the evaluation halves, pooled over clients. Mondrian rules use one threshold per class (from the pooled calibration scores of that class, or per client with a fallback to the pooled class threshold when a client has fewer than 10 calibration images of the class).
 \begin{table*}[!htbp]
 \centering
@@ -898,7 +898,7 @@ B & Mondrian & 0.917 & 0.905 & 0.901 & 0.899 & 0.903 & 0.902 & 0.901 & 4.04 \\
 \bottomrule
 \end{tabular}
 \end{table}
-\section*{S15. Variants of EB-ShrinkFCP (post hoc)}
+\section*{S14. Variants of EB-ShrinkFCP (post hoc)}
 LAC, $\alpha=0.1$, FedAvg models, 1,000 lesion-wise draws per model. Variants change one element of the pre-specified rule at a time.
 \begin{table}[!htbp]
 \centering
@@ -963,7 +963,7 @@ B & E5 & 0.77, 0.97, 0.76, 0.85, 0.94, 0.63 \\
 \bottomrule
 \end{tabular}
 \end{table}
-\section*{S16. Simulation with clustered scores and calibration-budget curves (post hoc)}
+\section*{S15. Simulation with clustered scores and calibration-budget curves (post hoc)}
 Six clients with 600, 300, 150, 80, 40, 20 calibration lesions; each lesion has $1+\mathrm{Poisson}(1)$ images; latent score $z=\delta_c+u_\ell+e_i$ with lesion effect $u_\ell\sim N(0,\rho)$, image noise $e_i\sim N(0,1-\rho)$ and client shift $\delta_c\sim N(0,\tau^2)$ drawn per replicate; conformal score $1/(1+e^{-z})$. The true coverage of each threshold for one image of a new lesion is computed from 200,000 draws of the known client distribution; 2,000 replicates per scenario.
 \begin{table}[!htbp]
 \centering
@@ -1041,7 +1041,7 @@ B & 100 & 0.801 / 0.898 & 0.687 / 0.746 & 0.815 / 0.897 \\
 \bottomrule
 \end{tabular}
 \end{table}
-\section*{S17. Nearest-neighbor proximity matched by client and class (post hoc)}
+\section*{S16. Nearest-neighbor proximity matched by client and class (post hoc)}
 Frozen plain-view embeddings, centered with the training mean of each split and L2-normalized; image-level splits, seeds 0--4. Matched differences average the within-stratum (client $\times$ class) differences, weighted by the stratum's new-lesion count (strata with at least three leaked and three new images). 1-NN inflation is standardized like Eq.~(1); ``siblings removed'' excludes all training images of the test image's lesion from the neighbor search.
 \begin{table*}[!htbp]
 \centering
@@ -1057,7 +1057,7 @@ B & +0.059 & +0.055 (0.002) & +0.002 & +0.001 (0.001) & +25.2 (1.9) & -0.9 (1.7)
 \bottomrule
 \end{tabular}
 \end{table*}
-\section*{S18. Training-budget controls (post hoc)}
+\section*{S17. Training-budget controls (post hoc)}
 \begin{table}[!htbp]
 \centering
 \scriptsize

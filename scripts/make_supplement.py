@@ -126,7 +126,7 @@ def s3():
 
 
 def s5_s7():
-    out = ["\\section*{S5. Federated conformal prediction: all rules, scores and levels}\n"]
+    out = ["\\section*{S4. Federated conformal prediction: all rules, scores and levels}\n"]
     for title, fa, fb in (("in-federation lesion-grouped FedAvg models (E5)", "E5_conformal.json", "E5_conformal_pandermfrozen.json"),
                           ("LOCO models (E6, test 5b)", "E6_conformal_loco.json", "E6_conformal_loco_pandermfrozen.json")):
         rows = []
@@ -150,7 +150,7 @@ def s5_s7():
                                                                     zip(d[m]["mean_coverage"], d[m]["mean_set_size"])))
         out.append(table(f"Per-client mean coverage / mean set size, {title} (LAC, $\\alpha=0.1$).", f"tab:s5pc{fa[:2]}",
                          "ll" + "r" * 6, "Model & Rule & 0 & 1 & 2 & 3 & 4 & 5", rows, size="\\scriptsize", wide=True))
-    out.append("\\section*{S7. Conformal prediction on personalized models (descriptive)}\n")
+    out.append("\\section*{S6. Conformal prediction on personalized models (descriptive)}\n")
     rows = []
     for run in ("fedbn_r9", "fedavgft_r9", "fedper_r9", "local_e20"):
         for model, suf in (("A", ""), ("B", "_pandermfrozen")):
@@ -168,7 +168,7 @@ def s5_s7():
 
 def s6():
     d = load("Conformal_sensitivity.json")
-    out = ["\\section*{S6. Sensitivity analyses of the conformal results (post hoc)}\n",
+    out = ["\\section*{S5. Sensitivity analyses of the conformal results (post hoc)}\n",
            "All on LAC, $\\alpha=0.1$. q10 from 1,000 draws; range of q10 over five independent sets of 100 draws; "
            "one image per lesion in both halves; global and FCP thresholds from exact order statistics; "
            "calibration-only q10 with five fixed evaluation halves per model and 100 lesion-bootstrap calibration sets; "
@@ -214,7 +214,7 @@ def nice(key):
 
 def s8():
     d = load("Calibration_sensitivity.json")
-    out = ["\\section*{S8. Sensitivity analyses of the calibration results (post hoc)}\n"]
+    out = ["\\section*{S7. Sensitivity analyses of the calibration results (post hoc)}\n"]
     if d is None:
         return out[0] + "Pending.\n"
     lab = {"ece_unmatched": "ECE, unmatched (as in E3)", "ece_matched": "ECE, size- and composition-matched",
@@ -246,7 +246,7 @@ def s8():
 
 def s10():
     a = load("Audit_supplement.json")
-    out = ["\\section*{S10. Run matrix and seed-level results}\n"]
+    out = ["\\section*{S9. Run matrix and seed-level results}\n"]
     rows = ["E0 & Official & A & FedAvg, FedProx, SCAFFOLD, pooled & 0--2",
             "E1 & Image, lesion & A, A-frozen, B & FedAvg, pooled (A: also FedAvg 27 rounds) & 0--2",
             "E2 & Image, lesion & A, B & FedAvg, FedProx, SCAFFOLD, FedBN (A), FedAvg-FT, pooled, local-only & 0--4",
@@ -276,7 +276,7 @@ def s10():
 
 def s11():
     d = load("E8_sibling_exposure.json")
-    out = ["\\section*{S11. Randomized sibling exposure (E8)}\n"]
+    out = ["\\section*{S10. Randomized sibling exposure (E8)}\n"]
     if d is None:
         return out[0] + "Pending: results of E8 are not yet available.\n"
     rows = []
@@ -297,7 +297,7 @@ def s11():
 
 def s12():
     d = load("E9_analysis_panderm.json")
-    out = ["\\section*{S12. Capacity-matched two-layer heads for model B (E9)}\n"]
+    out = ["\\section*{S11. Capacity-matched two-layer heads for model B (E9)}\n"]
     if d is None:
         return out[0] + "Pending: results of E9 are not yet available.\n"
     rows = []
@@ -325,7 +325,7 @@ def s13():
         ("Ayromlou \\& Emerson 2025 (arXiv) [f]", "FLamby settings, per-client held-out test sets", "FedAvg 64.1, Ditto 71.4, Ditto + constraint up to 72.2"),
         ("Tupper \\& Gagn\\'e 2025 (arXiv) [g]", "same test set as FLamby; 80/20 stratified train/validation", "FedIT 0.656, best (FedSA) 0.737"),
     ]
-    out = ["\\section*{S13. Fed-ISIC2019 studies and their evaluation split}\n",
+    out = ["\\section*{S12. Fed-ISIC2019 studies and their evaluation split}\n",
            "Studies found in a targeted search (not a systematic review). None reported a lesion-grouped split; all "
            "evaluated on the FLamby test set or stated that they followed FLamby's settings. Differences between "
            "the compared methods in these studies are often a few balanced-accuracy points, comparable to the "
@@ -346,7 +346,7 @@ CLS8 = ["MEL", "NV", "BCC", "AK", "BKL", "DF", "VASC", "SCC"]
 
 def s14():
     d = load("Class_conditional.json")
-    out = ["\\section*{S14. Coverage by diagnostic class (post hoc)}\n",
+    out = ["\\section*{S13. Coverage by diagnostic class (post hoc)}\n",
            "LAC, $\\alpha=0.1$, FedAvg models, 200 lesion-wise 50/50 draws per model; coverage by true class on the "
            "evaluation halves, pooled over clients. Mondrian rules use one threshold per class (from the pooled "
            "calibration scores of that class, or per client with a fallback to the pooled class threshold when a "
@@ -382,7 +382,7 @@ EBV = {"clientwise": "Client-wise", "global": "Global", "prespecified": "EB-Shri
 
 def s15():
     d = load("EB_variants.json")
-    out = ["\\section*{S15. Variants of EB-ShrinkFCP (post hoc)}\n",
+    out = ["\\section*{S14. Variants of EB-ShrinkFCP (post hoc)}\n",
            "LAC, $\\alpha=0.1$, FedAvg models, 1,000 lesion-wise draws per model. Variants change one element of the "
            "pre-specified rule at a time.\n"]
     if d is None:
@@ -413,7 +413,7 @@ SIMR = {"clientwise": "Client-wise", "global": "Global", "eb": "EB-ShrinkFCP", "
 
 def s16():
     d = load("Conformal_simulation.json")
-    out = ["\\section*{S16. Simulation with clustered scores and calibration-budget curves (post hoc)}\n"]
+    out = ["\\section*{S15. Simulation with clustered scores and calibration-budget curves (post hoc)}\n"]
     if d is None:
         return out[0] + "Pending.\n"
     out.append("Six clients with " + ", ".join(str(n) for n in d["n_lesions"]) + " calibration lesions; each lesion has "
@@ -460,7 +460,7 @@ BUDGET_NAMES = {"fedavg_r9": "FedAvg, 9 rounds", "fedavg_r27": "FedAvg, 27 round
 
 def s17nn():
     d = load("NN_matched.json")
-    out = ["\\section*{S17. Nearest-neighbor proximity matched by client and class (post hoc)}\n",
+    out = ["\\section*{S16. Nearest-neighbor proximity matched by client and class (post hoc)}\n",
            "Frozen plain-view embeddings, centered with the training mean of each split and L2-normalized; image-level "
            "splits, seeds 0--4. Matched differences average the within-stratum (client $\\times$ class) differences, "
            "weighted by the stratum's new-lesion count (strata with at least three leaked and three new images). "
@@ -486,7 +486,7 @@ def s17nn():
 
 def s17():
     d = load("Budget_controls.json")
-    out = ["\\section*{S18. Training-budget controls (post hoc)}\n"]
+    out = ["\\section*{S17. Training-budget controls (post hoc)}\n"]
     if d is None or not any(len(v) > 4 for v in d.values()):
         return ""                                        # optional runs not performed: section omitted
     rows = []
@@ -512,8 +512,8 @@ def s9():
             ("v0.11", "3 Nov", "E0--E5 (RQ4 failed)", "EB-ShrinkFCP and test 5b on LOCO models (before any LOCO model)"),
             ("e7, PAD, NN tags", "5--6 Nov", "E0--E6", "pre-run tags; PAD interpretation rule; NN analysis exploratory"),
             ("v0.12", "7 Nov", "E0--E7, PAD, NN; external review", "E8, E9 and their tests; post hoc sensitivity analyses"),
-            ("8 Nov (no new version)", "8 Nov", "all results, incl. E8, E9", "post hoc only: S13--S18")]
-    out = ["\\section*{S9. Protocol chronology and deviations}\n",
+            ("8 Nov (no new version)", "8 Nov", "all results, incl. E8, E9", "post hoc only: S12--S17")]
+    out = ["\\section*{S8. Protocol chronology and deviations}\n",
            table("Protocol versions and pre-run tags (git, pushed to GitHub), with the results available when each was "
                  "written.", "tab:s9", "llp{3.6cm}p{6.2cm}", "Version / tag & Date (2026) & Results available & Content",
                  [f"{a} & {b} & {c} & {d}" for a, b, c, d in rows], size="\\scriptsize", wide=True)]
@@ -574,7 +574,7 @@ def main():
 \maketitle
 All tables are generated by \texttt{scripts/make\_supplement.py} from the result files in the code repository
 (\url{https://github.com/Sisty37/reliable-fed-derm}).
-""" + s1() + s2() + s3() + s5_s7() + s6() + s8() + s9() + s10() + s11() + s12() + s13() + s14() + s15() + s16() + s17nn() + s17() + r"""
+""" + s1() + s2() + s3() + s5_s7().split("\\section*{S6.")[0] + s6() + "\\section*{S6." + s5_s7().split("\\section*{S6.")[1] + s8() + s9() + s10() + s11() + s12() + s13() + s14() + s15() + s16() + s17nn() + s17() + r"""
 \section*{Figure S1}
 \begin{figure}[!htbp]
 \centering

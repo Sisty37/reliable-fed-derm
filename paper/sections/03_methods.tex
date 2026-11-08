@@ -27,7 +27,7 @@ both split types; E3, calibration; E5, federated conformal prediction on in-fede
 leave-one-client-out (LOCO) models and a smartphone-image stress test; E7, personalized models and the
 final test of H3b; E8, a randomized sibling-exposure experiment on fixed test images; and E9,
 capacity-matched classifier heads for model~B. The optional experiment E4 was not run. Seeds differed
-between experiments (Supplementary~S10 gives the full run matrix): three for E0, E1, E6 and E8, five for E2, E7
+between experiments (Supplementary~S9 gives the full run matrix): three for E0, E1, E6 and E8, five for E2, E7
 and E9. Confirmatory tests followed the protocol version that was fixed before the corresponding runs
 (Section~\ref{sec:prereg}); all other analyses are labelled secondary, post hoc or exploratory.
 
@@ -37,7 +37,7 @@ and E9. Confirmatory tests followed the protocol version that was fixed before t
   \caption{Study framework. (1) Six Fed-ISIC2019 clients (acquisition sources) with one example image
   each. (2) Models are trained and evaluated on image-level splits, in which images of one lesion can
   fall on both sides, and on lesion-grouped splits, in which they cannot (three to five random re-splits
-  of each type, depending on the experiment; Supplementary~S10). (3) Simulated federated training with three
+  of each type, depending on the experiment; Supplementary~S9). (3) Simulated federated training with three
   encoder configurations and up to eight methods: images stay with their client during federated
   training, while the centralized baseline pools them. (4) Four evaluation questions; the proposed
   EB-ShrinkFCP is highlighted. Bottom: stress tests and the version-controlled protocol. Images: ISIC
@@ -219,7 +219,7 @@ between the image-level and lesion-grouped rankings was measured with Kendall's 
 agreement of single-seed rankings across split types (mean over 25 seed pairs) with a noise floor, the
 mean agreement of single-seed rankings from different seeds within one split type (10 pairs per split
 type); the pairs share seeds and are not independent. Seed-level BA and paired differences to FedAvg are given in
-Supplementary~S10.
+Supplementary~S9.
 
 \paragraph{H3b} The mean inflation of the local and personalized group (local-only, FedAvg-FT, FedBN
 and FedPer for model~A; local-only, FedAvg-FT and FedPer for model~B) minus that of FedAvg, averaged over
@@ -301,7 +301,7 @@ of its sampling variance. The variance is obtained from the spread of order stat
 quantile, a standard approximation to the standard error of a sample quantile, with the spacing widened
 by the average number of images per calibration lesion, $m_c/n_c$, as a heuristic allowance for
 correlated images; this factor is not a general design effect for unequal clusters, and its adequacy was
-checked post hoc with the lesion bootstrap and in a simulation (Supplementary~S6, S15 and S16). The server combines the quantiles into a
+checked post hoc with the lesion bootstrap and in a simulation (Supplementary~S5, S14 and S15). The server combines the quantiles into a
 between-client variance $\tau^2$ and a precision-weighted mean $\bar q$, and returns
 \begin{equation}
   \hat q_c = w_c\,q_c + (1-w_c)\,\bar q, \qquad w_c=\frac{\tau^2}{\tau^2+\sigma_c^2}.
@@ -364,7 +364,7 @@ target data.
 The protocol specified research questions, splits, models, metrics and success criteria before the
 corresponding experiments \cite{nosek2018preregistration}. It was not deposited in an external registry;
 instead, each version and each pre-run state of the code was committed and tagged in a git repository that
-was pushed to GitHub before the runs it governs, and the full history is released. Supplementary~S9 lists every
+was pushed to GitHub before the runs it governs, and the full history is released. Supplementary~S8 lists every
 version with its date, the results available when it was written and what it changed. Versions 0.1--0.10
 (26--30 October 2026) were written, and revised after five methodological reviews, before any experiment
 was run. Version 0.11 (3 November) was written after E0--E5 and before any LOCO model was trained, and
@@ -394,23 +394,24 @@ zero'' requires a point estimate of 2 points or more and a lower interval bound 
 interval above 2 points. Gate~2 is the single primary outcome; all other tests are secondary, and no
 correction for multiplicity was applied, so their intervals are not independent confirmations.
 Analyses not in the protocol are labelled post hoc or exploratory; the sensitivity analyses added after
-the external review are listed in Supplementary~S9.
+the external review are listed in Supplementary~S8.
 
 Unless stated otherwise, intervals are 95\% percentile intervals from a lesion-level cluster bootstrap
 \cite{field2007cluster} of the test sets (2,000 replicates; 1,000 for calibration
 contrasts), with the trained models fixed and seeds averaged inside each replicate; they reflect
 test-sample uncertainty, not retraining variability, which is shown by the seed-level results in
-Supplementary~S10. For the conformal gains, each replicate resampled the test lesions and redrew 20
+Supplementary~S9. For the conformal gains, each replicate resampled the test lesions and redrew 20
 calibration draws shared by all methods, so that gains are paired. In the pre-specified analysis, copies of
 a resampled lesion were treated as distinct lesions and could therefore fall into both halves; a corrected
 bootstrap that keeps the copies of a lesion together, with 20 and with 100 draws per replicate, is
-reported in Supplementary~S6. PAD-UFES-20 intervals resample patients. All deviations from the protocol recorded during the study are
-listed in Supplementary~S9; none changed a pre-specified test criterion.
+reported in Supplementary~S5. PAD-UFES-20 intervals resample patients. All deviations from the protocol recorded during the study are
+listed in Supplementary~S8; none changed a pre-specified test criterion.
 
 \subsection{Implementation}
 \label{sec:impl}
 
-All models were trained in PyTorch 2.5.1 \cite{paszke2019pytorch} on one laptop GPU (NVIDIA RTX 4050,
+Implementation details of every model and method are listed in Supplementary~S2. All models were
+trained in PyTorch 2.5.1 \cite{paszke2019pytorch} on one laptop GPU (NVIDIA RTX 4050,
 6\,GB) with mixed precision, using a re-implementation of FLamby's Fed-ISIC2019 pipeline whose
 configuration (optimizer, rounds, updates, loss, class weights, preprocessing and evaluation model) was
 compared with FLamby commit \texttt{edacf54}; FLamby's own code was not run. Federated training was
